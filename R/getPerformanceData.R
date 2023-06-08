@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Nov 21 2022 (18:41) 
+## Last-Updated: Apr 27 2023 (15:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,7 +44,7 @@ getPerformanceData <- function(testdata,
     X <- testdata[,-c(1:response.dim),with=FALSE]
     ## restore sanity
     setnames(X,sub("^protectedName.","",names(X)))
-    if (debug) message("extracted test set and prepared output object")
+    if (debug) message("\nExtracted test set and prepared output object")
     # }}}
     # {{{ collect pred as long format data.table
     args <- switch(response.type,"binary"={list(newdata=X)},
@@ -86,7 +86,6 @@ getPerformanceData <- function(testdata,
         }else{
             # predictions given as model which needs training in crossvalidation loops
             if (looping){
-                # browser(skipCalls = 1)
                 set.seed(trainseed)
                 if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
                 model.f$call$data <- trainX
@@ -118,6 +117,8 @@ getPerformanceData <- function(testdata,
         }
     }))
     if (any(is.na(pred$risk))) {
+        ## browser(skipCalls = 1)
+        message("Table of missing values in predicted risks:")
         pred[,model:=factor(model,levels=levs,labels)]
         if (response.type[1] == "binary"){
             print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model)])
@@ -126,7 +127,7 @@ getPerformanceData <- function(testdata,
             print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model,times)])
         stop("Missing values in predicted risk detected.")
     }
-    if (debug) message("trained the model(s) and extracted the predictions")
+    if (debug) message("\nTrained the model(s) and extracted the predictions")
     # }}}
     # {{{ merge with Weights (IPCW inner loop)
     if (response.type %in% c("survival","competing.risks")){

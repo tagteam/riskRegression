@@ -145,7 +145,7 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
 
-\method{predictRisk}{GLMnet}(object, newdata, times, ...)
+\method{predictRisk}{GLMnet}(object, newdata, times = NA, ...)
 
 \method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 
@@ -260,7 +260,7 @@ ndat <- data.frame(X1=c(0.25,0.25,-0.05,0.05),X2=c(0,1,0,1))
 predictRisk(cphmodel,newdata=ndat,times=ttt)
 predictRisk(coxphmodel,newdata=ndat,times=ttt)
 
-# stratified cox model
+# stratified Cox regression model
 sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,x=TRUE,y=TRUE)
 predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
 

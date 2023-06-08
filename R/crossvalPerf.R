@@ -12,7 +12,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
   ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag
   ## divide by number of times the pair is out-of-bag later
   aucDT <- NULL
-
+  
   redoSplitIndex <- function(x, N){
     res <- rep(TRUE, N)
     res[unique(x)] <- FALSE
@@ -43,13 +43,17 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       if (response.type == "survival"){
         Response$status0 <- Response$status
       }
-      else {
+      else { # competing risks
         oldEvent <- Response$event
         causeID <- oldEvent == cause
         cause1ID <- oldEvent == 1
         oldEvent[causeID] <- 1
         oldEvent[cause1ID] <- cause
         Response$status0 <- Response$status * oldEvent
+        # need a status variable with value
+        # 0 = censored
+        # 1 = cause of interest
+        # 2 = other causes
       }
       cases.index <- Response[,time<=t & status0==1]
       controls.index1 <- Response[,time>t]
@@ -126,7 +130,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
                                       controls =controls.index,
                                       controls1 = controls.index1,
                                       controls2 = controls.index2)
-            icPart <- getInfluenceFunction.AUC.censoring.term(time = data[["time"]],
+            icPart <- getInfluenceFunction.AUC.censoring.term(time = Response[["time"]],
                                                               event = Response[["status0"]],
                                                               t= t,
                                                               IFcalculationList = IFcalculationList,
@@ -428,7 +432,6 @@ crossvalPerf.bootcv <- function(m,crossval,se.fit,multi.split.test,keep.cv,byvar
     cv.score <- NULL
     bootcv.score <- NULL
   }
-  
   ## contrasts and multi-split test
   if (length(crossval[[1]][[m]]$contrasts)>0){
     cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))

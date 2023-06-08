@@ -587,8 +587,9 @@ Score.list <- function(object,
     if (missing(data)){stop("Argument data is missing.")}
     if (data.table::is.data.table(data))
         data <- copy(data)
-    else
-        data <- data.table::setDT(data)
+    else{
+        data <- data.table::as.data.table(data)
+    }
     responseFormula <- stats::update(formula,~1)
     ## if (missing(event)) event <- 1
     responsevars <- all.vars(responseFormula)
@@ -1319,7 +1320,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
             message(paste0("Calculating the performance metrics in ",B," validation data sets"))
         }
-        if (!("ROC" %in% plots)){de
+        if (!("ROC" %in% plots)){
           breaks <- NULL
         }
         crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
