@@ -17,13 +17,7 @@
 
 AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none",keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,...){
     model=risk=ReSpOnSe=FPR=TPR=ID=NULL
-
-    # {{{  helper functions
-    AireTrap <- function(FP,TP,N){
-        N <- length(FP)
-        sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
-    }
-
+    
     ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
     delongtest <-  function(risk,
                             score,
@@ -142,7 +136,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
         score <- aucDT[,auRoc.factor(risk,ReSpOnSe,ROC=ROC),by=list(model)]
     }
     else{
-        score <- aucDT[,auRoc.numeric(risk,ReSpOnSe,breaks=NULL,ROC=ROC),by=list(model)]
+        score <- aucDT[,auRoc.numeric(risk,ReSpOnSe,breaks=breaks,ROC=ROC),by=list(model)]
     }
     if (ROC==FALSE){
         setnames(score,"V1","AUC")
