@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 15 2022 (09:53) 
+## last-updated: May 30 2023 (08:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 386
+##     Update #: 387
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -207,7 +207,7 @@ plotCalibration <- function(x,
         fitted.models <- pframe[,unique(model)]
         if (all(models%in%fitted.models)){
             pframe <- pframe[model%in%models]
-        } else{
+        } else {
             if (all(is.numeric(models)) && (max(models)<=length(fitted.models))){
                 models <- fitted.models[models]
                 pframe <- pframe[model%in%models]

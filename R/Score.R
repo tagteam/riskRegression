@@ -565,8 +565,9 @@ Score.list <- function(object,
     if (missing(data)){stop("Argument data is missing.")}
     if (data.table::is.data.table(data))
         data <- copy(data)
-    else
-        data <- data.table::setDT(data)
+    else{
+        data <- data.table::as.data.table(data)
+    }
     responseFormula <- stats::update(formula,~1)
     ## if (missing(event)) event <- 1
     responsevars <- all.vars(responseFormula)
