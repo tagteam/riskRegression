@@ -10,4 +10,4 @@ Q <- Score(list(f),data = v,formula = Hist(time,event)~1,plots = "roc",split.met
 plotROC(x)
 plotROC(X,add = TRUE,col = 2)
 plotROC(Y,add = TRUE,col = 3)
-plotROC(Q,add = TRUE,col = 4)
+#plotROC(Q,add = TRUE,col = 4)

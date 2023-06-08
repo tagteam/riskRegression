@@ -172,7 +172,10 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{errorhandling}{Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.}
 
-\item{keep}{list of characters (not case sensitive) which determines additional output.}
+\item{keep}{list of characters (not case sensitive) which determines additional output.
+\code{"residuals"} provides Brier score residuals and
+\code{"splitindex"} provides sampling index used to split the data into training and validation sets. It is a function, whose argument is the bootstrap sample, which one wishes to look at.
+\code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
 
 \item{predictRisk.args}{A list of argument-lists to control how risks are predicted.
  The names of the lists should be the S3-classes of the \code{object}.
@@ -200,10 +203,11 @@ but may be slower.}
 If \code{'horizontal'} average crossvalidated specificities for fixed sensitivity values,
 specified in \code{roc.grid}, otherwise, if \code{'vertical'},
 average crossvalidated sensitivities for fixed specificity values.
-See Fawcett, T. (2006) for details.
-\code{"residuals"} provides Brier score residuals and
-\code{"splitindex"} provides sampling index used to split the data into training and validation sets. It is a function, whose argument is the bootstrap sample, which one wishes to look at.
-\code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
+See Fawcett, T. (2006) for details.}
+
+\item{roc.grid}{Grid points for the averaging of ROC curves.
+A sequence of values at which to compute averages across the ROC curves
+obtained for different data splits during crossvalidation.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,
