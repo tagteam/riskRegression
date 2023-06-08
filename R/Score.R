@@ -485,10 +485,10 @@ Score.list <- function(object,
                        debug=0L,
                        censoring.save.memory = FALSE,
                        breaks = seq(0,1,.01), 
-                       RocAverageMethod='vertical',
-                       RocAverageGrid=switch(RocAverageMethod,
-                                             "vertical"=seq(0,1,.01),
-                                             "horizontal"=seq(1,0,-.01)),
+                       roc.method='vertical',
+                       roc.grid=switch(roc.method,
+                                       "vertical"=seq(0,1,.01),
+                                       "horizontal"=seq(1,0,-.01)),
                        ...){
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
@@ -1266,29 +1266,29 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         if ("ROC" %in% plots){
           cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
           TPR=FPR=NULL
-          fancy.fun <- function(risk,TPR,FPR,RocAverageMethod,RocAverageGrid){
-            if (RocAverageMethod == "vertical"){
+          fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
+            if (roc.method == "vertical"){
               temp <- stats::approx(x=FPR,
                                     y=TPR,
-                                    xout=RocAverageGrid,
+                                    xout=roc.grid,
                                     ties=median,
                                     yleft=0,
                                     yright=1)$y
-              list(risk = rep(NA,length(RocAverageGrid)),TPR=temp, FPR=RocAverageGrid)
+              list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
             }
             else {
               temp <- stats::approx(x=TPR,
                                     y=FPR,
-                                    xout=RocAverageGrid,
+                                    xout=roc.grid,
                                     ties=median,
                                     yleft=0, #have to consider if yleft and yright have to be modified.
                                     yright=1)$y
-              data.table(risk = rep(NA,length(RocAverageGrid)),TPR=RocAverageGrid, FPR=temp)
+              data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
             }
           }
           if (response.type == "binary"){
-            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,RocAverageMethod=RocAverageMethod,RocAverageGrid=RocAverageGrid),by=list(model)])
-            if (RocAverageMethod == "vertical"){
+            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model)])
+            if (roc.method == "vertical"){
               cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
             }
             else {
@@ -1296,8 +1296,8 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             }
           }
           else {
-            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,RocAverageMethod=RocAverageMethod,RocAverageGrid=RocAverageGrid),by=list(model,times)])
-            if (RocAverageMethod == "vertical"){
+            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model,times)])
+            if (roc.method == "vertical"){
               cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
             }
             else {
