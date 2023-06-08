@@ -19,7 +19,7 @@ Hal9001 <- function(formula,data,lambda=NULL,...){
   bl_obj <- coxModelFrame(bl_cph)[]
   bl_obj[,strata.num:=0]
   data.table::setorder(bl_obj, strata.num,stop,start,-status)
-  hal_fit <- do.call(fit_hall,list(X = EHF$design,
+  hal_fit <- do.call(hal9001::fit_hal,list(X = EHF$design,
                                            Y = EHF$event.history,
                                            family = "cox",
                                            return_lasso = TRUE,
