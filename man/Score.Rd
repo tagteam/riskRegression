@@ -184,7 +184,6 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
  \code{list(rfsrc=list(na.action="na.impute"))}.
- 
 
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
@@ -196,16 +195,17 @@ of the cumulative hazard of the censoring as a matrix when calculating standard 
 with Cox censoring. This can allow one to use \code{Score} on larger test data sets,
 but may be slower.}
 
-\item{breaks}{Break points for computing the ROC curve when crossvalidation is applied. Defaults to
-\code{seq(0,1,.01)}, although it is not implmeneted for \code{split.method = "loob"} or \code{split.method = "cvk"} and \code{B} > 1 yet.}
+\item{breaks}{Break points for computing the Roc curve. Defaults to
+\code{seq(0,1,.01)} when some form of crossvalidation is applied, otherwise
+to all unique values of the predictive marker.}
 
 \item{roc.method}{Method for averaging ROC curves across data splits.
 If \code{'horizontal'} average crossvalidated specificities for fixed sensitivity values,
-specified in \code{roc.grid}, otherwise, if \code{'vertical'},
-average crossvalidated sensitivities for fixed specificity values.
+specified in \code{roc.grid}, otherwise, if  \code{'vertical'},
+average crossvalidated specificities for fixed sensitivity values.
 See Fawcett, T. (2006) for details.}
 
-\item{roc.grid}{Grid points for the averaging of ROC curves.
+\item{roc.grid}{Grid points for the averaging of Roc curves.
 A sequence of values at which to compute averages across the ROC curves
 obtained for different data splits during crossvalidation.}
 }
