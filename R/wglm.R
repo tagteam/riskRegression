@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: feb 23 2023 (11:31) 
+## Last-Updated: maj  2 2023 (09:44) 
 ##           By: Brice Ozenne
-##     Update #: 380
+##     Update #: 381
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 ## * wglm
 #' @title Logistic Regression Using IPCW
 #' @description Logistic regression over multiple timepoints
-#' where right-censoring is handle using inverse probability of censoring weighting. 
+#' where right-censoring is handled using inverse probability of censoring weighting (IPCW). 
 #'
 #' @param regressor.event [formula] a formula with empty left hand side and the covariates for the logistic regression on the right hand side.
 #' @param formula.censor [formula] a formula used to fit the censoring model.

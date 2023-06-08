@@ -34,7 +34,7 @@ an object of class \code{"wglm"}.
 }
 \description{
 Logistic regression over multiple timepoints
-where right-censoring is handle using inverse probability of censoring weighting.
+where right-censoring is handled using inverse probability of censoring weighting (IPCW).
 }
 \details{
 First, a Cox model is fitted (argument formula.censor)

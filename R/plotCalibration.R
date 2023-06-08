@@ -167,7 +167,7 @@ plotCalibration <- function(x,
                             ...){
     if (x$response.type!="binary" && missing(cens.method)){
         cens.method <- "local"
-        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
+        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensitive to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
     }
     
     # {{{ plot frame

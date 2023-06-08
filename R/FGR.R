@@ -77,6 +77,9 @@
 ##' f6
 ##' f6a<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=0.1)
 ##' f6a
+##' ## specify the censor code
+##' f7<- FGR(Hist,time,cause,cens.code="eventfree")~X1,data=d, cause="recurrence")
+##' f7
 #' @export
 FGR <- function(formula,data,cause=1,y=TRUE,...){
     # {{{ read the data and the design

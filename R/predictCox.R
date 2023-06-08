@@ -263,10 +263,10 @@ predictCox <- function(object,
     if(!is.null(object$naive.var)){
         stop("predictCox does not know how to handle frailty.") 
     }
-    if(any(object.modelFrame[["start"]]!=0)){
-        warning("The current version of predictCox was not designed to handle left censoring \n",
-                "The function may be used on own risks \n") 
-    }    
+    ## if(any(object.modelFrame[["start"]]!=0)){
+    ##     warning("The current version of predictCox was not designed to handle left censoring \n",
+    ##             "The function may be used on own risks \n") 
+    ## }    
     if(object.baseEstimator == "exact"){
         stop("Prediction with exact handling of ties is not implemented.\n")
     }
