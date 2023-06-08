@@ -10,12 +10,22 @@
 #' @param alpha The elasticnet mixing parameter. See the ?glmnet for more details.
 #' @param nfolds Number of folds for cross-validation. Default is 10.
 #' @param type.measure loss to use for cross-validation. Default is deviance.
+#' @param family passed to \code{glmnet}. Defaults for binary outcome to \code{"binomial"} and for survival to \code{"cox"}.
 #' @param \dots Additional arguments that are passed on to the glmnet.
 #' @export
-GLMnet <- function(formula,data,lambda=NULL, cv=TRUE,alpha = 1,nfolds = 10, type.measure = "deviance",...){
+GLMnet <- function(formula,
+                   data,
+                   lambda=NULL,
+                   cv=TRUE,
+                   alpha = 1,
+                   nfolds = 10,
+                   type.measure = "deviance",
+                   family,
+                   ...){
     requireNamespace(c("glmnet","prodlim"))
     tt <- all.vars(update(formula,".~1"))
     if (length(tt) != 1){
+        if (missing(family)) family <- "cox"
         strata.num = start = status = NULL
         EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
         stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
@@ -29,22 +39,51 @@ GLMnet <- function(formula,data,lambda=NULL, cv=TRUE,alpha = 1,nfolds = 10, type
         ## bl_obj$linear_predictor = c(exp(predict(fit,newx = EHF$design,type = "link", s=lambda)))
         design <- EHF$design[bl_obj$order,]
         if (!cv){
-            fit <- glmnet::glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda, alpha= alpha,family="cox", ...)
+            fit <- glmnet::glmnet(x=EHF$design,
+                                  y=EHF$event.history,
+                                  lambda=lambda,
+                                  alpha= alpha,
+                                  family=family,
+                                  ...)
         }
         else {
-            fit <- glmnet::cv.glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,nfolds=nfolds,type.measure = type.measure, alpha=alpha,family="cox",...)
+            fit <- glmnet::cv.glmnet(x=EHF$design,
+                                     y=EHF$event.history,
+                                     lambda=lambda,
+                                     nfolds=nfolds,
+                                     type.measure = type.measure,
+                                     alpha=alpha,
+                                     family=family,
+                                     ...)
             lambda <- fit$lambda
         }
     }
     else {
+        if (missing(family)) family <- "binomial"
         bl_obj=terms=design = NULL
         y  <- data[[tt[1]]]
         x <- model.matrix(formula, data=data)
         if (!cv){
-            fit <- glmnet::glmnet(x=x,y=y, lambda=lambda,alpha=alpha,family="binomial",...)
+            print("ho")
+            print(family)
+            fit <- glmnet::glmnet(x=x,
+                                  y=y,
+                                  lambda=lambda,
+                                  alpha=alpha,
+                                  family=family,
+                                  ...)
         }
         else {
-            fit <- glmnet::cv.glmnet(x=x,y=y, lambda=lambda,nfolds=nfolds,type.measure =type.measure, alpha=alpha, family="binomial",...)
+            print("hi")
+            print(family)
+            fit <- glmnet::cv.glmnet(x=x,
+                                     y=y,
+                                     lambda=lambda,
+                                     nfolds=nfolds,
+                                     type.measure =type.measure,
+                                     alpha=alpha,
+                                     family=family,
+                                     ...)
             lambda <- fit$lambda
         }
     }

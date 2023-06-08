@@ -184,7 +184,6 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
  \code{list(rfsrc=list(na.action="na.impute"))}.
- 
 
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
@@ -195,6 +194,20 @@ Cox regression and argument \code{conservative} is set to \code{FALSE}. If \code
 of the cumulative hazard of the censoring as a matrix when calculating standard errors
 with Cox censoring. This can allow one to use \code{Score} on larger test data sets,
 but may be slower.}
+
+\item{breaks}{Break points for computing the Roc curve. Defaults to
+\code{seq(0,1,.01)} when some form of crossvalidation is applied, otherwise
+to all unique values of the predictive marker.}
+
+\item{roc.method}{Method for averaging ROC curves across data splits.
+If \code{'horizontal'} average crossvalidated specificities for fixed sensitivity values,
+specified in \code{RocAverageGrid}, otherwise, if  \code{'vertical'},
+average crossvalidated specificities for fixed sensitivity values.
+See Fawcett, T. (2006) for details.}
+
+\item{roc.grid}{Grid points for the averaging of Roc curves.
+A sequence of values at which to compute averages across the ROC curves
+obtained for different data splits during crossvalidation.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,
@@ -518,6 +531,9 @@ the prediction error difference between 2 predictors Biostatistics (2009)
 Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: an
 intuitive measure useful for evaluating risk prediction models. Diagnostic
 and Prognostic Research, 2(1):7, 2018.
+
+Fawcett, T. (2006). An introduction to ROC analysis. Pattern
+Recognition Letters, 27, 861-874.
 }
 \author{
 Thomas A Gerds \email{tag@biostat.ku.dk} and Paul Blanche \email{paul.blanche@univ-ubs.fr}
