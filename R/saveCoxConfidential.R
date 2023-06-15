@@ -1,19 +1,34 @@
-# set.seed(18)
-# trainSurv <- sampleData(100,outcome="survival")
-# testSurv <- sampleData(40,outcome="survival")
-# cox1 = coxph(Surv(time,event)~strata(X1)+strata(X2)+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-# z<-saveCoxConfidential(cox1,c(2,5))
-# 
-# saveTextCoxConfidential(z) ## get output to copy object
-# 
-# predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
-# 
-# cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-# z<-saveCoxConfidential(cox2,c(2,5))
-# 
-# saveTextCoxConfidential(z) ## get output to copy object
-# 
-# predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
+#' library(survival)
+#' library(lava)
+#' set.seed(18)
+#' trainSurv <- sampleData(300,outcome="survival")
+#' testSurv <- sampleData(40,outcome="survival")
+#' fit = coxph(Surv(time,event)~X1+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+#' u=saveCoxConfidential(fit,times=3)
+#' \dontrun{
+#' # write object as plain text file
+#' sink("~/tmp/u.R")
+#' cat("U <- ")
+#' dput(u)
+#' sink(NULL)
+#' # reload object
+#' source("~/tmp/u.R")
+#' class(U) <- "CoxConfidential"
+#' }
+#' predictRisk(U,newdata=testsurv)
+#' cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+#' z<-saveCoxConfidential(cox1,c(2,5))
+#' 
+#' dput(z) ## get output to copy object
+#' 
+#' all.equal(predictRisk(z,newdata=testSurv),
+#'           predictRisk(cox1,newdata=testSurv,times=c(2,5)))
+#' 
+#' cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+#' z<-saveCoxConfidential(cox2,c(2,5))
+#' 
+#' predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
+#'@export
 saveCoxConfidential <- function(object, times){
   if (class(object) != "coxph"){
     stop("Object has to be a coxph object. ")
@@ -50,15 +65,19 @@ saveCoxConfidential <- function(object, times){
   out
 }
 
-saveTextCoxConfidential <- function(object){
-  dput(object)
-}
+## saveTextCoxConfidential <- function(object){
+  ## dput(object)
+## }
 
+## * predictRisk.CoxConfidential
+##' @export
+#' @rdname predictRisk
+#' @method predictRisk CoxConfidential
 predictRisk.CoxConfidential <- function(object,
                                         newdata,
                                         ...){
   if (missing(newdata)){
-    stop("You have to specify the new data. ")
+    stop("Argument newdata is missing. ")
   }
   formula <- object$formula
   formula[[2]] <- NULL
