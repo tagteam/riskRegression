@@ -52,6 +52,8 @@ getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationL
         (1/n)*(aucLPO/Phi)*((cases.index)*weights*(1/n)*muControls + (controls.index2)*weights*(1/n)*muCase)
       Waftert <- (1/(Phi*n^2))*ic0ControlOld*controls.index1- 
         (1/n)*(aucLPO/Phi)*(controls.index1)*weights*(1/n)*muCase
+      ## First term gives for i'th entry: 1/n \sum_j weights[j] * \hat{f}_i(\tilde{T}_j-,X_j); 
+      ## Next one does: 1/n \sum_j weights[j] * \hat{f}_i(tau,X_j) for Cox
       icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
         predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
     }
