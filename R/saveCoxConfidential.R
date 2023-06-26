@@ -5,16 +5,16 @@
 #' testSurv <- sampleData(40,outcome="survival")
 #' fit = coxph(Surv(time,event)~X1+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 #' u=saveCoxConfidential(fit,times=3)
-#' \dontrun{
+#' #\dontrun{
 #' # write object as plain text file
-#' sink("~/tmp/u.R")
-#' cat("U <- ")
-#' dput(u)
-#' sink(NULL)
-#' # reload object
-#' source("~/tmp/u.R")
-#' class(U) <- "CoxConfidential"
-#' }
+#' #sink("~/tmp/u.R")
+#' #cat("U <- ")
+#' #dput(u)
+#' #sink(NULL)
+#' ## reload object
+#' #source("~/tmp/u.R")
+#' #class(U) <- "CoxConfidential"
+#' #}
 #' predictRisk(U,newdata=testsurv)
 #' cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 #' z<-saveCoxConfidential(cox1,c(2,5))
