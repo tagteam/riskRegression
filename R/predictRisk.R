@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jun  8 2023 (15:51) 
-##           By: Thomas Alexander Gerds
-##     Update #: 517
+## last-updated: Jun 26 2023 (15:01) 
+##           By: Anders Munch
+##     Update #: 519
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -93,12 +93,12 @@
 #' fit <- GLMnet(Y~X1+X8,data=d) ## Uses CV as default
 #' predictRisk(fit,newdata=nd)
 #' 
-#'\dontrun{
+#' \dontrun{
 #' library(SuperLearner)
 #' set.seed(1)
 #' sl = SuperLearner(Y = d$Y, X = d[,-1], family = binomial(),
 #'       SL.library = c("SL.mean", "SL.glmnet", "SL.randomForest"))
-#'}
+#' }
 #'
 #' ## survival outcome
 #' # generate survival data
@@ -926,9 +926,9 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
             ptemp <- 1-stats::predict(object,data=newdata,...)$survival
             pos <- prodlim::sindex(jump.times=ranger::timepoints(object),eval.times=times)
             if (NROW(newdata) == 1)
-                p <- matrix(c(1,ptemp),nrow = 1)[,pos+1,drop=FALSE]
+                p <- matrix(c(0,ptemp),nrow = 1)[,pos+1,drop=FALSE]
             else
-                p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
+                p <- cbind(0,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
                 stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
             p
@@ -952,7 +952,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         if (object$family[[1]]=="surv") {
             ptemp <- 1-stats::predict(object,newdata=newdata,importance="none",...)$survival
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
-            p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
+            p <- cbind(0,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
                 stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
             p
