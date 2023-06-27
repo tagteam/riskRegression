@@ -515,6 +515,7 @@ Score.list <- function(object,
                        breaks = seq(0,1,.01), 
                        roc.method='vertical',
                        roc.grid=switch(roc.method,"vertical"=seq(0,1,.01),"horizontal"=seq(1,0,-.01)),
+                       cutpoints = NULL,
                        ...){
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
@@ -1005,7 +1006,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       ROC=ROC,
                                       MC=Weights$IC,
                                       IC.data=Weights$IC.data,
-                                      breaks=NULL)
+                                      breaks=NULL,
+                                      cutpoints=cutpoints)
         if (debug) message("computed apparent performance")
     }
     # }}}

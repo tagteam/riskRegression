@@ -42,7 +42,8 @@ computePerformance <- function(DT,
                                ROC=FALSE,
                                MC,
                                IC.data,
-                               breaks=NULL){
+                               breaks=NULL,
+                               cutpoints=NULL){
     IPA=IBS=Brier=NULL
     model = reference = NULL
     ## ibs <- "ibs"%in%summary
@@ -63,7 +64,7 @@ computePerformance <- function(DT,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
                   ## DT.residuals=DT.residuals,
-                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,IC.data=IC.data,breaks=breaks) ## will break survival
+                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,IC.data=IC.data,breaks=breaks,cutpoints=cutpoints) ## will break survival
     if (response.type=="competing.risks") {
         input <- c(input,list(cause=cause,states=states))
     }
