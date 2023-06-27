@@ -15,9 +15,8 @@
 ## 
 ### Code:
 
-AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none",keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,...){
+AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none",keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,cutpoints,...){
     model=risk=ReSpOnSe=FPR=TPR=ID=NULL
-    
     ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
     delongtest <-  function(risk,
                             score,
@@ -110,14 +109,25 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
     out
 }
 
-    auRoc.numeric <- function(X,D,breaks,ROC){
+    auRoc.numeric <- function(X,D,breaks,ROC,cutpoints=NULL){
         if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
-        TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==1))
-        FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==0))
-        if (ROC==TRUE)
-            data.table(risk=breaks,TPR,FPR)
-        else
-            0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
+        TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=TRUE)/sum(D==1))
+        FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=TRUE)/sum(D==0))
+        if (ROC && is.null(cutpoints)) {
+          data.table(risk=breaks,TPR,FPR)
+        }
+        else if (!is.null(cutpoints)){
+          Prisks <- c(prodlim::sindex(jump.times=X,eval.times=breaks,comp="greater",strict=TRUE))
+          Prisks2 <- c(prodlim::sindex(jump.times=X,eval.times=breaks,comp="smaller",strict=FALSE))
+          PPV <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=TRUE))/Prisks
+          NPV <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="smaller",strict=FALSE))/Prisks2
+          Prisks <- Prisks/length(D)
+          Prisks2 <- Prisks2/length(D)
+          data.table(risk=breaks,TPR,FPR,PPV,NPV,Prisks,Prisks2)
+        }
+        else {
+          0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
+        }
     }
     auRoc.factor <- function(X,D,ROC){
         TPR <- (sum(D==1)-table(X[D==1]))/sum(D==1)
@@ -128,15 +138,18 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
             0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
     }
     # }}}
-
+    
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     data.table::setkey(aucDT,model,ID)
+    if (!is.null(cutpoints)){
+      ROC <- TRUE
+    }
     if (is.factor(DT[["risk"]])){
         score <- aucDT[,auRoc.factor(risk,ReSpOnSe,ROC=ROC),by=list(model)]
     }
     else{
-        score <- aucDT[,auRoc.numeric(risk,ReSpOnSe,breaks=breaks,ROC=ROC),by=list(model)]
+        score <- aucDT[,auRoc.numeric(risk,ReSpOnSe,breaks=breaks,ROC=ROC,cutpoints=cutpoints),by=list(model)]
     }
     if (ROC==FALSE){
         setnames(score,"V1","AUC")
@@ -144,7 +157,37 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
     } else{
         AUC <- score[,list(AUC=0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))),by=list(model)]
         ROC <- score
-        output <- list(score=AUC,ROC=ROC)
+        
+        if(!is.null(cutpoints)){
+          temp.fun <- function(risk,cutpoints,TPR,FPR,PPV,NPV,Prisks,Prisks2){
+            temp <- pmin(prodlim::sindex(risk,cutpoints,comp = "greater")+1,length(risk))
+            data.table(TPR=TPR[temp],FPR=FPR[temp],PPV=PPV[temp],NPV=NPV[temp],Prisks=Prisks[temp],Prisks2=Prisks2[temp],cutpoints=cutpoints)
+          }
+          temp.TPR.ic <- score[,temp.fun(risk,cutpoints,TPR,FPR,PPV,NPV,Prisks,Prisks2),by=list(model)]
+          res.cut <- list()
+          for (i in 1:length(cutpoints)){
+            temp.TPR <- subset(temp.TPR.ic,cutpoints==cutpoints[i])
+            aucDT.temp <- merge(aucDT,temp.TPR)
+            some.fun <- function(ReSpOnSe,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cut,N){
+              meanY <- mean(ReSpOnSe)
+              out <- list(TPR = TPR[1], 
+                          SE.TPR = sd(ReSpOnSe/meanY * ((risk > cut)-TPR))/sqrt(N), 
+                          FPR = FPR[1], 
+                          SE.FPR = sd((1-ReSpOnSe)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
+                          PPV = PPV[1],
+                          SE.PPV = sd((risk > cut)/Prisks[1] * (ReSpOnSe - PPV))/sqrt(N),
+                          NPV = NPV[1], 
+                          SE.NPV = sd((risk <= cut)/Prisks2[1] * ((1-ReSpOnSe) - NPV))/sqrt(N), 
+                          cutpoint = cut)
+              out
+            }
+            res.cut[[i]] <- aucDT.temp[,some.fun(ReSpOnSe,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cutpoints[i],N), by = list(model)]
+          }
+          output <- list(score=AUC,ROC=ROC, res.cut=do.call("rbind",res.cut))
+        }
+        else {
+          output <- list(score=AUC,ROC=ROC)
+        }
     }
     if (length(dolist)>0 || (se.fit[[1]]==1L)){
         xRisk <- data.table::dcast(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
