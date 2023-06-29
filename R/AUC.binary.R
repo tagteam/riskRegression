@@ -160,7 +160,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
         
         if(!is.null(cutpoints)){
           temp.fun <- function(risk,cutpoints,TPR,FPR,PPV,NPV,Prisks,Prisks2){
-            temp <- pmin(prodlim::sindex(risk,cutpoints,comp = "greater")+1,length(risk))
+            temp <- pmin(prodlim::sindex(risk,cutpoints,comp = "greater"),length(risk))
             data.table(TPR=TPR[temp],FPR=FPR[temp],PPV=PPV[temp],NPV=NPV[temp],Prisks=Prisks[temp],Prisks2=Prisks2[temp],cutpoints=cutpoints)
           }
           temp.TPR.ic <- score[,temp.fun(risk,cutpoints,TPR,FPR,PPV,NPV,Prisks,Prisks2),by=list(model)]
