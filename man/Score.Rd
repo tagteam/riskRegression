@@ -45,13 +45,14 @@ Score(object, ...)
   roc.method = "vertical",
   roc.grid = switch(roc.method, vertical = seq(0, 1, 0.01), horizontal = seq(1, 0,
     -0.01)),
+  cutpoints = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
 
-\item{...}{Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.}
+\item{...}{Named list containing additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.}
 
 \item{formula}{A formula which identifies the outcome (left hand
     side). E.g., \code{Y ~ 1} for binary and \code{Hist(time,status) ~ 1} for time-to-event outcome.
@@ -205,9 +206,13 @@ specified in \code{roc.grid}, otherwise, if  \code{'vertical'},
 average crossvalidated specificities for fixed sensitivity values.
 See Fawcett, T. (2006) for details.}
 
-\item{roc.grid}{Grid points for the averaging of Roc curves.
+\item{roc.grid}{Grid points for the averaging of ROC curves.
 A sequence of values at which to compute averages across the ROC curves
 obtained for different data splits during crossvalidation.}
+
+\item{cutpoints}{If not \code{NULL}, estimates and standard errors of the TPR (True Positive Rate), 
+FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value) 
+are given at the \code{cutpoints}. These values are saved in \code{object$AUC$res.cut}.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

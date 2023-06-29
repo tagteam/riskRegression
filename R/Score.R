@@ -155,10 +155,13 @@
 #' specified in \code{roc.grid}, otherwise, if  \code{'vertical'},
 #' average crossvalidated specificities for fixed sensitivity values.
 #' See Fawcett, T. (2006) for details.
-##' @param roc.grid Grid points for the averaging of Roc curves.
+##' @param roc.grid Grid points for the averaging of ROC curves.
 #' A sequence of values at which to compute averages across the ROC curves
 #' obtained for different data splits during crossvalidation.
-##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
+##' @param cutpoints If not \code{NULL}, estimates and standard errors of the TPR (True Positive Rate), 
+##' FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value) 
+##' are given at the \code{cutpoints}. These values are saved in \code{object$AUC$res.cut}. 
+##' @param ... Named list containing additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
 ##'     summaries and plots. Most elements are in\code{data.table} format.

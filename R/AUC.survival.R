@@ -44,31 +44,35 @@ AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.v
     if (!is.null(cutpoints)){
       breaks <- sort(cutpoints,decreasing = TRUE)
       aucDT[,nth.times:=as.numeric(factor(times))]
-      helper.fun <- function(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times,event,cens.model,nth.times,conservative, IC.G, cutpoints){
+      helper.fun <- function(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times,event,cens.model,nth.times,conservative, IC.G, cutpoints,se.fit){
         den_TPR<-sum(ipcwCases) ## estimate the cumulative incidence via IPCW
         den_FPR<-sum(ipcwControls)
         indeces <- sindex(risk,cutpoints,comp = "greater",TRUE)
         res <- list()
         ordered <- order(time) ## can probably move this outside to improve computation time, for now keep it
+        SE.TPR <- SE.FPR <- SE.PPV <- SE.NPV <- NA
         for (i in 1:length(cutpoints)){
           den_PPV <- sum(ipcwCases[risk > cutpoints[i]]+ipcwControls[risk > cutpoints[i]])
           den_NPV <- 1-den_PPV
           if (indeces[i] != 0){
             TPRi <- TPR[indeces[i]]
             FPRi <- FPR[indeces[i]]
-            IC0.TPR <- ipcwCases*N*((risk > cutpoints[i])-TPRi)/den_TPR
-            SE.TPR <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.TPR[ordered],IC0.TPR[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
-            IC0.FPR <- (ipcwControls)*N*((risk > cutpoints[i])-FPRi)/(1-den_TPR)
-            SE.FPR <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.FPR[ordered],IC0.FPR[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+            if (se.fit){
+              IC0.TPR <- ipcwCases*N*((risk > cutpoints[i])-TPRi)/den_TPR
+              SE.TPR <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.TPR[ordered],IC0.TPR[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+              IC0.FPR <- (ipcwControls)*N*((risk > cutpoints[i])-FPRi)/(1-den_TPR)
+              SE.FPR <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.FPR[ordered],IC0.FPR[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+            }
           }
           else {
             TPRi <- FPRi <- 0
-            SE.TPR <- SE.FPR <- NA
           }
           if (den_PPV > 1e-10){
             PPV <- (TPRi*den_TPR)/den_PPV
-            IC0.PPV <- (risk > cutpoints[i])/den_PPV*(((ipcwCases)*N)*(1*(event==1)-1*(event!=0)*PPV)-ipcwControls*N*PPV) #OBS, check other causes, paul's implementation
-            SE.PPV <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.PPV[ordered],IC0.PPV[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+            if (se.fit){
+              IC0.PPV <- (risk > cutpoints[i])/den_PPV*(((ipcwCases)*N)*(1*(event==1)-1*(event!=0)*PPV)-ipcwControls*N*PPV) #OBS, check other causes, paul's implementation
+              SE.PPV <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.PPV[ordered],IC0.PPV[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+            }
             
             ## Alternative implementation
             # IC0.PPV <- (risk > cutpoints[i])/den_PPV*(ipcwCases*N - PPV)
@@ -81,8 +85,10 @@ AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.v
           }
           if (den_NPV > 1e-10){
             NPV <- ((1-FPRi)*den_FPR)/den_NPV
-            IC0.NPV <- (risk <= cutpoints[i])/den_NPV*(((ipcwCases)*N)*(1*(event!=1 & event!=0)-1*(event!=0)*NPV)+ipcwControls*N*(1-NPV)) #OBS, check other causes, paul's implementation
-            SE.NPV <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.NPV[ordered],IC0.NPV[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+            if (se.fit){
+              IC0.NPV <- (risk <= cutpoints[i])/den_NPV*(((ipcwCases)*N)*(1*(event!=1 & event!=0)-1*(event!=0)*NPV)+ipcwControls*N*(1-NPV)) #OBS, check other causes, paul's implementation
+              SE.NPV <- sd(getInfluenceCurve.Brier(times,time[ordered],IC0.NPV[ordered],IC0.NPV[ordered],IC.G,cens.model,nth.times,conservative,event[ordered]))/sqrt(N)
+            }
             
             ## Alternative implementation
             # IC0.NPV <- (risk <= cutpoints[i])/den_NPV*((ipcwControls1+ipcwControls2)*N - NPV)
@@ -96,7 +102,7 @@ AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.v
         }
         do.call("rbind",res)
       }
-      output <- list(res.cut=aucDT[, helper.fun(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times[1],status,cens.model,nth.times[1],conservative, MC, cutpoints),by=list(model,times)])
+      output <- list(res.cut=aucDT[, helper.fun(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times[1],status,cens.model,nth.times[1],conservative, MC, cutpoints,se.fit),by=list(model,times)])
     }
     else if (ROC==TRUE) {
       if (is.null(breaks)){
