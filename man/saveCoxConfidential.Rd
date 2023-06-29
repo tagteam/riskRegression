@@ -34,9 +34,9 @@ dput(u)
 sink(NULL)
 # reload object
 source("~/tmp/u.R")
-class(U) <- "CoxConfidential"
+class(u) <- "CoxConfidential"
 }
-predictRisk(U,newdata=testsurv)
+predictRisk(u,newdata=testSurv)
 cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 z<-saveCoxConfidential(cox1,c(2,5))
 
@@ -48,5 +48,5 @@ all.equal(predictRisk(z,newdata=testSurv),
 cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 z<-saveCoxConfidential(cox2,c(2,5))
 
-predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
+all.equal(predictRisk(z,testSurv),predictRisk(z,testSurv,c(2,5)))
 }

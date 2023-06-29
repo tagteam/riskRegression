@@ -21,9 +21,9 @@
 ##' sink(NULL)
 ##' # reload object
 ##' source("~/tmp/u.R")
-##' class(U) <- "CoxConfidential"
+##' class(u) <- "CoxConfidential"
 ##' }
-##' predictRisk(U,newdata=testsurv)
+##' predictRisk(u,newdata=testSurv)
 ##' cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 ##' z<-saveCoxConfidential(cox1,c(2,5))
 ##' 
@@ -35,10 +35,12 @@
 ##' cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 ##' z<-saveCoxConfidential(cox2,c(2,5))
 ##' 
-##' predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
+##' all.equal(predictRisk(z,testSurv),predictRisk(z,testSurv,c(2,5)))
 ##' @export
 saveCoxConfidential <- function(object, times){
-  if (class(object) != "coxph"){
+  hazard = NULL
+  `.` <- list
+  if (!inherits(object,"coxph")){
     stop("Object has to be a coxph object. ")
   }
   if (missing(times)) {
@@ -84,12 +86,13 @@ saveCoxConfidential <- function(object, times){
 predictRisk.CoxConfidential <- function(object,
                                         newdata,
                                         ...){
+  times = observation = NULL
   if (missing(newdata)){
     stop("Argument newdata is missing. ")
   }
   formula <- object$formula
   formula[[2]] <- NULL
-  frame <- Publish:::specialFrame(formula,
+  frame <- Publish::specialFrame(formula,
                                   data=newdata,
                                   specials="strata")
   design <- frame$design
@@ -112,7 +115,7 @@ predictRisk.CoxConfidential <- function(object,
   Lambda0 <- object$Lambda0
   dat.frame2 <- data.frame(Lambda0)
   merged <- merge(dat.frame,dat.frame2)
-  setorder(merged, times, observation)
+  data.table::setorder(merged, times, observation)
   merged$risk <- 1-exp(-merged$eLP*merged$hazard0)
   matrix(merged$risk, ncol=n.times,nrow=n.newdata)
 }
