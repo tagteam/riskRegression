@@ -308,8 +308,6 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
                                                 time=time,
                                                 IC0,
                                                 residuals=residuals,
-                                                WTi=WTi,
-                                                Wt=Wt,
                                                 IC.G=Weights$IC,
                                                 cens.model=cens.model,
                                                 conservative = conservative,

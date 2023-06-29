@@ -16,7 +16,7 @@
 ### Code:
 
 AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none",keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,cutpoints,...){
-    model=risk=ReSpOnSe=FPR=TPR=ID=NULL
+    PPV=NPV=Prisks=Prisks2=model=risk=ReSpOnSe=FPR=TPR=ID=NULL
     ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
     delongtest <-  function(risk,
                             score,
@@ -111,8 +111,8 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
 
     auRoc.numeric <- function(X,D,breaks,ROC,cutpoints=NULL){
         if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
-        TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=TRUE)/sum(D==1))
-        FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=TRUE)/sum(D==0))
+        TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==1))
+        FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==0))
         if (ROC && is.null(cutpoints)) {
           data.table(risk=breaks,TPR,FPR)
         }

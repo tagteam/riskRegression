@@ -44,7 +44,7 @@ AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.v
     if (!is.null(cutpoints)){
       breaks <- sort(cutpoints,decreasing = TRUE)
       aucDT[,nth.times:=as.numeric(factor(times))]
-      helper.fun <- function(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times,event,cens.model,nth.times,conservative, IC.G, cutpoints,se.fit){
+      cutpoint.helper.fun <- function(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times,event,cens.model,nth.times,conservative, IC.G, cutpoints,se.fit){
         den_TPR<-sum(ipcwCases) ## estimate the cumulative incidence via IPCW
         den_FPR<-sum(ipcwControls)
         indeces <- sindex(risk,cutpoints,comp = "greater",TRUE)
@@ -102,7 +102,7 @@ AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.v
         }
         do.call("rbind",res)
       }
-      output <- list(res.cut=aucDT[, helper.fun(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times[1],status,cens.model,nth.times[1],conservative, MC, cutpoints,se.fit),by=list(model,times)])
+      output <- list(res.cut=aucDT[, cutpoint.helper.fun(FPR,TPR,risk,ipcwCases,ipcwControls, N, time,times[1],status,cens.model,nth.times[1],conservative, MC, cutpoints,se.fit),by=list(model,times)])
     }
     else if (ROC==TRUE) {
       if (is.null(breaks)){
