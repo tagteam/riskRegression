@@ -1,4 +1,3 @@
-
 ##' @title Save confidential Cox objects 
 ##' @name saveCoxConfidential
 ##' @param object An object of class \code{coxph}.
