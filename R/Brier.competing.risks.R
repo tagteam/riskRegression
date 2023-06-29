@@ -35,8 +35,6 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                               time=time,
                                               IC0,
                                               residuals=residuals,
-                                              WTi=WTi,
-                                              Wt=Wt,
                                               IC.G=MC,
                                               cens.model=cens.model,
                                               conservative = conservative,
