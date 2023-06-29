@@ -87,14 +87,11 @@ getInfluenceCurve.Brier <- function(t,
                                     time,
                                     IC0,
                                     residuals,
-                                    WTi,
-                                    Wt,
                                     IC.G,
                                     cens.model,
                                     nth.times=NULL,
                                     conservative,
-                                    event,
-                                    one.step = FALSE){
+                                    event){
     ##
     ## Compute influence function of Brier score estimator using weights of the reverse Cox model
     ## This function evaluates the part of influence function which is related to the IPCW weights
