@@ -1,34 +1,43 @@
-#' library(survival)
-#' library(lava)
-#' set.seed(18)
-#' trainSurv <- sampleData(300,outcome="survival")
-#' testSurv <- sampleData(40,outcome="survival")
-#' fit = coxph(Surv(time,event)~X1+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-#' u=saveCoxConfidential(fit,times=3)
-#' \dontrun{
-#' # write object as plain text file
-#' sink("~/tmp/u.R")
-#' cat("U <- ")
-#' dput(u)
-#' sink(NULL)
-#' # reload object
-#' source("~/tmp/u.R")
-#' class(U) <- "CoxConfidential"
-#' }
-#' predictRisk(U,newdata=testsurv)
-#' cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-#' z<-saveCoxConfidential(cox1,c(2,5))
-#' 
-#' dput(z) ## get output to copy object
-#' 
-#' all.equal(predictRisk(z,newdata=testSurv),
-#'           predictRisk(cox1,newdata=testSurv,times=c(2,5)))
-#' 
-#' cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-#' z<-saveCoxConfidential(cox2,c(2,5))
-#' 
-#' predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
-#'@export
+
+##' @title Save confidential Cox objects 
+##' @name saveCoxConfidential
+##' @param object An object of class \code{coxph}.
+##' @param times The times at which we want to predict risk.
+##' @details
+##' This function can save \code{coxph} objects such that we do not need to export 
+##' the data on which it was fitted at given times. 
+##' @examples
+##' library(survival)
+##' library(lava)
+##' set.seed(18)
+##' trainSurv <- sampleData(300,outcome="survival")
+##' testSurv <- sampleData(40,outcome="survival")
+##' fit = coxph(Surv(time,event)~X1+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+##' u=saveCoxConfidential(fit,times=3)
+##' \dontrun{
+##' # write object as plain text file
+##' sink("~/tmp/u.R")
+##' cat("U <- ")
+##' dput(u)
+##' sink(NULL)
+##' # reload object
+##' source("~/tmp/u.R")
+##' class(U) <- "CoxConfidential"
+##' }
+##' predictRisk(U,newdata=testsurv)
+##' cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+##' z<-saveCoxConfidential(cox1,c(2,5))
+##' 
+##' dput(z) ## get output to copy object
+##' 
+##' all.equal(predictRisk(z,newdata=testSurv),
+##'           predictRisk(cox1,newdata=testSurv,times=c(2,5)))
+##' 
+##' cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+##' z<-saveCoxConfidential(cox2,c(2,5))
+##' 
+##' predictRisk(z,testSurv)-predictRisk(z,testSurv,c(2,5))
+##' @export
 saveCoxConfidential <- function(object, times){
   if (class(object) != "coxph"){
     stop("Object has to be a coxph object. ")
