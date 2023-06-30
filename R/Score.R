@@ -115,7 +115,8 @@
 ##' @param keep list of characters (not case sensitive) which determines additional output.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets. It is a function, whose argument is the bootstrap sample, which one wishes to look at.
-##' \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.
+##' \code{"vcov"} provides the variance-covariance matrix for the estimates.
+##' \code{"iid"} provides the estimated influence function of the estimates.
 ##' @param breaks Break points for computing the ROC curve when crossvalidation is applied. Defaults to
 ##' \code{seq(0,1,.01)}, although it is not implmeneted for \code{split.method = "loob"} or \code{split.method = "cvk"} and \code{B} > 1 yet.
 ##' @param roc.method Method for averaging ROC curves across data splits.
@@ -797,9 +798,11 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         if("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
         if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
         if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
+        if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.cv = FALSE
     }else{
         keep.residuals=FALSE
         keep.vcov=FALSE
+        keep.iid=FALSE
         keep.cv=FALSE
         keep.splitindex=FALSE
     }
