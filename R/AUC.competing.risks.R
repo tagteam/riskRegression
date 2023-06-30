@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun 30 2023 (11:23) 
+## Last-Updated: Jun 30 2023 (16:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 25
+##     Update #: 26
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -175,7 +175,7 @@ AUC.competing.risks <- function(DT,
         }
         if (keep.iid[[1]] == TRUE && se.fit[[1]] == TRUE) {
             output <- c(output,
-                        list(iid.decomp = DT[,data.table::data.table(ID,model,cause,times,IF.AUC)]))
+                        list(iid.decomp = aucDT[,data.table::data.table(ID,model,cause,times,IF.AUC)]))
         }
     }
     ## add score to object

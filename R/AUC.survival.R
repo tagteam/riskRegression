@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun 30 2023 (11:21) 
+## Last-Updated: Jun 30 2023 (16:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 12
+##     Update #: 13
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -172,7 +172,7 @@ AUC.survival <- function(DT,
         }
         if (keep.iid[[1]] == TRUE && se.fit[[1]] == TRUE) {
             output <- c(output,
-                        list(iid.decomp = DT[,data.table::data.table(ID,model,times,IF.AUC)]))
+                        list(iid.decomp = aucDT[,data.table::data.table(ID,model,times,IF.AUC)]))
         }
         
     }
