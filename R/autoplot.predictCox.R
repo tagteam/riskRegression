@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Mar  7 2022 (08:31) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1275
+## last-updated: aug 31 2023 (11:19) 
+##           By: Brice Ozenne
+##     Update #: 1277
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -608,7 +608,7 @@ predict2plot <- function(dataL, name.outcome,
             }else{
                 gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
                                                                        "ggplot2::aes(x = time, y = lowerBand.smooth, group = ",group.by,", color = ",group.by,", linetype = \"band\")"))),
-                                                        size = size.band)
+                                                        linewidth = size.band)
                 gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
                                                                        "ggplot2::aes(x = time, y = upperBand.smooth, group = ",group.by, ", color = ",group.by,", linetype = \"band\")"))),
                                                         size = size.band)
@@ -620,9 +620,9 @@ predict2plot <- function(dataL, name.outcome,
                 gg.base <- gg.base + scale_fill_manual("", values="grey12")        
             }else{
                 gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerBand", xend = "timeRight", yend = "lowerBand", color = "\"band\""),
-                                                           size = size.band)
+                                                           linewidth = size.band)
                 gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperBand", xend = "timeRight", yend = "upperBand", color = "\"band\""),
-                                                           size = size.band)
+                                                           linewidth = size.band)
             }
         }
     }
@@ -635,10 +635,10 @@ predict2plot <- function(dataL, name.outcome,
             }else{
                 gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
                                                                        "ggplot2::aes(x = time, y = lowerCI.smooth, group = ",group.by,", color = ",group.by,", linetype = \"ci\")"))),
-                                                        size = size.ci)
+                                                        linewidth = size.ci)
                 gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
                                                                        "ggplot2::aes(x = time, y = upperCI.smooth, group = ",group.by,", color = ",group.by,", linetype = \"ci\")"))),
-                                                        size = size.ci)
+                                                        linewidth = size.ci)
 
             }
         }else{
@@ -649,19 +649,19 @@ predict2plot <- function(dataL, name.outcome,
 
             }else{
                 gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerCI", xend = "timeRight", yend = "lowerCI", color = "\"ci\""),
-                                                           size = size.ci)
+                                                           linewidth = size.ci)
                 gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperCI", xend = "timeRight", yend = "upperCI", color = "\"ci\""),
-                                                           size = size.ci)
+                                                           linewidth = size.ci)
             }
         }
     }
     ## estimate
     if(smooth>0){
         gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes_string(x = "time", y = paste0(name.outcome,".smooth"), group = group.by, color = group.by),
-                                                size = size.estimate)
+                                                linewidth = size.estimate)
     }else{
         gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes_string(x = "timeRight", y = name.outcome, xend = "time", yend = name.outcome, color = group.by),
-                                                   size = size.estimate)
+                                                   linewidth = size.estimate)
         if("status" %in% names(dataL)){
             dataL$status <- as.character(dataL$status)
             gg.base <- gg.base + ggplot2::geom_point(data = na.omit(dataL),

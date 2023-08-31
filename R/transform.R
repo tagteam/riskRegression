@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: Nov 22 2022 (11:49) 
-##           By: Thomas Alexander Gerds
-##     Update #: 531
+## Last-Updated: aug 31 2023 (10:54) 
+##           By: Brice Ozenne
+##     Update #: 536
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -559,7 +559,7 @@ transformCIBP <- function(estimate, se, iid, null,
                             }
                         })
 
-                        if(length(index.keep)>0 && all(out$p.value[iC,-index.keep]==1)){
+                        if(length(index.keep)>0 && all(stats::na.omit(out$p.value[iC,-index.keep])==1)){
                             out$adj.p.value[iC,-index.keep] <- out$p.value[iC,-index.keep]
                         }
                     }
@@ -580,7 +580,7 @@ transformCIBP <- function(estimate, se, iid, null,
                             }
                         })
 
-                        if(length(index.keep)>0 && all(out$p.value[iC,-index.keep]==1)){
+                        if(length(index.keep)>0 && all(stats::na.omit(out$p.value[iC,-index.keep])==1)){
                             out$adj.p.value[iC,-index.keep] <- out$p.value[iC,-index.keep]
                         }
                     }
@@ -598,7 +598,8 @@ transformCIBP <- function(estimate, se, iid, null,
                                                                                   "less" = 1),
                                                              global = (band == 2)                             
                                                              )
-                if(length(index.keep)>0 && all(out$p.value[,-index.keep]==1)){
+
+                if(length(index.keep)>0 && all(stats::na.omit(out$p.value[,-index.keep])==1)){
                     out$adj.p.value[,-index.keep] <- out$p.value[,-index.keep]
                 }
             }
