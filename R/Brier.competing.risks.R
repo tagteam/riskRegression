@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jan 11 2022 (17:04)
+## Last-Updated: Jun 30 2023 (11:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 4
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -15,7 +15,24 @@
 ##
 ### Code:
 
-Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,cause,states,IC.data,...){
+Brier.competing.risks <- function(DT,
+                                  MC,
+                                  se.fit,
+                                  conservative,
+                                  cens.model,
+                                  keep.vcov=FALSE,
+                                  keep.iid=FALSE,
+                                  multi.split.test,
+                                  alpha,
+                                  N,
+                                  NT,
+                                  NF,
+                                  dolist,
+                                  keep.residuals=FALSE,
+                                  cause,
+                                  states,
+                                  IC.data,
+                                  ...){
     IC0=nth.times=ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     thecause <- match(cause,states,nomatch=0)
@@ -83,6 +100,10 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
     }
     if (keep.vcov[1] && se.fit[1]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
+    }
+    if (keep.iid[1] && se.fit[1] == TRUE) {
+        output <- c(output,
+                    list(iid.decomp = DT[,data.table::data.table(ID,model,cause,times,IF.Brier)]))
     }
     output
 }

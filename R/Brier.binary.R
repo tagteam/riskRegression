@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:03) 
 ## Version: 
-## Last-Updated: Jan 11 2022 (17:04) 
+## Last-Updated: Jun 30 2023 (10:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 4
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,6 +20,7 @@ Brier.binary <- function(DT,
                          conservative=FALSE,
                          cens.model="none",
                          keep.vcov=FALSE,
+                         keep.iid=FALSE,
                          multi.split.test,
                          alpha,
                          N,
@@ -77,10 +78,14 @@ Brier.binary <- function(DT,
     }else{
         output <- list(score=score)
     }
-    if (keep.vcov[1] && se.fit[1]==TRUE){
+    if (keep.vcov[[1]] == TRUE && se.fit[[1]]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier")))
     }
-    if (keep.residuals) {
+    if (keep.iid[1] && se.fit[1] == TRUE) {
+        output <- c(output,
+                    list(iid.decomp = DT[,data.table::data.table(ID,model,IF.Brier)]))
+    }
+    if (keep.residuals[[1]] == TRUE) {
         output <- c(output,list(residuals=DT[,data.table::data.table(ID,ReSpOnSe,model,risk,residuals)]))
     }
     output
