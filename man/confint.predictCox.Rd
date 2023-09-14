@@ -50,13 +50,13 @@ library(survival)
 
 #### generate data ####
 set.seed(10)
-d <- sampleData(40,outcome="survival") 
+d <- sampleData(40,outcome="survival")
 
 #### estimate a stratified Cox model ####
 fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 
-#### compute individual specific survival probabilities  
+#### compute individual specific survival probabilities
 fit.pred <- predictCox(fit, newdata=d[1:3], times=c(3,8), type = "survival",
                        se = TRUE, iid = TRUE, band = TRUE)
 fit.pred

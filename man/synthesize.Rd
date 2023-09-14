@@ -51,7 +51,7 @@ lava object
 \description{
 Fit parametric regression models to the outcome distribution and optionally
 also parametric regression models for the joint distribution of the predictors
-structural equation models. 
+structural equation models.
 Then the function \code{sim.synth} can be called on the  resulting object to
 to simulate from the parametric model based on the machinery of the \code{lava} package
 }

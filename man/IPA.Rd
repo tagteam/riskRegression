@@ -83,7 +83,7 @@ IPA(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
 ## predicted risks externally given
 p2=predictRisk(cox1,newdata=pbcval,times=1000)
 IPA(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
- 
+
 # competing risks
 data(Melanoma)
 Melanomatest=(1:NROW(Melanoma)) \%in\% sample(1:NROW(Melanoma),size=.632*NROW(Melanoma))
@@ -100,7 +100,7 @@ IPA(fit1,formula=Hist(time,status)~1,newdata=Melanomaval,times=1000)
 ## predicted risks externally given
 p3= predictRisk(fit1,cause=1,newdata=Melanomaval,times=1000)
 IPA(p3,formula=Hist(time,status)~1,cause=1,newdata=Melanomaval,times=1000)
- 
+
 }
 \seealso{
 Score

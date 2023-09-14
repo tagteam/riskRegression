@@ -62,7 +62,7 @@ library(survival)
 library(prodlim)
 set.seed(140515)
 sdat <- sampleData(43,outcome="survival")
-# -- fit a Cox regression model 
+# -- fit a Cox regression model
 survForm = Surv(time,event) ~ X8 + X9
 cox <- coxph(survForm, data = sdat,x=TRUE)
 

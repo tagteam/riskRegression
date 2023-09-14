@@ -57,7 +57,7 @@ The number of groups is controlled by argument \code{q}.}
 \item{\code{"nne"}}: {The observed proportion at predicted risk value 'p' is obtained based
 on the subjects whose predicted risk is inside a nearest
 neighborhood around the value 'p'. The larger the
-bandwidth the more subjects are included in the current neighborhood. 
+bandwidth the more subjects are included in the current neighborhood.
 }}}
 
 \item{cens.method}{For right censored data only. How observed proportions are calculated. Either \code{"jackknife"} or \code{"local"}:

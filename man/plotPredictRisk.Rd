@@ -90,31 +90,31 @@ library(survival)
 # generate survival data
 # no effect
 set.seed(8)
-d <- sampleData(80,outcome="survival",formula = ~f(X6, 0) + f(X7, 0))
-d[,table(event)]
-f <- coxph(Surv(time,event)~X6+X7,data=d,x=1)
+d <- sampleData(80, outcome = "survival", formula = ~ f(X6, 0) + f(X7, 0))
+d[, table(event)]
+f <- coxph(Surv(time, event) ~ X6 + X7, data = d, x = 1)
 plotPredictRisk(f)
 
 # large effect
 set.seed(8)
-d <- sampleData(80,outcome="survival",formula = ~f(X6, 0.1) + f(X7, -0.1))
-d[,table(event)]
-f <- coxph(Surv(time,event)~X6+X7,data=d,x=1)
+d <- sampleData(80, outcome = "survival", formula = ~ f(X6, 0.1) + f(X7, -0.1))
+d[, table(event)]
+f <- coxph(Surv(time, event) ~ X6 + X7, data = d, x = 1)
 plotPredictRisk(f)
 
 # generate competing risk data
 # small effect
 set.seed(8)
-d <- sampleData(40,formula = ~f(X6, 0.01) + f(X7, -0.01))
-d[,table(event)]
-f <- CSC(Hist(time,event)~X5+X6,data=d)
+d <- sampleData(40, formula = ~ f(X6, 0.01) + f(X7, -0.01))
+d[, table(event)]
+f <- CSC(Hist(time, event) ~ X5 + X6, data = d)
 plotPredictRisk(f)
 
 # large effect
 set.seed(8)
-d <- sampleData(40,formula = ~f(X6, 0.1) + f(X7, -0.1))
-d[,table(event)]
-f <- CSC(Hist(time,event)~X5+X6,data=d)
+d <- sampleData(40, formula = ~ f(X6, 0.1) + f(X7, -0.1))
+d[, table(event)]
+f <- CSC(Hist(time, event) ~ X5 + X6, data = d)
 plotPredictRisk(f)
 }
 \references{

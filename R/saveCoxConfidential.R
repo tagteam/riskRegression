@@ -1,10 +1,10 @@
-##' @title Save confidential Cox objects 
+##' @title Save confidential Cox objects
 ##' @name saveCoxConfidential
 ##' @param object An object of class \code{coxph}.
 ##' @param times The times at which we want to predict risk.
 ##' @details
-##' This function can save \code{coxph} objects such that we do not need to export 
-##' the data on which it was fitted at given times. 
+##' This function can save \code{coxph} objects such that we do not need to export
+##' the data on which it was fitted at given times.
 ##' @examples
 ##' library(survival)
 ##' library(lava)
@@ -26,45 +26,44 @@
 ##' predictRisk(u,newdata=testSurv)
 ##' cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 ##' z<-saveCoxConfidential(cox1,c(2,5))
-##' 
+##'
 ##' dput(z) ## get output to copy object
-##' 
+##'
 ##' all.equal(predictRisk(z,newdata=testSurv),
 ##'           predictRisk(cox1,newdata=testSurv,times=c(2,5)))
-##' 
+##'
 ##' cox2 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 ##' z<-saveCoxConfidential(cox2,c(2,5))
-##' 
+##'
 ##' all.equal(predictRisk(z,testSurv),predictRisk(z,testSurv,c(2,5)))
 ##' @export
-saveCoxConfidential <- function(object, times){
-  hazard = NULL
+saveCoxConfidential <- function(object, times) {
+  hazard <- NULL
   `.` <- list
-  if (!inherits(object,"coxph")){
+  if (!inherits(object, "coxph")) {
     stop("Object has to be a coxph object. ")
   }
   if (missing(times)) {
     stop("You have to specify the times. ")
   }
   times <- sort(times)
-  fun.aggregate <- function(x, y){
+  fun.aggregate <- function(x, y) {
     x.max <- max(x)
     x.min <- min(x)
     res <- rep(NA, length(times))
     ## handle times outside of the observed times for the specific strata
-    res[times > x.min & times < x.max] <- y[sindex(x, times)][times > x.min & times < x.max] 
+    res[times > x.min & times < x.max] <- y[sindex(x, times)][times > x.min & times < x.max]
     res
-  } 
-  base.haz <- data.table::as.data.table(survival::basehaz(object))
-  if (is.null(object$strata)){
-    base.haz$strata <- rep(1,object$n)
-    n.strata <- 1
   }
-  else {
+  base.haz <- data.table::as.data.table(survival::basehaz(object))
+  if (is.null(object$strata)) {
+    base.haz$strata <- rep(1, object$n)
+    n.strata <- 1
+  } else {
     n.strata <- length(levels(object$strata))
   }
-  base.haz <- base.haz[,.(hazard0 = fun.aggregate(time,hazard)), by = strata]
-  base.haz$times <- rep(times,n.strata)
+  base.haz <- base.haz[, .(hazard0 = fun.aggregate(time, hazard)), by = strata]
+  base.haz$times <- rep(times, n.strata)
   out <- list()
   out$Lambda0 <- as.data.frame(base.haz)
   out$times <- times
@@ -76,7 +75,7 @@ saveCoxConfidential <- function(object, times){
 }
 
 ## saveTextCoxConfidential <- function(object){
-  ## dput(object)
+## dput(object)
 ## }
 
 ## * predictRisk.CoxConfidential
@@ -85,37 +84,41 @@ saveCoxConfidential <- function(object, times){
 #' @method predictRisk CoxConfidential
 predictRisk.CoxConfidential <- function(object,
                                         newdata,
-                                        ...){
-  times = observation = NULL
-  if (missing(newdata)){
+                                        ...) {
+  times <- observation <- NULL
+  if (missing(newdata)) {
     stop("Argument newdata is missing. ")
   }
   formula <- object$formula
   formula[[2]] <- NULL
   frame <- Publish::specialFrame(formula,
-                                  data=newdata,
-                                  specials="strata")
+    data = newdata,
+    specials = "strata"
+  )
   design <- frame$design
   fit.times <- object$times
   n.times <- length(fit.times)
   n.newdata <- nrow(newdata)
-  lp <- t(t(design)-object$means) %*% object$coefficients
+  lp <- t(t(design) - object$means) %*% object$coefficients
   exp.lp <- exp(lp)
-  if (!is.null(frame$strata[[1]])){
-    dat.frame <- data.frame(eLP = rep(exp.lp, n.times), 
-                            strata=rep(frame$strata[[1]], n.times), 
-                            times=rep(fit.times,each=n.newdata), 
-                            observation = rep(1:n.newdata, n.times))
-  } 
-  else {
-    dat.frame <- data.frame(eLP = rep(exp.lp, n.times), 
-                            times=rep(fit.times,each=n.newdata), 
-                            observation = rep(1:n.newdata, n.times))  
+  if (!is.null(frame$strata[[1]])) {
+    dat.frame <- data.frame(
+      eLP = rep(exp.lp, n.times),
+      strata = rep(frame$strata[[1]], n.times),
+      times = rep(fit.times, each = n.newdata),
+      observation = rep(1:n.newdata, n.times)
+    )
+  } else {
+    dat.frame <- data.frame(
+      eLP = rep(exp.lp, n.times),
+      times = rep(fit.times, each = n.newdata),
+      observation = rep(1:n.newdata, n.times)
+    )
   }
   Lambda0 <- object$Lambda0
   dat.frame2 <- data.frame(Lambda0)
-  merged <- merge(dat.frame,dat.frame2)
+  merged <- merge(dat.frame, dat.frame2)
   data.table::setorder(merged, times, observation)
-  merged$risk <- 1-exp(-merged$eLP*merged$hazard0)
-  matrix(merged$risk, ncol=n.times,nrow=n.newdata)
+  merged$risk <- 1 - exp(-merged$eLP * merged$hazard0)
+  matrix(merged$risk, ncol = n.times, nrow = n.newdata)
 }

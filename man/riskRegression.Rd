@@ -102,7 +102,7 @@ summary(fit.lrr)
 ## tumor thickness on the log-scale
 Melanoma$logthick <- log(Melanoma$thick)
 
-## absolute risk regression 
+## absolute risk regression
 fit2.arr <- ARR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 print(fit2.arr)
 # show predicted cumulative incidences

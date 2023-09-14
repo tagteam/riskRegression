@@ -51,7 +51,7 @@ Only necessary for the standard errors when computing the Average Treatment Effe
 
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 
-\item{estimator}{[character] The type of estimator used to compute the average treatment effect. 
+\item{estimator}{[character] The type of estimator used to compute the average treatment effect.
 Can be \code{"G-formula"}, \code{"IPTW"}, or \code{"AIPTW"}.
 When using \code{estimator="G-formula"}, a model for the outcome should be provided (argument event).
 When using \code{estimator="IPTW"}, a model for the treatment should be provided (argument treatment), as well as for the censoring (if any, argument censor).
@@ -88,7 +88,7 @@ If it equals 0, then the influence function is used to compute Wald-type confide
 \item{seed}{[integer, >0] sed number used to generate seeds for bootstrap
 and to achieve reproducible results.}
 
-\item{handler}{[character] Parallel handler for bootstrap. 
+\item{handler}{[character] Parallel handler for bootstrap.
 \code{"foreach"} is the default and the only option on Windows. It uses \code{parallel} to create a cluster.
 Other operating systems can use \code{"mclapply"}.
 This argument is ignored when \code{mc.cores=1} and \code{cl=NULL}.}
@@ -124,12 +124,12 @@ set.seed(10)
 
 ## generate data
 n <- 100
-dtS <- sampleData(n, outcome="survival")
-dtS$time <- round(dtS$time,1)
-dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
+dtS <- sampleData(n, outcome = "survival")
+dtS$time <- round(dtS$time, 1)
+dtS$X1 <- factor(rbinom(n, prob = c(0.3, 0.4), size = 2), labels = paste0("T", 0:2))
 
 ## estimate the Cox model
-fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+fit <- cph(formula = Surv(time, event) ~ X1 + X2, data = dtS, y = TRUE, x = TRUE)
 
 ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 ## standard error computed using the influence function
@@ -143,38 +143,50 @@ summary(ateFit1a, short = TRUE, type = "ratioRisk")
 \dontrun{
 ## same as before with in addition the confidence bands / adjusted p-values
 ## (argument band = TRUE)
-ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-                band = TRUE)
+ateFit1b <- ate(fit,
+  data = dtS, treatment = "X1", times = 5:8,
+  band = TRUE
+)
 summary(ateFit1b)
 
 ## by default bands/adjuste p-values computed separately for each treatment modality
-summary(ateFit1b, band = 1,
-         se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
+summary(ateFit1b,
+  band = 1,
+  se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE
+)
 ## adjustment over treatment and time using the band argument of confint
-summary(ateFit1b, band = 2,
-       se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
+summary(ateFit1b,
+  band = 2,
+  se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE
+)
 
 ## confidence intervals / p-values computed using 1000 bootstrap samples
-## (argument se = TRUE and B = 1000) 
-ateFit1c <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50, handler = "mclapply")
-## NOTE: for real applications 50 bootstrap samples is not enough 
+## (argument se = TRUE and B = 1000)
+ateFit1c <- ate(fit,
+  data = dtS, treatment = "X1",
+  times = 5:8, se = TRUE, B = 50, handler = "mclapply"
+)
+## NOTE: for real applications 50 bootstrap samples is not enough
 
 ## same but using 2 cpus for generating and analyzing the bootstrap samples
-## (parallel computation, argument mc.cores = 2) 
-ateFit1d <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50, mc.cores = 2)
+## (parallel computation, argument mc.cores = 2)
+ateFit1d <- ate(fit,
+  data = dtS, treatment = "X1",
+  times = 5:8, se = TRUE, B = 50, mc.cores = 2
+)
 
 ## manually defining the cluster to be used
 ## useful when specific packages need to be loaded in each cluster
-fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
+fit <- cph(formula = Surv(time, event) ~ X1 + X2 + rcs(X6), data = dtS, y = TRUE, x = TRUE)
 
 cl <- parallel::makeCluster(2)
 parallel::clusterEvalQ(cl, library(rms))
 
-ateFit1e <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50,
-                handler = "foreach", cl = cl)
+ateFit1e <- ate(fit,
+  data = dtS, treatment = "X1",
+  times = 5:8, se = TRUE, B = 50,
+  handler = "foreach", cl = cl
+)
 }
 
 #### Survival settings without censoring ####
@@ -182,11 +194,11 @@ ateFit1e <- ate(fit, data = dtS, treatment = "X1",
 
 ## generate data
 n <- 100
-dtB <- sampleData(n, outcome="binary")
+dtB <- sampleData(n, outcome = "binary")
 dtB[, X2 := as.numeric(X2)]
 
 ## estimate a logistic regression model
-fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
+fit <- glm(formula = Y ~ X1 + X2, data = dtB, family = "binomial")
 
 ## compute the ATE using X1 as the treatment variable
 ## only point estimate (argument se = FALSE)
@@ -195,18 +207,24 @@ ateFit1a
 
 \dontrun{
 ## with confidence intervals
-ateFit1b <- ate(fit, data = dtB, treatment = "X1",
-               times = 5) ## just for having a nice output not used in computations
+ateFit1b <- ate(fit,
+  data = dtB, treatment = "X1",
+  times = 5
+) ## just for having a nice output not used in computations
 summary(ateFit1b, short = TRUE)
 
 ## using the lava package
 library(lava)
-ateLava <- estimate(fit, function(p, data){
-a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
-R.X11 <- expit(a + b + c * data[["X2"]])
-R.X10 <- expit(a + c * data[["X2"]])
-list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
-average=TRUE)
+ateLava <- estimate(fit, function(p, data) {
+  a <- p["(Intercept)"]
+  b <- p["X11"]
+  c <- p["X2"]
+  R.X11 <- expit(a + b + c * data[["X2"]])
+  R.X10 <- expit(a + c * data[["X2"]])
+  list(risk0 = R.X10, risk1 = R.X11, riskdiff = R.X11 - R.X10)
+},
+average = TRUE
+)
 ateLava
 }
 
@@ -218,15 +236,17 @@ ateLava
 ## generate data
 n <- 500
 set.seed(10)
-dt <- sampleData(n, outcome="competing.risks")
-dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
+dt <- sampleData(n, outcome = "competing.risks")
+dt$X1 <- factor(rbinom(n, prob = c(0.2, 0.3), size = 2), labels = paste0("T", 0:2))
 
 ## estimate cause specific Cox model
-fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
+fitCR <- CSC(Hist(time, event) ~ X1 + X8, data = dt, cause = 1)
 
 ## compute the ATE at times 1, 5, 10 using X1 as the treatment variable
-ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
-                cause = 1, se = TRUE, band = TRUE)
+ateFit2a <- ate(fitCR,
+  data = dt, treatment = "X1", times = c(1, 5, 10),
+  cause = 1, se = TRUE, band = TRUE
+)
 summary(ateFit2a)
 as.data.table(ateFit2a)
 
@@ -235,73 +255,86 @@ as.data.table(ateFit2a)
 ## generate data
 n <- 500
 set.seed(10)
-dt <- sampleData(n, outcome="competing.risks")
-dt$time <- round(dt$time,1)
-dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
+dt <- sampleData(n, outcome = "competing.risks")
+dt$time <- round(dt$time, 1)
+dt$X1 <- factor(rbinom(n, prob = c(0.4), size = 1), labels = paste0("T", 0:1))
 
 ## working models
-m.event <-  CSC(Hist(time,event)~ X1+X2+X3+X5+X8,data=dt)
-m.censor <-  coxph(Surv(time,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
-m.treatment <-  glm(X1~X2+X3+X5+X8,data=dt,family=binomial(link="logit"))
+m.event <- CSC(Hist(time, event) ~ X1 + X2 + X3 + X5 + X8, data = dt)
+m.censor <- coxph(Surv(time, event == 0) ~ X1 + X2 + X3 + X5 + X8, data = dt, x = TRUE, y = TRUE)
+m.treatment <- glm(X1 ~ X2 + X3 + X5 + X8, data = dt, family = binomial(link = "logit"))
 
 ## prediction + average
-ateRobust <- ate(event = m.event,
-                 treatment = m.treatment,
-                 censor = m.censor,
-                 data = dt, times = 5:10, 
-                 cause = 1, band = TRUE)
+ateRobust <- ate(
+  event = m.event,
+  treatment = m.treatment,
+  censor = m.censor,
+  data = dt, times = 5:10,
+  cause = 1, band = TRUE
+)
 
 ## compare various estimators
-ateRobust3 <- ate(event = m.event,
-                 treatment = m.treatment,
-                 censor = m.censor,
-                 estimator = c("GFORMULA","IPTW","AIPTW"),
-                 data = dt, times = c(5:10), 
-                 cause = 1, se = TRUE)
-print(setkeyv(as.data.table(ateRobust3, type = "meanRisk"),"time"))
-print(setkeyv(as.data.table(ateRobust3, type = "diffRisk"),"time"))
+ateRobust3 <- ate(
+  event = m.event,
+  treatment = m.treatment,
+  censor = m.censor,
+  estimator = c("GFORMULA", "IPTW", "AIPTW"),
+  data = dt, times = c(5:10),
+  cause = 1, se = TRUE
+)
+print(setkeyv(as.data.table(ateRobust3, type = "meanRisk"), "time"))
+print(setkeyv(as.data.table(ateRobust3, type = "diffRisk"), "time"))
 }
 
 #### time-dependent covariates ###
 \dontrun{
 library(survival)
-fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
-vet2 <- survSplit(Surv(time, status) ~., veteran,
-                       cut=c(60, 120), episode ="timegroup")
-fitTD <- coxph(Surv(tstart, time, status) ~ celltype +karno + age + trt,
-               data= vet2,x=1)
+fit <- coxph(Surv(time, status) ~ celltype + karno + age + trt, veteran)
+vet2 <- survSplit(Surv(time, status) ~ ., veteran,
+  cut = c(60, 120), episode = "timegroup"
+)
+fitTD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
+  data = vet2, x = 1
+)
 set.seed(16)
-resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-          data = vet2, treatment = "celltype",
-        times=5,verbose=1,
-        landmark = c(0,30,60,90), cause = 1, B = 50, se = 1,
-        band = FALSE, mc.cores=1)
+resVet <- ate(fitTD,
+  formula = Hist(entry = tstart, time = time, event = status) ~ 1,
+  data = vet2, treatment = "celltype",
+  times = 5, verbose = 1,
+  landmark = c(0, 30, 60, 90), cause = 1, B = 50, se = 1,
+  band = FALSE, mc.cores = 1
+)
 summary(resVet)
 }
 
 \dontrun{
 set.seed(137)
-d=sampleDataTD(127)
+d <- sampleDataTD(127)
 library(survival)
-d[,status:=1*(event==1)]
-d[,X3:=as.factor(X3)]
+d[, status := 1 * (event == 1)]
+d[, X3 := as.factor(X3)]
 ## ignore competing risks
-cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8,
-                data=d, x = TRUE)
-resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
-        data = d, treatment = "X3", contrasts = NULL,
-        times=.5,verbose=1,
-        landmark = c(0,0.5,1), B = 20, se = 1,
-        band = FALSE, mc.cores=1)
+cox1TD <- coxph(Surv(start, time, status, type = "counting") ~ X3 + X5 + X6 + X8,
+  data = d, x = TRUE
+)
+resTD1 <- ate(cox1TD,
+  formula = Hist(entry = start, time = time, event = status) ~ 1,
+  data = d, treatment = "X3", contrasts = NULL,
+  times = .5, verbose = 1,
+  landmark = c(0, 0.5, 1), B = 20, se = 1,
+  band = FALSE, mc.cores = 1
+)
 resTD1
 ## account for competing risks
-cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
+cscTD <- CSC(Hist(time = time, event = event, entry = start) ~ X3 + X5 + X6 + X8, data = d)
 set.seed(16)
-resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
-        data = d, treatment = "X3", contrasts = NULL,
-        times=.5,verbose=1,
-        landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
-        band = FALSE, mc.cores=1)
+resTD <- ate(cscTD,
+  formula = Hist(entry = start, time = time, event = event) ~ 1,
+  data = d, treatment = "X3", contrasts = NULL,
+  times = .5, verbose = 1,
+  landmark = c(0, 0.5, 1), cause = 1, B = 20, se = 1,
+  band = FALSE, mc.cores = 1
+)
 resTD
 }
 }
