@@ -107,7 +107,7 @@ Compute the influence function for each observation used to estimate the model
 \details{
 This function implements the first three formula (no number,10,11) of the subsection
 "Empirical estimates" in Ozenne et al. (2017).
-If there is no event in a strata, the influence function for the baseline hazard is set to 0.
+If there is no event in a strata, the influence function for the baseline hazard is set to 0. 
 
 \bold{Argument store.iid}:
 If \code{n} denotes the sample size, \code{J} the number of jump times, and \code{p} the number of coefficients:
@@ -123,13 +123,13 @@ library(survival)
 library(data.table)
 library(prodlim)
 set.seed(10)
-d <- sampleData(100, outcome = "survival")[, .(eventtime, event, X1, X6)]
+d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
 
-m.cox <- coxph(Surv(eventtime, event) ~ X1 + X6, data = d, y = TRUE, x = TRUE)
+m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IF.cox <- iidCox(m.cox))
 
-IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7, d$eventtime))))
+IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)
 
 }

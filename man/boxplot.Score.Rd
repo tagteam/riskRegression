@@ -80,7 +80,7 @@ boxplot(x)
 library(survival)
 ds=sampleData(40,outcome="survival")
 fit=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
-\dontrun{
+\dontrun{ 
 scoreobj=Score(list("Cox"=fit),
                 formula=Hist(time,event)~1, data=ds,
                 metrics=NULL, plots="box",

@@ -71,17 +71,15 @@ library(ggplot2)
 #### simulate data ####
 n <- 1e2
 set.seed(10)
-dtS <- sampleData(n, outcome = "survival")
-seqTimes <- c(0, sort(dtS$time[dtS$event == 1]), max(dtS$time))
+dtS <- sampleData(n,outcome="survival")
+seqTimes <- c(0,sort(dtS$time[dtS$event==1]),max(dtS$time))
 
 #### Cox model ####
-fit <- cph(formula = Surv(time, event) ~ X1 + X2, data = dtS, y = TRUE, x = TRUE)
+fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 #### plot.type = 1: for few timepoints ####
-ateFit <- ate(fit,
-  data = dtS, treatment = "X1",
-  times = c(1, 2, 5, 10), se = TRUE, band = TRUE
-)
+ateFit <- ate(fit, data = dtS, treatment = "X1",
+              times = c(1,2,5,10), se = TRUE, band = TRUE)
 ggplot2::autoplot(ateFit)
 \dontrun{
 ggplot2::autoplot(ateFit, band = FALSE)
@@ -91,10 +89,8 @@ ggplot2::autoplot(ateFit, type = "ratioRisk")
 
 #### plot.type = 2: when looking at all jump times ####
 \dontrun{
-ateFit <- ate(fit,
-  data = dtS, treatment = "X1",
-  times = seqTimes, se = TRUE, band = TRUE
-)
+ateFit <- ate(fit, data = dtS, treatment = "X1",
+              times = seqTimes, se = TRUE, band = TRUE)
 
 ggplot2::autoplot(ateFit, plot.type = "2")
 
@@ -110,14 +106,10 @@ outGGS$plot + facet_wrap(~X1, labeller = label_both)
 ## first derivative
 ## (computation of the confidence intervals takes time)
 ## (based on simulation - n.sim parameter)
-ggplot2::autoplot(ateFit,
-  plot.type = "2", smooth = TRUE,
-  band = FALSE, type = "diffRisk"
-)
-ggplot2::autoplot(ateFit,
-  plot.type = "2", smooth = TRUE, first.derivative = TRUE,
-  band = FALSE, type = "diffRisk"
-)
+ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
+                  band = FALSE, type = "diffRisk")
+ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
+                  band = FALSE, type = "diffRisk")
 }
 }
 \seealso{

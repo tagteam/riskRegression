@@ -1,18 +1,18 @@
-### sim.synth.R ---
+### sim.synth.R --- 
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Jul  7 2022 (13:33)
-## Version:
-## Last-Updated: Jul  7 2022 (14:26)
+## Created: Jul  7 2022 (13:33) 
+## Version: 
+## Last-Updated: Jul  7 2022 (14:26) 
 ##           By: Thomas Alexander Gerds
 ##     Update #: 9
 #----------------------------------------------------------------------
-##
-### Commentary:
-##
+## 
+### Commentary: 
+## 
 ### Change Log:
 #----------------------------------------------------------------------
-##
+## 
 ### Code:
 
 #' @title Simulating from a synthesized object
@@ -25,30 +25,29 @@
 #' @export simsynth
 #' @examples
 #' library(survival)
-#' m <- synthesize(Surv(time, status) ~ sex + age + bili, data = pbc)
-#' simsynth(m, 10, drop.latent = TRUE)
-#'
-simsynth <- function(object, n = 200, drop.latent = FALSE, ...) {
-  lava.object <- object$lava.object
-  res <- lava::sim(lava.object, n, ...)
-  labels <- object$labels
-  for (var in names(labels)) {
-    res[[var]] <- factor(res[[var]])
-    levels(res[[var]]) <- labels[[var]]
-  }
-  # remove variables that would not be in the original data set
-  if (drop.latent) {
-    # remove latent times
-    if (length(lava.object$attributes$eventHistory$time$latentTimes) > 0) {
-      res <- res[, -match(lava.object$attributes$eventHistory$time$latentTimes, names(res), nomatch = 0)]
+#' m=synthesize(Surv(time,status)~sex+age+bili,data=pbc)
+#' simsynth(m,10,drop.latent=TRUE)
+#' 
+simsynth <- function(object, n= 200, drop.latent=FALSE, ...){
+    lava.object <- object$lava.object
+    res <- lava::sim(lava.object,n,...)
+    labels <- object$labels
+    for (var in names(labels)){
+        res[[var]] <- factor(res[[var]])
+        levels(res[[var]]) <- labels[[var]]
     }
-    # remove dummy variables
-    categories <- object$categories
-    for (c in categories) {
-      res <- res[, -grep(c, names(res))[-1]]
+    # remove variables that would not be in the original data set 
+    if (drop.latent){
+        # remove latent times
+        if (length(lava.object$attributes$eventHistory$time$latentTimes)>0)
+            res <- res[,-match(lava.object$attributes$eventHistory$time$latentTimes,names(res),nomatch=0)]
+        # remove dummy variables
+        categories <- object$categories
+        for (c in categories) {
+            res <- res[,-grep(c,names(res))[-1]]
+        }
     }
-  }
-  res
+    res
 }
 
 

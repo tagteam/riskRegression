@@ -20,7 +20,7 @@ Simulating from a synthesized object
 }
 \examples{
 library(survival)
-m <- synthesize(Surv(time, status) ~ sex + age + bili, data = pbc)
-simsynth(m, 10, drop.latent = TRUE)
+m=synthesize(Surv(time,status)~sex+age+bili,data=pbc)
+simsynth(m,10,drop.latent=TRUE)
 
 }

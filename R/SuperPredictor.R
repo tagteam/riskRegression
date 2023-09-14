@@ -1,18 +1,18 @@
-### SuperPredictor.R ---
+### SuperPredictor.R --- 
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Mar  6 2019 (18:22)
-## Version:
-## Last-Updated: Mar  9 2022 (15:49)
+## Created: Mar  6 2019 (18:22) 
+## Version: 
+## Last-Updated: Mar  9 2022 (15:49) 
 ##           By: Thomas Alexander Gerds
 ##     Update #: 10
 #----------------------------------------------------------------------
-##
-### Commentary:
-##
+## 
+### Commentary: 
+## 
 ### Change Log:
 #----------------------------------------------------------------------
-##
+## 
 ### Code:
 ##' Formula interface for SuperLearner::SuperLearner
 ##'
@@ -36,24 +36,22 @@
 ##' x <- Score(list(spfit),data=d,formula=Y~1)
 ##' }
 ##' }
-##' @export
-SuperPredictor <- function(formula, data, family = "binomial", SL.library = c("SL.glm", "SL.glm.interaction", "SL.ranger"), ...) {
-  vv <- all.vars(formula)
-  yy <- vv[[1]]
-  xx <- vv[-1]
-  if (is.data.table(data)) XX <- data[, xx, with = FALSE] else XX <- data[, xx]
-  YY <- data[[yy]]
-  if (is.factor(YY)) YY <- as.numeric(YY != levels(YY)[1])
-  fit <- SuperLearner::SuperLearner(
-    Y = YY,
-    X = XX,
-    family = family,
-    SL.library = SL.library,
-    ...
-  )
-  class(fit) <- "SuperPredictor"
-  fit$call <- match.call()
-  fit
+##' @export 
+SuperPredictor <- function(formula,data,family="binomial",SL.library=c("SL.glm","SL.glm.interaction","SL.ranger"),...){
+    vv <- all.vars(formula)
+    yy <- vv[[1]]
+    xx <- vv[-1]
+    if (is.data.table(data)) XX <- data[,xx,with=FALSE] else XX <- data[,xx]
+    YY <- data[[yy]]
+    if (is.factor(YY)) YY <- as.numeric(YY!=levels(YY)[1])
+    fit <- SuperLearner::SuperLearner(Y=YY,
+                                      X=XX,
+                                      family=family,
+                                      SL.library=SL.library,
+                                      ...)
+    class(fit) <- "SuperPredictor"
+    fit$call <- match.call()
+    fit
 }
 
 ######################################################################

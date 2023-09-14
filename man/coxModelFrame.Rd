@@ -23,7 +23,7 @@ obtained with \code{coxph} (survival package), \code{cph}
 \item{center}{[logical] Should the variables of the linear predictor be added ?}
 }
 \description{
-Extract the design matrix used to train a Cox model. Should contain the time of event, the type of event,
+Extract the design matrix used to train a Cox model. Should contain the time of event, the type of event, 
 the variable for the linear predictor, the strata variables and the date of entry (in case of delayed entry).
 }
 \author{

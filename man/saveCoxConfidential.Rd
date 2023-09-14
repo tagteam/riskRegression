@@ -15,7 +15,7 @@ saveCoxConfidential(object, times)
 Save confidential Cox objects
 }
 \details{
-This function can save \code{coxph} objects such that we do not need to export
+This function can save \code{coxph} objects such that we do not need to export 
 the data on which it was fitted at given times.
 }
 \examples{

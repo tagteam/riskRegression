@@ -43,7 +43,7 @@ library(survival)
 library(prodlim)
 #### generate data ####
 set.seed(10)
-d <- sampleData(100)
+d <- sampleData(100) 
 
 #### estimate a stratified CSC model ###
 fit <- CSC(Hist(time,event)~ X1 + strata(X2) + X6, data=d)

@@ -24,7 +24,7 @@ obtained with \code{coxph} (survival package), \code{cph}
 Extract the variance covariance matrix of the beta from a Cox model
 }
 \details{
-Should return \code{NULL} if the Cox model has no covariate.
+Should return \code{NULL} if the Cox model has no covariate. 
 The rows and columns of the variance covariance matrix must be named with the names used in the design matrix.
 }
 \author{

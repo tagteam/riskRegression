@@ -114,7 +114,7 @@ dd$X1 <- rep(factor("T0", levels = paste0("T",0:2)), NROW(dd))
 out <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, average.iid = TRUE)
 term1 <- -out$survival.average.iid
 term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
-sqrt(colSums((term1 + term2/NROW(d))^2))
+sqrt(colSums((term1 + term2/NROW(d))^2)) 
 ## fit.ate$meanRisk[treatment=="T0",se]
 
 ## note

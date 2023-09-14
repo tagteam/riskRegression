@@ -14,7 +14,7 @@ Collapse rows of characters. Fast alternative to apply(x,1,paste0,collapse="")
 }
 \examples{
 \dontrun{
-M <- matrix(letters, nrow = 26, ncol = 2)
+M <- matrix(letters,nrow = 26, ncol = 2)
 rowPaste(M)
 }
 }

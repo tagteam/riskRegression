@@ -29,11 +29,11 @@ NA indicates that the column should be set to NA.}
 Extract specific elements from an object.
 }
 \examples{
-M <- matrix(rnorm(50), 5, 10)
-subsetIndex(M, index = c(0, 0, 1), default = 0)
-subsetIndex(M, index = c(0, 2, 3, NA), default = 0)
-subsetIndex(M, index = c(0, NA, 2, 3, NA), default = 0)
+M <- matrix(rnorm(50),5,10)
+subsetIndex(M, index = c(0,0,1), default = 0)
+subsetIndex(M, index = c(0,2,3,NA), default = 0)
+subsetIndex(M, index = c(0,NA,2,3,NA), default = 0)
 
 C <- 1:10
-subsetIndex(C, index = c(0, 0, 1, 5, NA), default = 0)
+subsetIndex(C, index = c(0,0,1,5,NA), default = 0)
 }

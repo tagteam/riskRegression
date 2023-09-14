@@ -210,8 +210,8 @@ See Fawcett, T. (2006) for details.}
 A sequence of values at which to compute averages across the ROC curves
 obtained for different data splits during crossvalidation.}
 
-\item{cutpoints}{If not \code{NULL}, estimates and standard errors of the TPR (True Positive Rate),
-FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value)
+\item{cutpoints}{If not \code{NULL}, estimates and standard errors of the TPR (True Positive Rate), 
+FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value) 
 are given at the \code{cutpoints}. These values are saved in \code{object$AUC$res.cut}.}
 }
 \value{
@@ -364,15 +364,15 @@ x=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
          formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
 ## Use Cox to estimate censoring weights
 y=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-         formula=Surv(time,event)~X1+X8,data=testSurv,conf.int=FALSE,times=c(5,8))
+         formula=Surv(time,event)~X1+X8,data=testSurv,conf.int=FALSE,times=c(5,8)) 
 ## Use GLMnet to estimate censoring weights
 z=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
          formula=Surv(time,event)~X1+X8,cens.model = "GLMnet",data=testSurv,
-         conf.int=FALSE,times=c(5,8))
+         conf.int=FALSE,times=c(5,8)) 
 ## Use hal9001 to estimate censoring weights
 w=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
          formula=Surv(time,event)~X1+X8,cens.model = "Hal9001",data=testSurv,
-         conf.int=FALSE,times=c(5,8))
+         conf.int=FALSE,times=c(5,8)) 
 x
 y
 z

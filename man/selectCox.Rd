@@ -27,8 +27,8 @@ This function first calls \code{cph} then \code{fastbw} and finally
 \examples{
 library(survival)
 set.seed(74)
-d <- sampleData(89, outcome = "survival")
-f <- selectCox(Surv(time, event) ~ X1 + X2 + X3 + X4 + X6 + X7 + X8 + X9, data = d)
+d <- sampleData(89,outcome="survival")
+f <- selectCox(Surv(time,event)~X1+X2+X3+X4+X6+X7+X8+X9, data=d)
 
 }
 \references{

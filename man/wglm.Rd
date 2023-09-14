@@ -49,41 +49,33 @@ set.seed(10)
 n <- 250
 tau <- 1:5
 d <- sampleData(n, outcome = "competing.risks")
-dFull <- d[event != 0] ## remove censoring
-dSurv <- d[event != 2] ## remove competing risk
+dFull <- d[event!=0] ## remove censoring
+dSurv <- d[event!=2] ## remove competing risk
 
 #### no censoring ####
-e.wglm <- wglm(
-  regressor.event = ~X1, formula.censor = Surv(time, event == 0) ~ 1,
-  times = tau, data = dFull, product.limit = TRUE
-)
+e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+               times = tau, data = dFull, product.limit = TRUE)
 e.wglm ## same as a logistic regression
 
 summary(ate(e.wglm, data = dFull, times = tau, treatment = "X1", verbose = FALSE))
 
 #### right-censoring ####
 ## no covariante in the censoring model (independent censoring)
-eC.wglm <- wglm(
-  regressor.event = ~X1, formula.censor = Surv(time, event == 0) ~ 1,
-  times = tau, data = dSurv, product.limit = TRUE
-)
+eC.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+               times = tau, data = dSurv, product.limit = TRUE)
 eC.wglm
 
 ## with covariates in the censoring model
-eC2.wglm <- wglm(
-  regressor.event = ~ X1 + X8,
-  formula.censor = Surv(time, event == 0) ~ X1 * X8,
-  times = tau, data = dSurv
-)
+eC2.wglm <- wglm(regressor.event = ~ X1 + X8,
+                formula.censor = Surv(time,event==0) ~ X1*X8,
+                 times = tau, data = dSurv)
 eC2.wglm
 
 #### Competing risks ####
 ## here Kaplan-Meier as censoring model
-eCR.wglm <- wglm(
-  regressor.event = ~X1,
-  formula.censor = Surv(time, event == 0) ~ strata(X1),
-  times = tau, data = d, cause = 1, product.limit = TRUE
-)
+eCR.wglm <- wglm(regressor.event = ~ X1,
+                 formula.censor = Surv(time,event==0) ~ strata(X1),
+                 times = tau, data = d, cause = 1, product.limit = TRUE)
 eCR.wglm
 
 }

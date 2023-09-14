@@ -57,22 +57,19 @@ library(prodlim)
 #### simulate data ####
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
-seqTau <- c(0, unique(sort(d[d$event == 1, time])), max(d$time))
+seqTau <- c(0,unique(sort(d[d$event==1,time])), max(d$time))
 
 #### CSC model ####
-m.CSC <- CSC(Hist(time, event) ~ X1 + X2 + X6, data = d)
+m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
 
-pred.CSC <- predict(m.CSC, newdata = d[1:2, ], time = seqTau, cause = 1, band = TRUE)
+pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = seqTau, cause = 1, band = TRUE)
 autoplot(pred.CSC, alpha = 0.2)
 
 #### stratified CSC model ####
-m.SCSC <- CSC(Hist(time, event) ~ strata(X1) + strata(X2) + X6,
-  data = d
-)
-pred.SCSC <- predict(m.SCSC,
-  time = seqTau, newdata = d[1:4, ],
-  cause = 1, keep.newdata = TRUE, keep.strata = TRUE
-)
+m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
+              data = d)
+pred.SCSC <- predict(m.SCSC, time = seqTau, newdata = d[1:4,],
+                     cause = 1, keep.newdata = TRUE, keep.strata = TRUE)
 autoplot(pred.SCSC, group.by = "strata")
 }
 \seealso{
