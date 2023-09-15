@@ -38,11 +38,11 @@ as.data.table.ate <- function(x, keep.rownames = FALSE, estimator = x$estimator,
   type <- match.arg(type, choices = c("meanRisk", "diffRisk", "ratioRisk"), several.ok = TRUE)
 
   if (!is.null(x$allContrasts)) {
-    allContrasts <- x$allContrasts
+    # allContrasts <- x$allContrasts
     contrasts <- x$contrasts
   } else {
     contrasts <- x$contrasts
-    allContrasts <- utils::combn(contrasts, m = 2)
+    # allContrasts <- utils::combn(contrasts, m = 2)
   }
 
   ## ** meanRisk
