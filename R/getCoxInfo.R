@@ -33,10 +33,13 @@ coxVariableName <- function(object, model.frame){
                                     data = model.frame))    
     ls.specials <- attr(xterms,"specials")
     if(any(attr(xterms,"order")>1) && length(ls.specials$strata)>0){
-        ## the presence of an interaction makes attr(xterms,"specials")$strata consider the 'main' effects
-        ## which may not automatically be there. This is a fix
-        term.strata <- names(which(attr(xterms,"factors")[attr(xterms,"specials")$strata,]==1))
-        ls.specials$strata <- which(attr(xterms,"term.labels") == term.strata)
+        ## the presence of an interaction makes attr(xterms,"specials")$strata consider the 'main' effects which may not automatically be there
+        ## e.g. coxph(Surv(time,event)~X1*X3+strata(X5),data=train, y=TRUE, x = TRUE) lead to design matrix [X1,X3,strata(X5),X1:X3] and attr(xterms,"specials")$strata being 3 (as expected)
+        ## e.g. coxph(Surv(time,event)~X1:X3+strata(X5),data=train, y=TRUE, x = TRUE) lead to design matrix [strata(X5),X1:X3] and attr(xterms,"specials")$strata being 3 (incorrect)
+        ## This is a fix
+        term.strata <- names(which(colSums(attr(xterms,"factors")[attr(xterms,"specials")$strata,,drop=FALSE])>0))
+        ls.specials$strata <- intersect(which(attr(xterms,"order")==1), ## strata terms are always main terms (handle X2*strata(X1)--> strata(X1), X2:strata(X1))
+                                        which(attr(xterms,"term.labels") %in% term.strata))
     }
     n.specials <- length(unlist(ls.specials))
     
@@ -81,7 +84,7 @@ coxVariableName <- function(object, model.frame){
         out["strata.sterms"] <- list(NULL)
         out$strata.levels <- factor("1") ## not NULL - coherent with coxStrata
     }
-    
+
     ## ** export
     return(out)
 } 
@@ -449,12 +452,12 @@ coxLP.coxph <- function(object, data, center){
   }else{ ## new dataset
       if(n.varLP>0){
       is.strata <- attr(object$terms, "special")$strata
-      
+
       
       if(length(is.strata)>0){
         object.strata <- object[["strata"]]
-        object[["strata"]] <- NULL # solve a bug in survival:::predict.coxph when fitting the model with x = TRUE
-        
+        object[["strata"]] <- NULL # solve a bug in survival:::predict.coxph when fitting the model with strata
+
         Xb <- try(rowSums(stats::predict(object, newdata = as.data.frame(data), 
                                          type = "terms")), silent = TRUE)
         if(inherits(x=Xb,what="try-error")){ ## Fix an error when the dataset used to fit the object is removed from the global environment
@@ -484,7 +487,7 @@ coxLP.coxph <- function(object, data, center){
       Xb <- rep(0, NROW(data)) 
     } 
   }
-  
+
   return(unname(Xb))
 }
 
