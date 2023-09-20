@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 15 2022 (09:53) 
+## last-updated: May 30 2023 (08:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 386
+##     Update #: 387
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -167,7 +167,7 @@ plotCalibration <- function(x,
                             ...){
     if (x$response.type!="binary" && missing(cens.method)){
         cens.method <- "local"
-        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
+        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensitive to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
     }
     
     # {{{ plot frame
@@ -207,7 +207,7 @@ plotCalibration <- function(x,
         fitted.models <- pframe[,unique(model)]
         if (all(models%in%fitted.models)){
             pframe <- pframe[model%in%models]
-        } else{
+        } else {
             if (all(is.numeric(models)) && (max(models)<=length(fitted.models))){
                 models <- fitted.models[models]
                 pframe <- pframe[model%in%models]
