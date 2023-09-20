@@ -15,7 +15,7 @@ plotROC(
   lty = 1,
   cex = 1,
   pch = 1,
-  legend = TRUE,
+  legend = !add,
   auc.in.legend = TRUE,
   brier.in.legend = FALSE,
   add = FALSE,

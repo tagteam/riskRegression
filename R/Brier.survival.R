@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Sep 23 2022 (11:34) 
+## Last-Updated: Jun 30 2023 (10:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2
+##     Update #: 4
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -15,7 +15,22 @@
 ##
 ### Code:
 
-Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,IC.data,...){
+Brier.survival <- function(DT,
+                           MC,
+                           se.fit,
+                           conservative,
+                           cens.model,
+                           keep.vcov=FALSE,
+                           keep.iid=FALSE,
+                           multi.split.test,
+                           alpha,
+                           N,
+                           NT,
+                           NF,
+                           dolist,
+                           keep.residuals=FALSE,
+                           IC.data,
+                           ...){
     IC0=IPCW=nth.times=ID=time=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     DT[time<=times & status==1,residuals:=(1-risk)^2/WTi]
@@ -31,8 +46,6 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                               time=time,
                                               IC0,
                                               residuals=residuals,
-                                              WTi=WTi,
-                                              Wt=Wt,
                                               IC.G=MC,
                                               cens.model=cens.model,
                                               conservative = conservative,
@@ -76,6 +89,10 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
     }
     if (keep.vcov[1] && se.fit[1]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
+    }
+    if (keep.iid[1] && se.fit[1] == TRUE) {
+        output <- c(output,
+                    list(iid.decomp = DT[,data.table::data.table(ID,model,times,IF.Brier)]))
     }
     if (keep.residuals) {
         if (all(c("Wt","WTi")%in%names(DT))){

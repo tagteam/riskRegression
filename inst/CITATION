@@ -1,14 +1,10 @@
-citHeader("To cite riskRegression in publications use:")
-
-citEntry(entry = "book",
-  title = "Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)",
-  author       = personList(as.person("Thomas A. Gerds"), as.person("Michael W. Kattan")),
-  publisher      = "Chapman and Hall/CRC",
-  year         = "2021",
-  url          = "https://doi.org/10.1201/9781138384484",
-  textVersion  =
-  paste("Thomas A. Gerds and Michael W. Kattan (2021).",
-        "Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)",
-        "Chapman and Hall/CRC",
-        "https://doi.org/10.1201/9781138384484")
-)
+## R package reference generated from DESCRIPTION metadata
+citation(auto = meta)
+## medical risk prediction book
+bibentry(bibtype = "book",
+         title = "Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)",
+         author       = c(person(c("Thomas A."), "Gerds"),
+                          person(c("Michael W."),"Kattan")),
+         year         = "2021",
+         publisher    = "Chapman and Hall/CRC",
+         doi          = "10.1201/9781138384484")

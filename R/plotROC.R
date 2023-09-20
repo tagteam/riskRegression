@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Mar  9 2022 (14:33) 
+## last-updated: Jun  8 2023 (11:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 184
+##     Update #: 185
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -86,7 +86,7 @@ plotROC <- function(x,
                     lty=1,
                     cex=1,
                     pch=1,
-                    legend=TRUE,
+                    legend=!add,
                     auc.in.legend=TRUE,
                     brier.in.legend=FALSE,
                     add=FALSE,

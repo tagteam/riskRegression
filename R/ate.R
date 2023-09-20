@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj  9 2023 (16:33) 
-##           By: Brice Ozenne
-##     Update #: 2309
+## last-updated: Jun  8 2023 (14:00) 
+##           By: Thomas Alexander Gerds
+##     Update #: 2313
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -295,14 +295,14 @@ ate <- function(event,
                 censor = NULL,
                 data,
                 data.index = NULL,
-                formula,
+                formula = NULL,
                 estimator = NULL,
                 strata = NULL,
                 contrasts = NULL,
                 allContrasts = NULL,
                 times,
                 cause = NA,
-                landmark,
+                landmark = NULL,
                 se = TRUE,
                 iid = (B == 0) && (se || band),
                 known.nuisance = FALSE,
@@ -544,7 +544,7 @@ ate <- function(event,
     }
     ## note: system.time() seems to slow down the execution of the function, this is why Sys.time is used instead.
     tps1 <- Sys.time()
-
+    
     pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate)
     
     tps2 <- Sys.time()
@@ -688,7 +688,7 @@ ate_initArgs <- function(object.event,
                          object.treatment,
                          object.censor,
                          landmark,
-                         formula,
+                         formula = NULL,
                          estimator,
                          mydata, ## instead of data to avoid confusion between the function data and the dataset when running the bootstrap
                          data.index,
@@ -896,7 +896,7 @@ ate_initArgs <- function(object.event,
     ## presence of time dependent covariates
     TD <- switch(class(object.event)[[1]],
                  "coxph"=(attr(object.event$y,"type")=="counting"),
-                 "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")=="counting"),
+                 "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")[1]=="counting"),
                  FALSE)
     if(TD){
         fct.pointEstimate <- ATE_TD
@@ -1377,7 +1377,7 @@ ate_checkArgs <- function(call,
         }
         freq.event <- tapply(data.status, data.strata, function(x){mean(x==cause)})
         count.event <- tapply(data.status, data.strata, function(x){sum(x==cause)})
-
+        
         if(any(count.event < 5)  ){
             warning("Rare event \n")
         }

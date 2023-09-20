@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: Mar  7 2022 (08:35) 
+## Last-Updated: May 23 2023 (11:30) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 932
+##     Update #: 934
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -199,7 +199,6 @@ ATE_TI <- function(object.event,
             }else{
                 factor <- FALSE
             }
-
             outRisk <- predictRisk(object.event, newdata = data.i, times = times,
                                    average.iid = factor, cause = cause,
                                    product.limit = product.limit)

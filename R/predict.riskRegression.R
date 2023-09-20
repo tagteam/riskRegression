@@ -101,7 +101,10 @@ predict.riskRegression <- function(object,
     }
     else
         timeConstLP <- 0
-    LP <- timeConstLP+timeVarLP
+    if (object$link == "relative")
+        LP <- timeConstLP+log(timeVarLP)
+    else
+        LP <- timeConstLP+timeVarLP
     ## tag
     ## added 23 Jan 2016 (16:33)
     ## to fix bug in predictRisk.riskRegression

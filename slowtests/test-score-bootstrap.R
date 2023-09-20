@@ -20,6 +20,10 @@ test_that("loob survival",{
     expect_equal(ignore_attr=TRUE,loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
 })
 
+test_that("loob AUC comp risk",{
+   
+})
+
 ## GIVES WARNING
 ## Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE
 test_that("bootcv survival (multi.state.test)",{
@@ -52,3 +56,4 @@ test_that("bootcv survival (multi.state.test)",{
     ## for (m in c("AUC","Brier"))
         ## expect_equal(ignore_attr=TRUE,bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
 })
+
