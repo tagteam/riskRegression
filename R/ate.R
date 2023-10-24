@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jun  8 2023 (14:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 2313
+## last-updated: okt 24 2023 (17:36) 
+##           By: Brice Ozenne
+##     Update #: 2323
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -317,9 +317,20 @@ ate <- function(event,
 
     dots <- list(...)
     call <- match.call()
-    
+
     ## ** initialize arguments
-    if(is.data.table(data)){
+    if(missing(data)){ ## Support to mice: try to find variables in the parent environment
+        etc.vars <- c(all.vars(event),
+                      all.vars(treatment),
+                      all.vars(censor))
+        if(all(etc.vars %in% ls(envir = parent.frame()))){
+            etc.formula <- paste("~",paste(etc.vars, collapse ="+"))
+            etc.mf <- parse(text=paste0("stats::model.frame(",etc.formula,")"))
+            data <- data.table::as.data.table(eval(etc.mf, envir = parent.frame()))
+        }else{
+            stop("Argument \"data\" is missing, with no default. \n")
+        }        
+    }else if(is.data.table(data)){
         data <- data.table::copy(data)
     }else{
         data <- data.table::as.data.table(data)
