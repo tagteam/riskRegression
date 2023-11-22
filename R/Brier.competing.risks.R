@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun 30 2023 (11:28) 
+## Last-Updated: Nov 22 2023 (15:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 5
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -98,10 +98,10 @@ Brier.competing.risks <- function(DT,
     if (keep.residuals) {
         output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals"),with=FALSE]))
     }
-    if (keep.vcov[1] && se.fit[1]==TRUE){
+    if (keep.vcov[[1]] && se.fit[[1]]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
     }
-    if (keep.iid[1] && se.fit[1] == TRUE) {
+    if (keep.iid[[1]] && se.fit[[1]] == TRUE) {
         output <- c(output,
                     list(iid.decomp = DT[,data.table::data.table(ID,model,cause,times,IF.Brier)]))
     }
