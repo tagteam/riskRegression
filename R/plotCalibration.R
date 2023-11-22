@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: May 30 2023 (08:10) 
+## last-updated: Nov 22 2023 (15:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 387
+##     Update #: 388
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -338,17 +338,18 @@ plotCalibration <- function(x,
                              xlab=xlab)
     rug.DefaultArgs <- list(col=col,lwd=lwd,side=1,ticksize=0.03)
     pseudo.DefaultArgs <- list(col=col,cex=cex,density=55)
-    barplot.DefaultArgs <- list(ylim = ylim,
-                                col=col,
-                                axes=FALSE,
-                                ylab=ylab,
-                                xlab=xlab,
-                                beside=TRUE,
-                                legend.text=NULL,
-                                cex.axis=cex,
-                                cex.lab=par()$cex.lab,
-                                cex.names=cex)
     if (bars){
+        barplot.DefaultArgs <- list(ylim = ylim,
+                                    col=col,
+                                    axes=FALSE,
+                                    ylab=ylab,
+                                    xlab=xlab,
+                                    beside=TRUE,
+                                    legend.text=NULL,
+                                    cex.axis=cex,
+                                    cex.lab=par()$cex.lab,
+                                    cex.names=cex)
+
         control <- prodlim::SmartControl(call= list(...),
                                          keys=c("barplot","legend","addtable2plot","axis2","abline","names","frequencies"),
                                          ignore=NULL,
