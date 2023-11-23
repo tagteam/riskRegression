@@ -1,0 +1,109 @@
+* Load package
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes  
+library(riskRegression)
+library(survival)
+packageVersion("riskRegression")
+#+END_SRC
+
+#+RESULTS[(2022-07-12 10:34:54) 19a9e01e2fccb7b859fd63f618d46ceaaa8862b2]:
+:results:
+[1] ‘2022.7.5’
+:end:
+
+* Test data
+
+** Uncensored binary outcome
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes
+set.seed(8)
+train=sampleData(n=474,outcome="binary")
+test=sampleData(n=736,outcome="binary")
+f1=glm(Y~X1+X2+X8+X9,data=train,family="binomial")
+f2=glm(Y~X3+X4+X7+X10,data=train,family="binomial")
+x=Score(list(f1=f1,f2=f2),data=test,formula=Y~1)
+summary(x)$score
+#+END_SRC
+
+#+RESULTS[(2022-07-12 10:46:04) f48a1aa9d4adb961caca86d46c3da990e347b5f8]:
+:results:
+        Model          AUC (%)        Brier (%)
+1: Null model             <NA> 24.7 [24.3;25.1]
+2:         f1 70.3 [66.5;74.0] 21.6 [20.6;22.7]
+3:         f2 57.1 [52.9;61.3] 24.5 [23.6;25.3]
+:end:
+
+** Censored survival outcome
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes
+set.seed(11)
+train=sampleData(n=474,outcome="survival")
+test=sampleData(n=736,outcome="survival")
+f1=coxph(Surv(time,event)~X1+X2+X8+X9,data=train,x=TRUE,y=TRUE)
+f2=coxph(Surv(time,event)~X3+X4+X7+X10,data=train,x=TRUE,y=TRUE)
+x=Score(list(f1=f1,f2=f2),data=test,formula=Surv(time,event)~X1+X2+X3+X4+X8+X9+X10,times=5)
+summary(x)$score
+x1=Score(list(f1=f1,f2=f2),data=test,formula=Surv(time,event)~1,times=5)
+summary(x1)$score
+#+END_SRC
+
+#+RESULTS[(2022-07-12 11:02:53) 40f72514da2c1591c750b3c74825fbef0833cbf5]:
+:results:
+   times      Model          AUC (%)        Brier (%)
+1:     5 Null model             50.0 24.0 [23.2;24.7]
+2:     5         f1 71.1 [67.1;75.1] 20.6 [19.2;22.1]
+3:     5         f2 60.5 [56.0;65.0] 23.2 [22.2;24.1]
+   times      Model          AUC (%)        Brier (%)
+1:     5 Null model             50.0 24.0 [23.3;24.8]
+2:     5         f1 71.0 [66.8;75.1] 20.7 [19.2;22.2]
+3:     5         f2 60.3 [55.7;64.9] 23.2 [22.2;24.2]
+:end:
+
+** Censored competing risk outcome
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes
+set.seed(11)
+train=sampleData(n=474,outcome="competing.risk")
+test=sampleData(n=736,outcome="competing.risk")
+f1=CSC(Hist(time,event)~X1+X2+X8+X9,data=train)
+f2=CSC(Hist(time,event)~X3+X4+X7+X10,data=train)
+x=Score(list(f1=f1,f2=f2),data=test,formula=Hist(time,event)~X1+X2+X3+X4+X8+X9+X10,times=5)
+summary(x)$score
+x1=Score(list(f1=f1,f2=f2),data=test,formula=Hist(time,event)~1,times=5)
+summary(x1)$score
+#+END_SRC
+
+#+RESULTS[(2022-07-12 10:48:24) 56872dc051c5b77db8226885fe83a048c4c7672b]:
+:results:
+   times      Model          AUC (%)        Brier (%)
+1:     5 Null model             50.0 23.9 [23.1;24.7]
+2:     5         f1 70.2 [66.1;74.3] 21.1 [19.7;22.4]
+3:     5         f2 60.2 [55.7;64.6] 23.3 [22.3;24.4]
+   times      Model          AUC (%)        Brier (%)
+1:     5 Null model             50.0 23.9 [23.1;24.7]
+2:     5         f1 70.2 [66.1;74.4] 21.1 [19.7;22.5]
+3:     5         f2 60.2 [55.7;64.7] 23.3 [22.2;24.4]
+:end:
+
+
+** uncensored competing risk outcome
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes
+set.seed(11)
+train=sampleData(n=474,outcome="competing.risk")
+test=sampleData(n=736,outcome="competing.risk")
+test[,etime:=pmin(eventtime1,eventtime2)]
+test[,dummy:=1]
+f1=CSC(Hist(time,event)~X1+X2+X8+X9,data=train)
+f2=CSC(Hist(time,event)~X3+X4+X7+X10,data=train)
+x2=Score(list(f1=f1,f2=f2),data=test,formula=Hist(etime,dummy)~X1+X2+X3+X4+X8+X9+X10,times=5)
+x2a=Score(list(f1=f1,f2=f2),data=test,formula=Hist(etime,dummy)~1,times=5)
+x2$Brier$score
+x2a$Brier$score
+x2$AUC$score
+x2a$AUC$score
+#+END_SRC
