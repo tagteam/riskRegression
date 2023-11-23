@@ -144,7 +144,7 @@ predict.CauseSpecificCox <- function(object,
     if(missing(newdata)){
         newdata <- eval(object$call$data)
     }else{
-        setDT(newdata)
+        newdata <- data.table::as.data.table(newdata)
     }
 
     if (missing(times)) {
@@ -472,7 +472,7 @@ predict.CauseSpecificCox <- function(object,
     if(keep.strata==TRUE){
         allStrata <- unique(unlist(lapply(ls.infoVar,"[[","stratavars.original")))
         if (length(allStrata)>0){
-            newdata <- copy(newdata[,allStrata, with = FALSE])
+            newdata <- data.table::copy(newdata[,allStrata, with = FALSE])
             newdata[, (allStrata) := lapply(allStrata, function(col){paste0(col,"=",.SD[[col]])})]
             out$strata <- newdata[, interaction(.SD, sep = " "), .SDcols = allStrata]
         }

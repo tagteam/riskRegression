@@ -766,7 +766,7 @@ coxStrata.coxph <- function(object, data, sterms, strata.vars, strata.levels){
 ## ** coxStrata.phreg
 #' @rdname coxStrata
 #' @method coxStrata phreg
-# '@export
+#' @export
 coxStrata.phreg <- function(object, data, sterms, strata.vars, strata.levels){
   
   if(length(strata.vars)==0){ ## no strata variables
@@ -1071,9 +1071,10 @@ reconstructData <- function(object){
 #' @description Extract design matrix for cph objects
 #' @param object a cph object.
 #' @param data a dataset.
+#' @param ... not used
 #' 
 #' @method model.matrix cph
-model.matrix.cph <- function(object, data){
+model.matrix.cph <- function(object, data, ...){
 
     if(all(object$Design$assume %in% c("category","asis","interaction","strata"))){
         out <- predict(object, newdata = data, type = "x")
@@ -1122,11 +1123,12 @@ model.matrix.cph <- function(object, data){
 #' @description Extract design matrix for phreg objects
 #' @param object a phreg object.
 #' @param data a dataset.
+#' @param ... not used
 #' 
 #' @details mainly a copy paste of the begining of the \code{phreg} function.
 #' 
 #' @method model.matrix phreg
-model.matrix.phreg <- function(object, data){
+model.matrix.phreg <- function(object, data, ...){
     special <- c("strata", "cluster")
     Terms <- stats::delete.response(attr(object$model.frame, "terms"))
 
