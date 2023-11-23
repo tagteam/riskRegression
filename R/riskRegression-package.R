@@ -76,8 +76,14 @@ NULL
 ##' data(Melanoma)
 NULL
 
+#' Risk Regression Models and Prediction Scores for Survival Analysis with Competing Risks
+#'
+#' Methods for evaluating risk predictions in censored event history analysis
+#' @keywords internal
+# "_PACKAGE"
 #' @docType package
-#' @name riskRegression
+#' @name riskRegression-package
+#' @aliases riskRegression-package
 #' @useDynLib riskRegression, .registration=TRUE
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @importFrom grDevices rainbow
@@ -86,7 +92,7 @@ NULL
 #' @importFrom ggplot2 autoplot aes aes_string element_blank element_line element_rect geom_errorbar geom_line geom_point geom_ribbon ggplot labs guide_legend guides scale_colour_manual scale_color_continuous scale_fill_manual scale_linetype_manual scale_y_continuous theme theme_bw "%+replace%"  unit xlab  ylab
 #' @importFrom survival Surv strata coxph survreg
 #' @importFrom lava sim iid information score transform<- exogenous endogenous regression<-
-#' @importFrom data.table data.table set dcast setkeyv setDT as.data.table copy data.table is.data.table melt rbindlist setnames setorder setcolorder setkey ":=" ".N" ".SD"
+#' @importFrom data.table data.table set dcast setkeyv as.data.table copy data.table is.data.table melt rbindlist setnames setorder setcolorder setkey ":=" ".N" ".SD"
 #' @importFrom prodlim Hist dimColor prodlim
 #' @importFrom foreach "%dopar%" foreach "%do%"
 #' @importFrom cmprsk predict.crr

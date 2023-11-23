@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: okt 29 2021 (14:10) 
-##           By: Brice Ozenne
-##     Update #: 171
+## Last-Updated: Sep  6 2023 (09:51) 
+##           By: Thomas Alexander Gerds
+##     Update #: 173
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -57,7 +57,7 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
             n.times <- length(x$times)
         }        
         out <- data.table::rbindlist(lapply(1:n.times,function(tt){
-            ndtt=copy(nd)
+            ndtt=data.table::copy(nd)
             if(x$diag && length(x$times)>0){
                 nd[,times:=x$times]
             }else if(length(x$times)>0){
@@ -97,7 +97,6 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
                 }
                 colnames(tyc) <- paste0(name,vec.names)
           
-                ## setDT(tyc)
                 nd <- cbind(nd,tyc)
             }
             nd   

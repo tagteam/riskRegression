@@ -4,12 +4,14 @@
 \alias{model.matrix.cph}
 \title{Extract design matrix for cph objects}
 \usage{
-\method{model.matrix}{cph}(object, data)
+\method{model.matrix}{cph}(object, data, ...)
 }
 \arguments{
 \item{object}{a cph object.}
 
 \item{data}{a dataset.}
+
+\item{...}{not used}
 }
 \description{
 Extract design matrix for cph objects

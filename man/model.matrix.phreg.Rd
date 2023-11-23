@@ -4,12 +4,14 @@
 \alias{model.matrix.phreg}
 \title{Extract design matrix for phreg objects}
 \usage{
-\method{model.matrix}{phreg}(object, data)
+\method{model.matrix}{phreg}(object, data, ...)
 }
 \arguments{
 \item{object}{a phreg object.}
 
 \item{data}{a dataset.}
+
+\item{...}{not used}
 }
 \description{
 Extract design matrix for phreg objects

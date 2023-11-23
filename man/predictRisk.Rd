@@ -30,6 +30,7 @@
 \alias{predictRisk.integer}
 \alias{predictRisk.factor}
 \alias{predictRisk.numeric}
+\alias{predictRisk.multinom}
 \alias{predictRisk.formula}
 \alias{predictRisk.BinaryTree}
 \alias{predictRisk.comprisk}
@@ -59,6 +60,15 @@ predictRisk(object, newdata, ...)
 \method{predictRisk}{numeric}(object, newdata, times, cause, ...)
 
 \method{predictRisk}{glm}(object, newdata, iid = FALSE, average.iid = FALSE, ...)
+
+\method{predictRisk}{multinom}(
+  object,
+  newdata,
+  iid = FALSE,
+  average.iid = FALSE,
+  cause = NULL,
+  ...
+)
 
 \method{predictRisk}{formula}(object, newdata, ...)
 

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jun 26 2023 (15:01) 
-##           By: Anders Munch
-##     Update #: 519
+## last-updated: Aug 30 2023 (11:35) 
+##           By: Thomas Alexander Gerds
+##     Update #: 521
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -359,7 +359,11 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
     }
 }
+
 ## * predictRisk.multinom
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk multinom
 predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FALSE, cause = NULL, ...){
     n.obs <- NROW(newdata)
     n.class <- length(object$lev)
@@ -1540,36 +1544,36 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
 }
 
 
-GrpSurv <- function(formula,data,...){
-    requireNamespace(c("grpreg","prodlim"))
-    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
-    fit = grpreg::grpsurv(X = EHF$design,y = EHF$event.history,...)
-    fit = list(fit = fit,terms = terms(formula),call=match.call())
-    class(fit) = c("GrpSurv",class(fit))
-    fit
-}
+## GrpSurv <- function(formula,data,...){
+    ## requireNamespace(c("grpreg","prodlim"))
+    ## EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    ## fit = grpreg::grpsurv(X = EHF$design,y = EHF$event.history,...)
+    ## fit = list(fit = fit,terms = terms(formula),call=match.call())
+    ## class(fit) = c("GrpSurv",class(fit))
+    ## fit
+## }
 
-predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
-    newdata$dummy.time=rep(1,NROW(newdata))
-    newdata$dummy.event=rep(1,NROW(newdata))
-    rhs <- as.formula(delete.response(object$terms))
-    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
-    EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
-                                       data=newdata,
-                                       specials = NULL,
-                                       unspecialsDesign=TRUE)
-    newdata$dummy.time = NULL
-    newdata$dummy.event = NULL
-    p <- predict(object$fit, EHF$design, type="survival")
-    p <- 1-sapply(p,function(f)f(times))
-    if (length(times) == 1){
-        p = cbind(p)
-    }else(p = t(p))
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
-    }
-    p
-}
+## predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
+    ## newdata$dummy.time=rep(1,NROW(newdata))
+    ## newdata$dummy.event=rep(1,NROW(newdata))
+    ## rhs <- as.formula(delete.response(object$terms))
+    ## dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    ## EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                       ## data=newdata,
+                                       ## specials = NULL,
+                                       ## unspecialsDesign=TRUE)
+    ## newdata$dummy.time = NULL
+    ## newdata$dummy.event = NULL
+    ## p <- predict(object$fit, EHF$design, type="survival")
+    ## p <- 1-sapply(p,function(f)f(times))
+    ## if (length(times) == 1){
+        ## p = cbind(p)
+    ## }else(p = t(p))
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+        ## stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+    ## }
+    ## p
+## }
 
 ## XgbSurv <- function(formula,data,...){
     ## requireNamespace(c("survXgboost","xgboost","prodlim"))
