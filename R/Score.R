@@ -1391,50 +1391,50 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         names(crossvalPerf) <- metrics
         
         if ("ROC" %in% plots){
-          cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
-          TPR=FPR=NULL
-          fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
-            if (roc.method == "vertical"){
-              temp <- stats::approx(x=FPR,
-                                    y=TPR,
-                                    xout=roc.grid,
-                                    ties=median,
-                                    yleft=0,
-                                    yright=1)$y
-              list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
+            cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
+            TPR=FPR=NULL
+            fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
+                if (roc.method == "vertical"){
+                    temp <- stats::approx(x=FPR,
+                                          y=TPR,
+                                          xout=roc.grid,
+                                          ties=median,
+                                          yleft=0,
+                                          yright=1)$y
+                    list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
+                }
+                else {
+                    temp <- stats::approx(x=TPR,
+                                          y=FPR,
+                                          xout=roc.grid,
+                                          ties=median,
+                                          yleft=0, #have to consider if yleft and yright have to be modified.
+                                          yright=1)$y
+                    data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
+                }
+            }
+            if (response.type == "binary"){
+                cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model)])
+                if (roc.method == "vertical"){
+                    cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
+                }
+                else {
+                    cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,TPR)]
+                }
             }
             else {
-              temp <- stats::approx(x=TPR,
-                                    y=FPR,
-                                    xout=roc.grid,
-                                    ties=median,
-                                    yleft=0, #have to consider if yleft and yright have to be modified.
-                                    yright=1)$y
-              data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
+                cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model,times)])
+                if (roc.method == "vertical"){
+                    cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
+                }
+                else {
+                    cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,TPR)]
+                }
             }
-          }
-          if (response.type == "binary"){
-            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model)])
-            if (roc.method == "vertical"){
-              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
-            }
-            else {
-              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,TPR)]
-            }
-          }
-          else {
-            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model,times)])
-            if (roc.method == "vertical"){
-              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
-            }
-            else {
-              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,TPR)]
-            }
-          }
-          setorder(cumROC, cols = "TPR")
-          ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
-          class(ROC.res) <- "scoreROC"
-          crossvalPerf[["ROC"]] <- ROC.res
+            setorder(cumROC, cols = "TPR")
+            ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
+            class(ROC.res) <- "scoreROC"
+            crossvalPerf[["ROC"]] <- ROC.res
         }
         if (ipa==TRUE){
             if (response.type=="binary")
@@ -1476,19 +1476,18 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     }
     # }}}
 }
-
     # }}}
     # {{{ the output object
-   if (split.method$internal.name=="noplan"){
+    if (split.method$internal.name=="noplan"){
         if (keep.residuals==TRUE){
             if("Brier" %in% metrics)
-              noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
+                noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
         }
         if (keep.iid==TRUE){
             if("Brier" %in% metrics)
-              noSplit$Brier$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)]
+                noSplit$Brier$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)]
             if("AUC" %in% metrics)
-              noSplit$AUC$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)]
+                noSplit$AUC$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)]
         }
         output <- noSplit
     } else{
