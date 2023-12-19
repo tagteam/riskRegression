@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Aug 30 2023 (11:35) 
+## last-updated: Dec 19 2023 (08:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 521
+##     Update #: 530
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -753,7 +753,8 @@ predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
 ##' @rdname predictRisk
 ##' @method predictRisk coxph.penal
 predictRisk.coxph.penal <- function(object,newdata,times,...){
-    frailhistory <- object$history$'frailty(cluster)'$history
+    # assume that only one cluster/sparse penalty is allowed 
+    frailhistory <- object$history[[1]]$history
     if (length(frailhistory) == 0){
         predictRisk.coxph(object,newdata,times,...)
     }else{
@@ -766,7 +767,7 @@ predictRisk.coxph.penal <- function(object,newdata,times,...){
             (1+frailVar*bhValues*exp(linearPred[i]))^{-1/frailVar}
         }))
         where <- prodlim::sindex(jump.times=bhTimes,eval.times=times)
-        p <- cbind(1,survPred)[,where+1]
+        p <- cbind(1,survPred)[,where+1,drop = FALSE]
         if ((miss.time <- (length(times) - NCOL(p)))>0)
             p <- cbind(p,matrix(rep(NA,miss.time*NROW(p)),nrow=NROW(p)))
         if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
@@ -917,6 +918,7 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
         if (object$treetype=="Classification") {
+            stop("You must set the argument probability=TRUE in the call to ranger in order to use predictRisk.ranger.")
             pred <- stats::predict(object,data=newdata,predict.all=TRUE,...)$predictions
             p <- rowMeans(pred == 2)
         } else {
