@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: Dec 20 2021 (12:24) 
+## last-updated: jan  2 2024 (20:32) 
 ##           By: Brice Ozenne
-##     Update #: 172
+##     Update #: 174
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -171,13 +171,13 @@ predictCoxPL <- function(object,
         for(iStrata in 1:n.Ustrata){ # iStrata <- 1
             indexStrata.object <- which(object.strata==Ustrata[iStrata])
             indexStrata.newdata <- which(new.strata==Ustrata[iStrata])
-                
+
             all.times <- object.modelFrame[indexStrata.object,.SD$stop]
             all.times <- sort(unique(all.times[all.times <= max(times)]))
 
             if(length(all.times)>0){
                 res.tempo <- predictCox(object,
-                                        newdata = newdata[indexStrata.newdata,],
+                                        newdata = newdata[indexStrata.newdata,,drop=FALSE],
                                         times = all.times,
                                         type = "hazard")
                 
