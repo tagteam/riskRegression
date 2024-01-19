@@ -98,6 +98,7 @@ subjectWeights.marginal <- function(formula,data,method,args,lag=1){
     class(out) <- "subjectWeights"
     out
 }
+#' @export 
 subjectWeights.km <- subjectWeights.marginal
 # }}}
 # {{{ reverse Stone-Beran

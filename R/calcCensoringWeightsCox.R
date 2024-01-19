@@ -150,11 +150,10 @@ predictCoxWeights <- function(object,
   ## restaure strata levels
   Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   
-  ## ** compute cumlative hazard and survival
-  ## *** reformat newdata (compute linear predictor and strata)
-  new.n <- NROW(newdata)
-  ## newdata <- copy(newdata)
-  setDT(newdata)
+    ## ** compute cumlative hazard and survival
+    ## *** reformat newdata (compute linear predictor and strata)
+    new.n <- NROW(newdata)
+    newdata <- data.table::as.data.table(newdata)
   
   Xb <- coxLP(object, data = newdata, center = FALSE)
   lp.iid <- FALSE
