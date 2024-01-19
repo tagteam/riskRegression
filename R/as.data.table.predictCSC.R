@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: nov 20 2020 (16:48) 
-##           By: Brice Ozenne
-##     Update #: 49
+## Last-Updated: Sep  6 2023 (09:52) 
+##           By: Thomas Alexander Gerds
+##     Update #: 51
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,7 @@ as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
     n.times <- NCOL(x$absRisk) 
         
     out <- data.table::rbindlist(lapply(1:n.times,function(tt){
-        ndtt=copy(nd)
+        ndtt=data.table::copy(nd)
         if(x$keep.times){
             nd[,times:=x$times[tt]]
         }
@@ -71,7 +71,6 @@ as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
                             absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
             }
         }
-        ## setDT(tyc)
         nd <- cbind(nd,ar)
         nd   
     }))    

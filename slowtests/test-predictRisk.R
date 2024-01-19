@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 16 2022 (08:10) 
 ## Version: 
-## Last-Updated: Jun 29 2022 (16:56) 
+## Last-Updated: Dec 19 2023 (08:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,7 +74,31 @@ x <- Score(list(hal = f1,cox = f2),
            times = c(5,10))
 summary(x)
 
+library(riskRegression)
+library(survival)
 
+set.seed(245)
+
+data(nafld, package="survival")
+
+# generating random cluster
+nafld1$clust <- sample(1:10, size=nrow(nafld1), replace=TRUE)
+nafld1$cluster <- nafld1$clust
+
+# fitting a model with a frailty term without naming it "cluster"
+model1 <- coxph(Surv(futime, status) ~ age + male + frailty(clust),
+               data=nafld1, x=TRUE)
+
+# fitting a model with a frailty term named "cluster"
+model2 <- coxph(Surv(futime, status) ~ age + male + frailty(cluster),
+                data=nafld1, x=TRUE)
+
+
+# getting predictions
+test1 <- predictRisk(model1, nafld1, times=100)
+test2 <- predictRisk(model2, nafld1, times=100) 
+
+all.equal(test1, test2)
 
 ######################################################################
 ### test-predictRisk.R ends here

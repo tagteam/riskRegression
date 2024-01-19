@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: jan  2 2024 (20:32) 
+## last-updated: jan 19 2024 (15:22) 
 ##           By: Brice Ozenne
-##     Update #: 174
+##     Update #: 175
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -87,9 +87,9 @@ predictCoxPL <- function(object,
     object.modelFrame <- coxModelFrame(object)
     if(!is.null(newdata)){
         if(is.data.table(newdata)){
-            newdata <- copy(newdata)
+            newdata <- data.table::copy(newdata)
         }else{
-            setDT(copy(newdata))
+            newdata <- data.table::as.data.table(newdata)
         }
     }else if (missing(times)) {
         times <- numeric(0)
