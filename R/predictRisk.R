@@ -1355,7 +1355,7 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     newdata <- data.frame(newdata)
     p <- matrix(0, NROW(newdata), length(times))
     term <- attr(terms(as.formula(object$call$formula)), "term.labels")
-    sm <- summary(object, newdata = newdata[, term], t = times, start = 0, B = 0) #no confidence interval simulations
+    sm <- summary(object, newdata = newdata[, term, drop = FALSE], t = times, start = 0, B = 0) #no confidence interval simulations
     for (i in 1:NROW(newdata)){
         p[i,] <- sm[[i]][,2]
     }
