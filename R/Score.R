@@ -671,8 +671,9 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         neworder <- 1:N
     }
     ## add ID variable for merging purposes and because output has long format
-    ## data[["ID"]]=1:N
-    data[,ID:=1:N]
+    ## if data.table data contains a variable N the code data[,ID:=1:N] does not
+    ## work hence we do it like this
+    data[["ID"]]=1:N
     if (response.type=="survival")
         formula <- stats::update(formula,"prodlim::Hist(time,status)~.")
     if (response.type=="competing.risks")
