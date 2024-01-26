@@ -50,25 +50,23 @@ plotCalibration(
 
 \item{method}{The method for estimating the calibration curve(s):
 \itemize{
-\item{\code{"quantile"}}{The observed proportion at predicted risk value 'p'
+\item \code{"quantile"}: The observed proportion at predicted risk value 'p'
 is obtained in groups
 defined by quantiles of the predicted event probabilities of all subjects.
-The number of groups is controlled by argument \code{q}.}
-\item{\code{"nne"}}: {The observed proportion at predicted risk value 'p' is obtained based
+The number of groups is controlled by argument \code{q}.
+\item \code{"nne"}: The observed proportion at predicted risk value 'p' is obtained based
 on the subjects whose predicted risk is inside a nearest
 neighborhood around the value 'p'. The larger the
-bandwidth the more subjects are included in the current neighborhood. 
-}}}
+bandwidth the more subjects are included in the current neighborhood. }}
 
 \item{cens.method}{For right censored data only. How observed proportions are calculated. Either \code{"jackknife"} or \code{"local"}:
 \itemize{
-\item{\code{"jackknife"}}{Compute a running mean of the jackknife pseudovalues across neighborhoods/groups of the predicted risks.
+\item \code{"jackknife"}: Compute a running mean of the jackknife pseudovalues across neighborhoods/groups of the predicted risks.
 Here we rely on the
-assumption that censoring is independent of the event time and the covariates, see References. }
-\item{\code{"local"}}{Compute the Kaplan-Meier estimator in absence of competing risks and the Aalen-Johansen estimator in presence of competing risks
+assumption that censoring is independent of the event time and the covariates, see References. 
+\item \code{"local"}: Compute the Kaplan-Meier estimator in absence of competing risks and the Aalen-Johansen estimator in presence of competing risks
 locally like a running mean in neighborhoods of the predicted risks. The widths of the neighborhoods
-are defined according to method.
-}}}
+are defined according to method. }}
 
 \item{round}{If \code{TRUE} predicted probabilities are rounded to
 two digits before smoothing. This may have a considerable
