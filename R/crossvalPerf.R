@@ -215,8 +215,8 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
   return(output)
 }
 
-crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID,cause){
-  status <- residuals <- risk <- WTi <- event <- ReSpOnSe <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- status0 <- NULL
+crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,ibs,keep.residuals,conservative,cens.model,response.dim,ID,cause){
+  status <- residuals <- risk <- WTi <- event <- ReSpOnSe <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- status0 <- IBS <- NULL
   ## sum across bootstrap samples where subject i is out of bag
   if (cens.type=="rightCensored"){
     if (response.type=="survival"){
@@ -333,6 +333,35 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
     else
       score.loob[,IPA:=1-Brier/Brier[model==0],by=times]
   }
+  ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
+  if (ibs){
+    Dint <- function(x,y,range,na.omit=FALSE){
+      if (is.null(range)) range=c(x[1],x[length(x)])
+      ##   integrate a step function f with
+      ##   values y=f(x) between range[1] and range[2]
+      start <- max(range[1],min(x))
+      Stop <- min(range[2],max(x))
+      if ((Stop-start)<=0)
+        return(0)
+      else{
+        Y=y[x>=start & x<Stop]
+        X=x[x>=start & x<Stop]
+        if (na.omit){
+          X=X[!is.na(Y)]
+          Y=Y[!is.na(Y)]
+        } else if (any(is.na(Y))|| any(is.na(X))){
+          return(NA)
+        }
+        return(1/(Stop-start) * sum(Y*diff(c(X,Stop))))
+      }
+    }
+    if (response.type!="binary"){
+      score.loob[,IBS:=sapply(times,function(t){
+        Dint(x=c(0,times),y=c(0,Brier),range=c(0,t))
+      }),by=c("model")]
+    }
+  }
+  
   data.table::setkeyv(score.loob,byvars)
   ## data.table::setkey(DT.B,model,times)
   ## DT.B <- DT.B[score.loob]
@@ -403,12 +432,12 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   return(output)
 }
 
-crossvalPerf.loob <- function(m,times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID,cause) {
+crossvalPerf.loob <- function(m,times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,ibs,keep.residuals,conservative,cens.model,response.dim,ID,cause) {
   if (m=="AUC"){
     return(crossvalPerf.loob.AUC(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,conservative,cens.model,cause))
   }
   if (m=="Brier"){
-    return(crossvalPerf.loob.Brier(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID,cause))
+    return(crossvalPerf.loob.Brier(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,ibs,keep.residuals,conservative,cens.model,response.dim,ID,cause))
   }
 }
 

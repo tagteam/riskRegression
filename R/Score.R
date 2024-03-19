@@ -1237,6 +1237,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                                                     byvars,
                                                                     mlabels,
                                                                     ipa,
+                                                                    ibs,
                                                                     keep.residuals,
                                                                     conservative,
                                                                     cens.model,
