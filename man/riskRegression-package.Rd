@@ -7,4 +7,32 @@
 \description{
 Methods for evaluating risk predictions in censored event history analysis
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/tagteam/riskRegression}
+  \item Report bugs at \url{https://github.com/tagteam/riskRegression/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Thomas Alexander Gerds \email{tag@biostat.ku.dk}
+
+Authors:
+\itemize{
+  \item Johan Sebastian Ohlendorff
+  \item Brice Ozenne \email{broz@sund.ku.dk} (\href{https://orcid.org/0000-0001-9694-2956}{ORCID})
+}
+
+Other contributors:
+\itemize{
+  \item Paul Blanche [contributor]
+  \item Rikke Mortensen [contributor]
+  \item Marvin Wright [contributor]
+  \item Nikolaj Tollenaar [contributor]
+  \item John Muschelli [contributor]
+  \item Ulla Brasch Mogensen [contributor]
+}
+
+}
 \keyword{internal}

@@ -523,6 +523,86 @@ categorize <- function(v,max.levels,data){
   return(is.bin+is.cat)
 }
 
+##' @export saveSynth.synth
+##' @export
+#' @rdname saveSynth
+#' @method saveSynth synth
+saveSynth.synth <- function(object, file = "",...){
+  if (missing(object)) stop("No object specified")
+  
+  ## handle various function objects in distribution attribute
+  ## we replace the corresponding parts of the function with the actual values as default values
+  for (l in names(object$lava.object$attributes$distribution)){
+    if ((at<-attributes(object$lava.object$attributes$distribution[[l]])$family$family) %in% c("binomial", "gaussian", "weibull")){
+      stupid_attr <- attributes(object$lava.object$attributes$distribution[[l]])
+      if (at == "binomial"){
+        stupid_fun <- function (n, mu, var, ...) 
+        {
+          if (missing(n)) {
+            return(fam)
+          }
+          rbinom(n, 1, binomial()$linkinv(mu))
+        }
+      } else if (at == "gaussian"){
+        stupid_fun <- function (n, mu, var, ...) 
+        {
+          rnorm(n, mu, sqrt(var))
+        }
+      } else if (at == "weibull"){
+        stupid_fun <- object$lava.object$attributes$distribution[[l]]
+        attributes(stupid_fun) <- NULL
+        dep_fun <- deparse(stupid_fun)
+        dep_fun <- gsub("\\b(scale)\\b", stupid_attr$family$par[2], dep_fun)
+        dep_fun <- gsub("\\b(shape)\\b", stupid_attr$family$par[1], dep_fun)
+        stupid_fun <- eval(parse(text=dep_fun))
+      }
+      stupid_attr$srcref <- NULL
+      object$lava.object$attributes$distribution[[l]] <- stupid_fun
+      attributes(object$lava.object$attributes$distribution[[l]]) <- stupid_attr
+    } else {
+      stop("Distribution not implemented")
+    }
+  }
+  
+  ## case: categorical
+  for (l in names(object$lava.object$constrainY)){
+    stupid_fun <- function (y, p, idx = zzz, ...) 
+    {
+      if (length(p[idx])){
+        theta <- p[idx]
+        v <- theta[1]
+        breaks <- c(-Inf, cumsum(c(v,exp(theta[seq(length(theta)-1L)+1L]))), Inf) 
+        as.numeric(cut(y, breaks = breaks)) - 1
+      } else {
+        stop("error")
+      }
+    }
+    ll <- object$lava.object$attributes$ordinalparname[[l]]
+    dep_fun <- deparse(stupid_fun)
+    dep_fun <- gsub("\\b(zzz)\\b", deparse(ll), dep_fun)
+    object$lava.object$constrainY[[l]]$fun <- eval(parse(text=dep_fun))
+  }
+  for (l in names(object$lava.object$attributes$transform)){
+    curr <- object$lava.object$attributes$transform[[l]]
+    stupid_fun <- curr$fun
+    dep_fun <- deparse(stupid_fun)
+    dep_fun <- gsub("\\b(l)\\b", paste0("\"",stringr::str_remove(l,curr$x),"\""), dep_fun)
+    object$lava.object$attributes$transform[[l]]$fun <- eval(parse(text=dep_fun)) 
+  }
+  
+  ## survival/comp.risk
+  if (length(object$lava.object$attributes$multitransform) > 0) {
+    stupid_fun <- function(z, events = zzz, ...) {
+      idx <- apply(z,1,which.min)
+      cbind(z[cbind(seq(NROW(z)),idx)],events[idx])
+    }
+    dep_fun <- deparse(stupid_fun)
+    dep_fun <- gsub("\\b(zzz)\\b", deparse(object$lava.object$attributes$eventHistory$time$events), dep_fun)
+    object$lava.object$attributes$multitransform[[1]]$fun <- eval(parse(text=dep_fun)) 
+  }
+  dput(object, file = file,
+       control = c("keepNA", "keepInteger", "niceNames","showAttributes", "useSource","quoteExpressions"))
+}
 
 #----------------------------------------------------------------------
 ### synthesize.R ends here
