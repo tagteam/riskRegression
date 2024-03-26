@@ -88,6 +88,7 @@ lava::regression(u,time.death~sex+age+logbili) <- 1
 lava::regression(u,time.cens~1) <- 1
 transform(u,logbili~bili) <- function(x){log(x)}
 u_synt <- synthesize(object=u, data=na.omit(pbc))
+saveSynth(u_synt)
 set.seed(8)
 d <- simsynth(u_synt,n=1000)
 # note: synthesize may relabel status variable
