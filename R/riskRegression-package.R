@@ -81,7 +81,6 @@ NULL
 #' Methods for evaluating risk predictions in censored event history analysis
 #' @keywords internal
 # "_PACKAGE"
-#' @docType package
 #' @name riskRegression-package
 #' @aliases riskRegression-package
 #' @useDynLib riskRegression, .registration=TRUE
