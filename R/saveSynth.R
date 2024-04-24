@@ -46,21 +46,22 @@ saveSynth <- function(object, file = ""){
   }
   
   ## case: categorical
-  for (l in names(object$lava.object$constrainY)){
-    bb_fun <- function (y, p, idx = zzz, ...) 
-    {
-      if (length(p[idx])){
-        theta <- p[idx]
-        v <- theta[1]
-        breaks <- c(-Inf, cumsum(c(v,exp(theta[seq(length(theta)-1L)+1L]))), Inf) 
-        as.numeric(cut(y, breaks = breaks)) - 1
-      } else {
-        stop("error")
-      }
+  bb_fun <- function (y, p, idx = zzz, ...) 
+  {
+    if (length(p[idx])){
+      theta <- p[idx]
+      v <- theta[1]
+      breaks <- c(-Inf, cumsum(c(v,exp(theta[seq(length(theta)-1L)+1L]))), Inf) 
+      as.numeric(cut(y, breaks = breaks)) - 1
+    } else {
+      stop("error")
     }
+  }
+  deparsed_bb_fun <- deparse(bb_fun)
+  
+  for (l in names(object$lava.object$constrainY)){
     ll <- object$lava.object$attributes$ordinalparname[[l]]
-    dep_fun <- deparse(bb_fun)
-    dep_fun <- gsub("\\b(zzz)\\b", deparse(ll), dep_fun)
+    dep_fun <- gsub("\\b(zzz)\\b", paste0(deparse(ll),collapse=""), deparsed_bb_fun)
     object$lava.object$constrainY[[l]]$fun <- eval(parse(text=dep_fun))
   }
   for (l in names(object$lava.object$attributes$transform)){
