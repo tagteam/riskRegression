@@ -217,7 +217,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
 
 crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,ibs,keep.residuals,conservative,cens.model,response.dim,ID,cause){
   status <- residuals <- risk <- WTi <- event <- ReSpOnSe <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- status0 <- IBS <- NULL
-  ## sum across bootstrap samples where subject i is out of bag
+   ## sum across bootstrap samples where subject i is out of bag
   if (cens.type=="rightCensored"){
     if (response.type=="survival"){
       ## event of interest before times
@@ -273,10 +273,14 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
     ## DT.B[,Brier:=NULL]
     if (cens.type[1]=="rightCensored" && !conservative){
       ## this is a new DT.B
-      DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
+      # DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
+      temp_dat <- data[,1:response.dim,with=FALSE]
+      temp_dat$ID <- 1:N
+      DT.B <- merge(DT.B,temp_dat,by="ID")
       DT.B[,nth.times:=as.numeric(factor(times))]
       WW <- data.table(ID=1:N,WTi=Weights$IPCW.subject.times,key="ID")
-      DT.B <- merge(WW,DT.B,by=ID)
+      ## merge WW with DT.B by ID, while retaining the order of DT.B
+      DT.B <- merge(DT.B,WW,by="ID")
       ## DT.B[,WTi:=rep(Weights$IPCW.subject.times,NF+length(nullobject))]
       if (Weights$method=="marginal"){
         Wt <- data.table(times=times,Wt=Weights$IPCW.times)
