@@ -20,4 +20,16 @@ test_that("AUC censored data: order",{
     expect_equal(ignore_attr=TRUE,a,b)
 })
 # }}}
+# {{{ Sens, Spec, PPV, NPV censored data competing risks
+test_that("Sens, Spec, PPV, NPV censored data competing risks",{
+    library(riskRegression)
+    library(survival)
+    library(prodlim)
+    data(Melanoma)
+    setDT(Melanoma)
+    fit <- CSC(Hist(time,status)~invasion+epicel+logthick,data=Melanoma)
+    x <- Score(list(fit),data=Melanoma,Hist(time,status)~1,cutpoints = 0.07,metric="Auc")
+    expect_output(print(x$AUC$res.cut))
+})
+# }}}
 
