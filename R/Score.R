@@ -627,6 +627,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         byvars <- c("model")
     }
     states <- attr(response,"states")
+    if (length(states) == 0) stop("There seem to be no events in the data.")
     if (missing(cause)||is.null(cause)){
         if (response.type=="binary"){
             cause <- attr(response,"event")
@@ -878,11 +879,11 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                     ## times <- sort(unique(c(start,times)))
                     times <- sort(unique(times))
             }
-            (if (any(times>maxtime))
+            (if (any(times >= maxtime))
                  message(paste0("Upper limit of followup is ",
-                                maxtime,"\nResults at evaluation time(s) beyond this time point are not computed.")))
+                                maxtime,"\nResults at ",maxtime," and at times beyond this time point are not computed.")))
             ## need to save indices to modify matrix input
-            include.times <- times<=maxtime
+            include.times <- times < maxtime
             times <- times[include.times]
             NT <-  length(times)
             if (NT==0)
@@ -969,8 +970,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                  cens.type=cens.type,
                                  object=object,
                                  object.classes=object.classes,
-                                 NT=NT
-)
+                                 NT=NT)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             missing.predictions[,model:=factor(model,levels=mlevs,mlabels)]
