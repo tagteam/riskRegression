@@ -286,7 +286,6 @@ replacement from the data, which does not depend on the sample size:
 \code{N=300}
 \code{mean(sapply(1:B, function(b){match(1,sample(1:N,size=N,replace=TRUE),nomatch=0)}))}
 
-
 ## Bootstrap without replacement (training size set to be 70 percent of data)
 B=10, M=.7
 
@@ -317,7 +316,9 @@ testdat <- sampleData(40,outcome="binary")
 ## score logistic regression models
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 lr2 = glm(Y~X3+X5,data=learndat,family=binomial)
-Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
+x=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
+print(x)
+summary(x)
 
 ## ROC curve and calibration plot
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,

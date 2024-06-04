@@ -212,7 +212,6 @@
 ##' \code{N=300}
 ##' \code{mean(sapply(1:B, function(b){match(1,sample(1:N,size=N,replace=TRUE),nomatch=0)}))}
 ##'
-##'
 ##' ## Bootstrap without replacement (training size set to be 70 percent of data)
 ##' B=10, M=.7
 ##'
@@ -523,7 +522,7 @@ Score.list <- function(object,
                        roc.grid=switch(roc.method,"vertical"=seq(0,1,.01),"horizontal"=seq(1,0,-.01)),
                        cutpoints = NULL,
                        ...){
-    se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
+    se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=riskRegression_time=riskRegression_time_status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=riskRegression_event=residuals=event=j=NULL
 
     # }}}
     theCall <- match.call()
@@ -648,20 +647,16 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     if (length(grep("^riskRegression_",names(data)))>0){
         stop("Internal variable name clash. Cannot have variables with names starting with riskRegression_ in the data.")
     }
-    ## put ReSpOnSe for binary and (time, event, status) in the first column(s)
-    if (response.type=="binary"){
-        data[,event:=factor(ReSpOnSe,
-                            levels=1:(length(states)+1),
-                            labels=c(states,"event-free"))]
-    }
+    ## put change names of outcome
     if (response.type %in% c("survival","competing.risks")){
         colnames(response) <- paste0("riskRegression_",colnames(response))
-        # FIXME: is order okay?
+        # FIXME: check if order still correct
         data <- cbind(response,data)
         N <- as.numeric(NROW(data))
         neworder <- data[,order(riskRegression_time,-riskRegression_status)]
         data.table::setorder(data,riskRegression_time,-riskRegression_status)
     }else{
+        # add variable riskRegression_event
         data <- cbind(response,data)
         N <- as.numeric(NROW(data))
         neworder <- 1:N

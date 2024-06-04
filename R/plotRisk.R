@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (07:22) 
+## Last-Updated: Jun  4 2024 (19:12) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 241
+##     Update #: 243
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -89,7 +89,7 @@ plotRisk <- function(x,
                      preclipse=0,
                      preclipse.shade=FALSE,
                      ...){
-    model = ReSpOnSe = risk = status = event = cause = NULL
+    model = riskRegression_event = riskRegression_time = risk = status = event = cause = NULL
     if (is.null(x$risks$score)) stop("No predicted risks in object. You should set summary='risks' when calling Score.")
     if (!is.null(x$null.model)){
         pframe <- x$risks$score[model!=x$null.model]
@@ -139,14 +139,14 @@ plotRisk <- function(x,
     # order according to current cause of interest
     states <- c(cause,states[cause != states])
     if (x$response.type=="binary"){
-        Rfactor <- factor(pframe[model==modelnames[1],ReSpOnSe],levels = rev(states),labels = c("No event","Event"))
+        Rfactor <- factor(pframe[model==modelnames[1],riskRegression_event],levels = rev(states),labels = c("No event","Event"))
     }
     else{
         if  (x$response.type=="survival"){
             Rfactor <- pframe[model==modelnames[1],
             {
                 r <- factor(status,levels = c(-1,0,1),labels = c("No event","Censored","Event"))
-                r[time>times] <- "No event"
+                r[riskRegression_time>times] <- "No event"
                 r
             }]
         }else{ ## competing risks
@@ -160,7 +160,7 @@ plotRisk <- function(x,
                     r = factor(as.character(event),levels = 0:(nCR+1),labels = c("No event",x$states))
                 }
                 ## r[status == 0] = "Censored"
-                r[time>times] = "No event"
+                r[riskRegression_time>times] = "No event"
                 # check if all states are anonymous numbers
                 if (suppressWarnings(sum(is.na(as.numeric(states))) == 0)){
                     if (nCR == 1){

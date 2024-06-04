@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: Jun  4 2024 (11:41) 
+## Last-Updated: Jun  4 2024 (12:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 21
+##     Update #: 22
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -62,7 +62,7 @@ computePerformance <- function(DT,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
                   keep.iid=keep.iid,                  
-                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,IC.data=IC.data,breaks=breaks,cutpoints=cutpoints) ## will break survival
+                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,IC.data=IC.data,breaks=breaks,cutpoints=cutpoints)
     if (response.type=="competing.risks") {
         input <- c(input,list(cause=cause,states=states))
     }

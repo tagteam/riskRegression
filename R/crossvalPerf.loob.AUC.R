@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:20) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (11:24) 
+## Last-Updated: Jun  4 2024 (15:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 11
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,7 @@ crossvalPerf.loob.AUC <- function(times,
                                   # crossvalPerf.loob.Brier has more arguments
                                   ...) {
     # initializing output
-    bfold <- fold <- AUC <- ReSpOnSe <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  event <- status0 <- NULL
+    bfold <- fold <- AUC <- riskRegression_event <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  riskRegression_event <- riskRegression_time <- riskRegression_status0 <- riskRegression_ID <- NULL
     if (response.type=="binary") {
         auc.loob <- data.table(expand.grid(times=0,model=mlevs)) #add times to auc.loob; now we can write less code for the same thing!
         times <- 0
@@ -72,7 +72,7 @@ crossvalPerf.loob.AUC <- function(times,
         if (response.type=="binary"){
             t <- 0
             ## the following indices have to be logical!!!
-            cases.index <- Response[,ReSpOnSe==1]
+            cases.index <- Response[,riskRegression_event==1]
             controls.index <- !cases.index
         }else{
             t <- times[s]
@@ -161,7 +161,6 @@ crossvalPerf.loob.AUC <- function(times,
                                                   muCase = muCase,
                                                   muControls = muControls, 
                                                   nu = nu1tauPm,
-                                                  # FIXME HERE
                                                   firsthit = first_hits[s],
                                                   cases = cases.index,
                                                   controls =controls.index,

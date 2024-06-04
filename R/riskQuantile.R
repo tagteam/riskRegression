@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Jun  4 2024 (07:21) 
+## last-updated: Jun  4 2024 (15:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 307
+##     Update #: 309
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,13 +24,13 @@ getQuantile <- function(x,Fx,Q){
 }
 
 riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
-    reference=model=ReSpOnSe=risk=cause=X=riskRegression_ID=NULL
+    reference=model=riskRegression_event=risk=cause=X=riskRegression_ID=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
     else Q <- sort(Q)
-    score.event <- DT[ReSpOnSe==1,data.table(t(quantile(risk,probs=Q))),by=list(model)]
+    score.event <- DT[riskRegression_event==1,data.table(t(quantile(risk,probs=Q))),by=list(model)]
     score.event[,cause:="event"]
-    score.eventfree <- DT[ReSpOnSe==0,data.table(t(quantile(risk,probs=Q))),by=list(model)]
+    score.eventfree <- DT[riskRegression_event==0,data.table(t(quantile(risk,probs=Q))),by=list(model)]
     score.eventfree[,cause:="event-free"]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model)]
     score.overall[,cause:="overall"]
@@ -48,9 +48,9 @@ riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
             N <- NROW(DTdiff)
             Xrange <- DTdiff[,range(X)]
             Xmed <- DTdiff[,median(X)]
-            changedist.event <- DTdiff[ReSpOnSe==1,data.table(t(quantile(X,probs=Q))),by=list(model)]
+            changedist.event <- DTdiff[riskRegression_event==1,data.table(t(quantile(X,probs=Q))),by=list(model)]
             changedist.event[,cause:="event"]
-            changedist.eventfree <- DTdiff[ReSpOnSe==0,data.table(t(quantile(X,probs=Q))),by=list(model)]
+            changedist.eventfree <- DTdiff[riskRegression_event==0,data.table(t(quantile(X,probs=Q))),by=list(model)]
             changedist.eventfree[,cause:="event-free"]
             changedist.overall <- DTdiff[,data.table(t(quantile(X,probs=Q))),by=list(model)]
             changedist.overall[,cause:="overall"]
@@ -105,7 +105,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     ##
     ## For 'event-free analyses' P(X<=x|T>t) is estimated by P(T>t|X<=x) P(X<=x)/P(T>t)
     #######
-    surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((time>times)/Wt))),by=times]
+    surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((riskRegression_time>times)/Wt))),by=times]
     surv[,cuminc:=1-surv]
     getQ.event <- function(Q,tp,X,time,status,WTi,surv){
         uX <- sort(unique(X[time<=tp & status==1]))
@@ -125,11 +125,11 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     }
     ## a <- DT[model==1]
     ## system.time(a[,getQ.eventFree(Q=Q,tp=times[1],X=risk,time=time,Wt=Wt,surv=surv)])
-    score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
+    score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=riskRegression_time,Wt=Wt,surv=surv),by=list(model,times)]
     ## setkey(DT,model,times)
     ## save(surv,file="~/tmp/surv.rda")
     ## save(DT,file="~/tmp/DT.rda")
-    score.event <- DT[,getQ.event(Q=Q,tp=times,X=risk,time=time,status=status,WTi=WTi,surv=surv),by=list(model,times)]
+    score.event <- DT[,getQ.event(Q=Q,tp=times,X=risk,time=riskRegression_time,status=riskRegression_status,WTi=WTi,surv=surv),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]
     colnames(score.overall) <- colnames(score.event)
@@ -147,8 +147,8 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
             N <- NROW(DTdiff)
             Xrange <- DTdiff[,range(X)]
             Xmed <- DTdiff[,median(X)]
-            changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-            changedist.event <- DTdiff[,getQ.event(Q=Q,tp=times,X=X,time=time,status=status,WTi=WTi,surv=surv),by=list(model,times)]
+            changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=riskRegression_time,Wt=Wt,surv=surv),by=list(model,times)]
+            changedist.event <- DTdiff[,getQ.event(Q=Q,tp=times,X=X,time=riskRegression_time,status=riskRegression_status,WTi=WTi,surv=surv),by=list(model,times)]
             changedist.overall <- DTdiff[,data.table(t(quantile(X,probs=Q))),by=list(model,times)]
             changedist.overall[,cause:="overall"]
             colnames(changedist.overall) <- colnames(changedist.event)
@@ -211,8 +211,8 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
     ##
     ## For 'event-free analyses' P(X<=x|T>t) is estimated by P(T>t|X<=x) P(X<=x)/P(T>t)
     #######
-    surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((time>times)/Wt))),by=times]
-    cuminc <- lapply(states.code,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
+    surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((riskRegression_time>times)/Wt))),by=times]
+    cuminc <- lapply(states.code,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((riskRegression_event==cc & riskRegression_time<=times)/WTi)),by=times]})
     names(cuminc) <- states
     getQ.states <- function(Q,tp,X,time,event,WTi,cuminc,states.code){
         uX <- sort(unique(X))
@@ -234,8 +234,8 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
         qR[,cause:="event-free"]
         qR
     }
-    score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-    score.states <- DT[,getQ.states(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,states.code=states.code),by=list(model,times)]
+    score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=riskRegression_time,Wt=Wt,surv=surv),by=list(model,times)]
+    score.states <- DT[,getQ.states(Q=Q,tp=times,X=risk,time=riskRegression_time,event=riskRegression_event,WTi=WTi,cuminc=cuminc,states.code=states.code),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]
     colnames(score.overall) <- colnames(score.states)
@@ -253,8 +253,8 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
             N <- NROW(DTdiff)
             Xrange <- DTdiff[,range(X)]
             Xmed <- DTdiff[,median(X)]
-            changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-            changedist.states <- DTdiff[,getQ.states(Q=Q,tp=times,X=X,time=time,event=event,WTi=WTi,cuminc=cuminc,states.code=states.code),by=list(model,times)]
+            changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=riskRegression_time,Wt=Wt,surv=surv),by=list(model,times)]
+            changedist.states <- DTdiff[,getQ.states(Q=Q,tp=times,X=X,time=riskRegression_time,event=riskRegression_event,WTi=WTi,cuminc=cuminc,states.code=states.code),by=list(model,times)]
             changedist.overall <- DTdiff[,data.table(t(quantile(X,probs=Q))),by=list(model,times)]
             changedist.overall[,cause:="overall"]
             colnames(changedist.overall) <- colnames(changedist.states)

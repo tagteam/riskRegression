@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:16) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (09:21) 
+## Last-Updated: Jun  4 2024 (15:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 9
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,25 +37,25 @@ crossvalPerf.loob.Brier <- function(times,
                                     conservative,
                                     cens.model,
                                     cause){
-    status <- residuals <- risk <- WTi <- event <- ReSpOnSe <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- status0 <- IBS <- NULL
+    riskRegression_status = riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- riskRegression_status0 <- IBS <- NULL
     ## sum across bootstrap samples where subject i is out of bag
     if (cens.type=="rightCensored"){
         if (response.type=="survival"){
             ## event of interest before times
-            DT.B[time<=times & status==1,residuals:=(1-risk)^2/WTi]
+            DT.B[riskRegression_time<=times & riskRegression_status==1,residuals:=(1-risk)^2/WTi]
         }
         else{ ## competing risks
             ## event of interest before times
-            DT.B[time<=times & status==1 & event==cause,residuals:=(1-risk)^2/WTi]
+            DT.B[riskRegression_time<=times & riskRegression_status==1 & riskRegression_event==cause,residuals:=(1-risk)^2/WTi]
             ## competing event before times
-            DT.B[time<=times & status==1 &event!=cause,residuals:=(0-risk)^2/WTi]
+            DT.B[riskRegression_time<=times & riskRegression_status==1 &riskRegression_event!=cause,residuals:=(0-risk)^2/WTi]
         }
         ## right censored before times
-        DT.B[time<=times & status==0,residuals:=0]
+        DT.B[riskRegression_time<=times & riskRegression_status==0,residuals:=0]
         ## no event at times
-        DT.B[time>times,residuals:=(risk)^2/Wt]
+        DT.B[riskRegression_time>times,residuals:=(risk)^2/Wt]
     }else{
-        DT.B[,residuals:=(ReSpOnSe-risk)^2]
+        DT.B[,residuals:=(riskRegression_event-risk)^2]
     }
     ## for each individual sum the residuals of the bootstraps where this individual is out-of-bag
     ## divide by number of times out-off-bag later
@@ -94,7 +94,7 @@ crossvalPerf.loob.Brier <- function(times,
         if (cens.type[1]=="rightCensored" && !conservative){
             # merge with
             ## FIXME HERE
-            rr_vars <- grep("^riskRegression_",names(testdata))
+            rr_vars <- grep("^riskRegression_",names(data))
             DT.B <- data[,rr_vars,with=FALSE][DT.B,,on="riskRegression_ID"]
             DT.B[,nth.times:=as.numeric(factor(times))]
             WW <- data.table(riskRegression_ID=1:N,WTi=Weights$IPCW.subject.times,key="riskRegression_ID")
@@ -123,20 +123,20 @@ crossvalPerf.loob.Brier <- function(times,
                 #amount of observations in the data, does not fulfill this.
                 #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now).
                 if (response.type == "survival"){
-                    DT.B[,status0:=status]
+                    DT.B[,riskRegression_status0:=riskRegression_status]
                 }
                 else {
-                    DT.B[,status0:=status*event]
+                    DT.B[,riskRegression_status0:=riskRegression_status*riskRegression_event]
                 }
                 DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                        time=time,
-                                                        IC0,
+                                                        time=riskRegression_time,
+                                                        IC0 = IC0,
                                                         residuals=residuals,
                                                         IC.G=Weights$IC,
                                                         cens.model=cens.model,
                                                         conservative = conservative,
                                                         nth.times=nth.times[1],
-                                                        event = status0),by=list(model,times)]
+                                                        event = riskRegression_status0),by=list(model,times)]
                 score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
                                                se=sd(IF.Brier)/sqrt(N)),by=byvars]
             }
@@ -230,8 +230,8 @@ crossvalPerf.loob.Brier <- function(times,
         DT.B[,model:=factor(model,levels=mlevs,mlabels)]
         if (all(c("Wt","WTi")%in%names(DT.B))){
             DT.B[,IPCW:=1/WTi]
-            DT.B[time>=times,IPCW:=1/Wt]
-            DT.B[time<times & status==0,IPCW:=0]
+            DT.B[riskRegression_time>=times,IPCW:=1/Wt]
+            DT.B[riskRegression_time<times & riskRegression_status==0,IPCW:=0]
             output <- c(output,list(residuals=DT.B[,c("riskRegression_ID",names(response),"model","times","risk","residuals","IPCW"),with=FALSE]))
         }else{
             output <- c(output,list(residuals=DT.B[,c("riskRegression_ID",names(response),"model","times","risk","residuals"),with=FALSE]))

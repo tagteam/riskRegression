@@ -28,7 +28,7 @@ getResponse <- function(formula,cause,data,vars){
                     }
                 }
                 ## coercing to 0/1 variable
-                response <- data.table(ReSpOnSe=as.numeric(response==cause))
+                response <- data.table(riskRegression_event=as.numeric(response==cause))
                 data.table::setattr(response,"states",c("0","1"))
                 data.table::setattr(response,"event","1")
                 data.table::setattr(response,"model","binary")
@@ -39,6 +39,7 @@ getResponse <- function(formula,cause,data,vars){
             }
         }
         else{
+            warning("Methods for continuous outcomes are either not\n (not yet) implemented or not well tested.")
             data.table::setattr(response,"model","continuous")
             attr(response,"event") <- NULL
         }

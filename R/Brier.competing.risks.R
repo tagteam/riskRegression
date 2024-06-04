@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  4 2024 (11:55) 
+## Last-Updated: Jun  4 2024 (19:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 8
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -56,7 +56,7 @@ Brier.competing.risks <- function(DT,
                                               cens.model=cens.model,
                                               conservative = conservative,
                                               nth.times=nth.times[1],
-                                              riskRegression_event = riskRegression_status*riskRegression_event),by=list(model,times)]
+                                              event = riskRegression_status*riskRegression_event),by=list(model,times)]
         score <- DT[,data.table(Brier=sum(residuals)/N,
                                 se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
         if (se.fit==TRUE){

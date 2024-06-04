@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  4 2024 (11:50) 
+## Last-Updated: Jun  4 2024 (14:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 8
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -31,7 +31,7 @@ Brier.survival <- function(DT,
                            keep.residuals=FALSE,
                            IC.data,
                            ...){
-    IC0=IPCW=nth.times=riskRegression_ID=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
+    IC0=IPCW=nth.times=riskRegression_ID = riskRegression_time = riskRegression_status=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     DT[riskRegression_time<=times & status==1,residuals:=(1-risk)^2/WTi]
     DT[riskRegression_time<=times & status==0,residuals:=0]

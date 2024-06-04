@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun  4 2024 (08:07) 
+## last-updated: Jun  4 2024 (15:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 397
+##     Update #: 398
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -202,7 +202,7 @@ plotCalibration <- function(x,
     pframe <- x$Calibration$plotframe
     if (is.null(pframe))
         stop("Object has no information for calibration plot.\nYou should call the function \"riskRegression::Score\" with plots=\"calibration\".")
-    Rvar <- grep("^(ReSpOnSe|pseudovalue)$",names(pframe),value=TRUE)
+    Rvar <- grep("^(riskRegression_event|pseudovalue)$",names(pframe),value=TRUE)
     if (!missing(models)){
         fitted.models <- pframe[,unique(model)]
         if (all(models%in%fitted.models)){

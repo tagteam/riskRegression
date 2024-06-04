@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (07:21) 
+## Last-Updated: Jun  4 2024 (15:24) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 16
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,6 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-
 AUC.binary <- function(DT,
                        breaks=NULL,
                        se.fit,
@@ -31,7 +30,7 @@ AUC.binary <- function(DT,
                        ROC,
                        cutpoints,
                        ...){
-    PPV=NPV=Prisks=Prisks2=model=risk=ReSpOnSe=FPR=TPR=riskRegression_ID=NULL
+    PPV=NPV=Prisks=Prisks2=model=risk=riskRegression_event=FPR=TPR=riskRegression_ID=NULL
     ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
     delongtest <-  function(risk,
                             score,
@@ -54,7 +53,6 @@ AUC.binary <- function(DT,
             #riskcontrols <- as.matrix(risk[Controls,])
             riskcontrols <- as.matrix(risk[!Cases,])
             riskcases <- as.matrix(risk[Cases,])
-
             # new method, uses a fast implementation of delongs covariance matrix
             # Fast Implementation of DeLong’s Algorithm for Comparing the Areas Under Correlated Receiver Operating Characteristic Curves
             # article can be found here:
@@ -124,7 +122,6 @@ AUC.binary <- function(DT,
         }
         out
     }
-
     auRoc.numeric <- function(X,D,breaks,ROC,cutpoints=NULL){
         if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
         TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==1))
@@ -162,10 +159,10 @@ AUC.binary <- function(DT,
         ROC <- TRUE
     }
     if (is.factor(DT[["risk"]])){
-        score <- aucDT[,auRoc.factor(risk,ReSpOnSe,ROC=ROC),by=list(model)]
+        score <- aucDT[,auRoc.factor(risk,riskRegression_event,ROC=ROC),by=list(model)]
     }
     else{
-        score <- aucDT[,auRoc.numeric(risk,ReSpOnSe,breaks=breaks,ROC=ROC,cutpoints=cutpoints),by=list(model)]
+        score <- aucDT[,auRoc.numeric(risk,riskRegression_event,breaks=breaks,ROC=ROC,cutpoints=cutpoints),by=list(model)]
     }
     if (ROC==FALSE){
         setnames(score,"V1","AUC")
@@ -184,20 +181,20 @@ AUC.binary <- function(DT,
             for (i in 1:length(cutpoints)){
                 temp.TPR <- subset(temp.TPR.ic,cutpoints==cutpoints[i])
                 aucDT.temp <- merge(aucDT,temp.TPR)
-                some.fun <- function(ReSpOnSe,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cut,N){
-                    meanY <- mean(ReSpOnSe)
+                some.fun <- function(riskRegression_event,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cut,N){
+                    meanY <- mean(riskRegression_event)
                     out <- list(TPR = TPR[1], 
-                                SE.TPR = sd(ReSpOnSe/meanY * ((risk > cut)-TPR))/sqrt(N), 
+                                SE.TPR = sd(riskRegression_event/meanY * ((risk > cut)-TPR))/sqrt(N), 
                                 FPR = FPR[1], 
-                                SE.FPR = sd((1-ReSpOnSe)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
+                                SE.FPR = sd((1-riskRegression_event)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
                                 PPV = PPV[1],
-                                SE.PPV = sd((risk > cut)/Prisks[1] * (ReSpOnSe - PPV))/sqrt(N),
+                                SE.PPV = sd((risk > cut)/Prisks[1] * (riskRegression_event - PPV))/sqrt(N),
                                 NPV = NPV[1], 
-                                SE.NPV = sd((risk <= cut)/Prisks2[1] * ((1-ReSpOnSe) - NPV))/sqrt(N), 
+                                SE.NPV = sd((risk <= cut)/Prisks2[1] * ((1-riskRegression_event) - NPV))/sqrt(N), 
                                 cutpoint = cut)
                     out
                 }
-                res.cut[[i]] <- aucDT.temp[,some.fun(ReSpOnSe,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cutpoints[i],N), by = list(model)]
+                res.cut[[i]] <- aucDT.temp[,some.fun(riskRegression_event,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cutpoints[i],N), by = list(model)]
             }
             output <- list(score=AUC,ROC=ROC, res.cut=do.call("rbind",res.cut))
         }
@@ -210,7 +207,7 @@ AUC.binary <- function(DT,
         delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
                                  dolist=dolist,
-                                 response=aucDT[model==model[1],ReSpOnSe],
+                                 response=aucDT[model==model[1],riskRegression_event],
                                  cause="1",
                                  alpha=alpha,
                                  multi.split.test=multi.split.test,
