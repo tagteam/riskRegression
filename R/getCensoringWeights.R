@@ -17,7 +17,7 @@ getCensoringWeights <- function(formula,
     }
     switch(cens.model,
            "marginal"={
-               sFormula <- update(formula,"Surv(time,status)~1")
+               sFormula <- update(formula,"Surv(riskRegression_time,riskRegression_status)~1")
                fit <- prodlim::prodlim(sFormula,data=data,reverse=TRUE,bandwidth="smooth")
                IPCW.times <- predict(fit,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
                IPCW.subject.times <- prodlim::predictSurvIndividual(fit,lag=1)
@@ -36,29 +36,24 @@ getCensoringWeights <- function(formula,
                out
            },"cox"={
                event = event2 = NULL
-               sFormula <- update(formula,"Surv(time,status == 0)~.")
-               tFormula <- update(formula,"Surv(time,status != 0)~.")
+               sFormula <- update(formula,"Surv(riskRegression_time,riskRegression_status == 0)~.")
+               tFormula <- update(formula,"Surv(riskRegression_time,riskRegression_status != 0)~.")
                wdata <- copy(data)
                if (length(unique(wdata[["event"]])) > 2){
                    wdata[,event2 := as.numeric(event)]
                    wdata[status == 0,event2 := 0]
-                   # FormulaCSC <- update(formula,"Hist(time,event2)~.")
-                   # suppressWarnings(fitCSC <- CSC(formula = FormulaCSC, data = wdata))
                    wdata[,event2 := NULL]
                }
                # else {
                #     fitCSC <- NULL
                # }
                # wdata[,status:=1-status]
-               Y <- data[["time"]]
+               Y <- data[["riskRegression_time"]]
                status <- data[["status"]]
                ## fit Cox model for censoring times
                args <- list(x=TRUE,y=TRUE,eps=0.000001,linear.predictors=TRUE)
                args$surv <- TRUE
                fit <- do.call(rms::cph,c(list(sFormula,data=wdata),args))
-               # fit.time <- do.call(rms::cph,c(list(tFormula,data=wdata),args))
-
-               ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
                if (length(times)==1){
                    IPCW.times <- matrix(rms::survest(fit,newdata=wdata,times=times,se.fit=FALSE)$surv,ncol=1)
                } else{
@@ -116,7 +111,7 @@ getCensoringWeights <- function(formula,
            {
                warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")
                vv <- all.vars(formula(delete.response(terms(formula))))
-               new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
+               new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_status)",paste0("~",paste0(paste(vv,collapse = "+")))))
                wdata <- copy(data)
                wdata[,status:=1-status]
                input <- list(formula=new.formula,data=wdata)
@@ -125,10 +120,10 @@ getCensoringWeights <- function(formula,
                message("done!")
                if (influence.curve){
                  if (is.null(data[["event"]])){
-                   new.formula<-as.formula(paste0("Surv(time,status==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
+                   new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_status==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
                  }
                  else {
-                   new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
+                   new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
                  }
                  input <- list(formula=new.formula,data=wdata)
                  message("Fitting time model to data ...", appendLF = FALSE)

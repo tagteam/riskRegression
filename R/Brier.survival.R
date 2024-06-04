@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  4 2024 (07:21) 
+## Last-Updated: Jun  4 2024 (11:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -43,14 +43,14 @@ Brier.survival <- function(DT,
         DT[,nth.times:=as.numeric(factor(times))]
         DT[,IC0:=residuals-mean(residuals),by=list(model,times)]
         DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                              time=time,
-                                              IC0,
+                                              time=riskRegression_time,
+                                              IC0 = IC0,
                                               residuals=residuals,
                                               IC.G=MC,
                                               cens.model=cens.model,
-                                              conservative = conservative,
                                               nth.times=nth.times[1],
-                                              event = status),by=list(model,times)]
+                                              conservative = conservative,
+                                              event = riskRegression_status),by=list(model,times)]
         score <- DT[,data.table(Brier=sum(residuals)/N,
                                 se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
@@ -97,11 +97,11 @@ Brier.survival <- function(DT,
     if (keep.residuals) {
         if (all(c("Wt","WTi")%in%names(DT))){
             DT[,IPCW:=1/WTi]
-            DT[time>=times,IPCW:=1/Wt]
-            DT[time<times & status==0,IPCW:=0]
-            output <- c(output,list(residuals=DT[,c("riskRegression_ID","time","status","model","times","risk","residuals","IPCW"),with=FALSE]))
+            DT[riskRegression_time>=times,IPCW:=1/Wt]
+            DT[riskRegression_time<times & riskRegression_status==0,IPCW:=0]
+            output <- c(output,list(residuals=DT[,c("riskRegression_ID","riskRegression_time","riskRegression_status","model","times","risk","residuals","IPCW"),with=FALSE]))
         }else{
-            output <- c(output,list(residuals=DT[,c("riskRegression_ID","time","status","model","times","risk","residuals"),with=FALSE]))
+            output <- c(output,list(residuals=DT[,c("riskRegression_ID","riskRegression_time","riskRegression_status","model","times","risk","residuals"),with=FALSE]))
         }
     }
     output

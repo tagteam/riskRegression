@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: Jun  4 2024 (07:22) 
+## Last-Updated: Jun  4 2024 (11:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 20
+##     Update #: 21
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -45,13 +45,10 @@ computePerformance <- function(DT,
                                IC.data,
                                breaks=NULL,
                                cutpoints=NULL){
-    IPA=IBS=Brier=NULL
-    model = reference = NULL
-    ## ibs <- "ibs"%in%summary
-    ## ipa <- "ipa"%in%summary
+    # {{{ input
+    IPA=IBS=Brier= model = reference = NULL
     # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
-    out <- vector(mode="list",
-                  length=length(c(summary,metrics,plots)))
+    out <- vector(mode="list",length=length(c(summary,metrics,plots)))
     names(out) <- c(summary,metrics,plots)
     input <- list(DT=DT,
                   N=N,
@@ -65,11 +62,11 @@ computePerformance <- function(DT,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
                   keep.iid=keep.iid,                  
-                  ## DT.residuals=DT.residuals,
                   dolist=dolist,Q=probs,ROC=FALSE,MC=MC,IC.data=IC.data,breaks=breaks,cutpoints=cutpoints) ## will break survival
     if (response.type=="competing.risks") {
         input <- c(input,list(cause=cause,states=states))
     }
+    # }}}
     # {{{ collect data for summary statistics
     for (s in summary){
         if (s=="risks") {
@@ -98,6 +95,7 @@ computePerformance <- function(DT,
     }
     # }}}
     ## make sure that Brier score comes first, so that we can remove the null.model afterwards
+    # {{{ calculating the other metrics
     for (m in sort(metrics,decreasing=TRUE)){
         if (m=="AUC" && ("ROC" %in% plots)){
             input <- replace(input, "ROC",TRUE)
@@ -154,6 +152,7 @@ computePerformance <- function(DT,
         else
             out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
     }
+    # }}}
     out[]
 }
 
