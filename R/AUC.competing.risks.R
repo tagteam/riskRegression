@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun  4 2024 (11:56) 
+## Last-Updated: Jun  4 2024 (14:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 29
+##     Update #: 36
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -62,11 +62,27 @@ AUC.competing.risks <- function(DT,
     if (!is.null(cutpoints)){
         breaks <- sort(cutpoints,decreasing = TRUE)
         aucDT[,nth.times:=as.numeric(factor(times))]
-        cutpoint.helper.fun <- function(FPR,TPR,risk,ipcwCases,ipcwControls1,ipcwControls2, N, riskRegression_time,times,riskRegression_event,cens.model,nth.times,conservative, IC.G, cutpoints,se.fit){
+        cutpoint.helper.fun <- function(FPR,
+                                        TPR,
+                                        risk,
+                                        ipcwCases,
+                                        ipcwControls1,
+                                        ipcwControls2,
+                                        N,
+                                        riskRegression_time,
+                                        times,
+                                        riskRegression_event,
+                                        cens.model,
+                                        nth.times,
+                                        conservative,
+                                        IC.G,
+                                        cutpoints,
+                                        se.fit){
             den_TPR<-sum(ipcwCases) ## estimate the cumulative incidence via IPCW
             den_FPR<-sum(ipcwControls1+ipcwControls2)
             indeces <- sindex(risk,cutpoints,comp = "greater",TRUE)
             res <- list()
+            # FIXME
             ordered <- order(riskRegression_time) ## can probably move this outside to improve computation time, for now keep it
             for (i in 1:length(cutpoints)){
                 den_PPV <- sum(ipcwCases[risk > cutpoints[i]]+ipcwControls1[risk > cutpoints[i]] + ipcwControls2[risk > cutpoints[i]])
@@ -77,8 +93,24 @@ AUC.competing.risks <- function(DT,
                     if (se.fit){
                         IC0.TPR <- ipcwCases*N*((risk > cutpoints[i])-TPRi)/den_TPR
                         IC0.FPR <- (ipcwControls1+ipcwControls2)*N*((risk > cutpoints[i])-FPRi)/(1-den_TPR)
-                        SE.TPR <- sd(getInfluenceCurve.Brier(times,riskRegression_time[ordered],IC0.TPR[ordered],IC0.TPR[ordered],IC.G,cens.model,nth.times,conservative,riskRegression_event[ordered]))/sqrt(N)
-                        SE.FPR <- sd(getInfluenceCurve.Brier(times,riskRegression_time[ordered],IC0.FPR[ordered],IC0.FPR[ordered],IC.G,cens.model,nth.times,conservative,riskRegression_event[ordered]))/sqrt(N)
+                        SE.TPR <- sd(getInfluenceCurve.Brier(t = times,
+                                                             time = riskRegression_time[ordered],
+                                                             IC0 = IC0.TPR[ordered],
+                                                             residuals = IC0.TPR[ordered],
+                                                             IC.G = IC.G,
+                                                             cens.model = cens.model,
+                                                             nth.times = nth.times,
+                                                             conservative = conservative,
+                                                             event = riskRegression_event[ordered]))/sqrt(N)
+                        SE.FPR <- sd(getInfluenceCurve.Brier(t = times,
+                                                             time = riskRegression_time[ordered],
+                                                             IC0 = IC0.FPR[ordered],
+                                                             residuals = IC0.FPR[ordered],
+                                                             IC.G = IC.G,
+                                                             cens.model = cens.model,
+                                                             nth.times = nth.times,
+                                                             conservative = conservative,
+                                                             event = riskRegression_event[ordered]))/sqrt(N)
                     }
                     else {
                         SE.TPR <- SE.FPR <- NA
@@ -92,16 +124,19 @@ AUC.competing.risks <- function(DT,
                     PPV <- (TPRi*den_TPR)/den_PPV
                     if (se.fit){
                         IC0.PPV <- (risk > cutpoints[i])/den_PPV*(((ipcwCases+ipcwControls2)*N)*(1*(riskRegression_event==1)-1*(riskRegression_event!=0)*PPV)-ipcwControls1*N*PPV) #OBS, check other causes, paul's implementation
-                        SE.PPV <- sd(getInfluenceCurve.Brier(times,riskRegression_time[ordered],IC0.PPV[ordered],IC0.PPV[ordered],IC.G,cens.model,nth.times,conservative,riskRegression_event[ordered]))/sqrt(N)
+                        SE.PPV <- sd(getInfluenceCurve.Brier(t = times,
+                                                             time = riskRegression_time[ordered],
+                                                             IC0 = IC0.PPV[ordered],
+                                                             residuals = IC0.PPV[ordered],
+                                                             IC.G = IC.G,
+                                                             cens.model = cens.model,
+                                                             nth.times = nth.times,
+                                                             conservative = conservative,
+                                                             event = riskRegression_event[ordered]))/sqrt(N)
                     }
                     else {
                         SE.PPV <- NA
                     }
-                    ## Alternative implementation
-                    # IC0.PPV <- (risk > cutpoints[i])/den_PPV*(ipcwCases*N - PPV)
-                    # weights.PPV <- ((risk > cutpoints[i])/(den_PPV))*((1-PPV)*ipcwCases*N - PPV*(N*ipcwControls1+N*ipcwControls2)) #include censoring from denominator
-                    # weights.PPV <- ((risk > cutpoints[i])/(den_PPV))*(ipcwCases*N) #exclude censoring from denominator
-                    # SE.PPV <- sd(getInfluenceCurve.Brier(times,riskRegression_time[ordered],IC0.PPV[ordered],weights.PPV[ordered],IC.G,cens.model,nth.times,conservative,riskRegression_event[ordered]))/sqrt(N)
                 }
                 else {
                     PPV <- NA
@@ -110,25 +145,51 @@ AUC.competing.risks <- function(DT,
                     NPV <- ((1-FPRi)*den_FPR)/den_NPV
                     if (se.fit){
                         IC0.NPV <- (risk <= cutpoints[i])/den_NPV*(((ipcwCases+ipcwControls2)*N)*(1*(riskRegression_event!=1 & riskRegression_event!=0)-1*(riskRegression_event!=0)*NPV)+ipcwControls1*N*(1-NPV)) #OBS, check other causes, paul's implementation
-                        SE.NPV <- sd(getInfluenceCurve.Brier(times,riskRegression_time[ordered],IC0.NPV[ordered],IC0.NPV[ordered],IC.G,cens.model,nth.times,conservative,riskRegression_event[ordered]))/sqrt(N)
+                        SE.NPV <- sd(getInfluenceCurve.Brier(t = times,
+                                                             time = riskRegression_time[ordered],
+                                                             IC0 = IC0.NPV[ordered],
+                                                             residuals = IC0.NPV[ordered],
+                                                             IC.G = IC.G,
+                                                             cens.model = cens.model,
+                                                             nth.times = nth.times,
+                                                             conservative = conservative,
+                                                             event = riskRegression_event[ordered]))/sqrt(N)
                     }
                     else {
                         SE.NPV <- NA
                     }
-                    
-                    ## Alternative implementation
-                    # IC0.NPV <- (risk <= cutpoints[i])/den_NPV*((ipcwControls1+ipcwControls2)*N - NPV)
-                    # weights.NPV <- ((risk <= cutpoints[i])/(den_NPV))*((ipcwControls1+ipcwControls2)*N)
-                    # SE.NPV <- sd(getInfluenceCurve.Brier(times,riskRegression_time[ordered],IC0.NPV[ordered],weights.NPV[ordered],IC.G,cens.model,nth.times,conservative,riskRegression_event[ordered]))/sqrt(N)
                 }
                 else {
                     NPV <- NA
                 }
-                res[[i]] <- data.table(risk = cutpoints[i], TPR=TPRi, SE.TPR=SE.TPR,FPR=FPRi, SE.FPR=SE.FPR,PPV=PPV,SE.PPV=SE.PPV,NPV=NPV,SE.NPV=SE.NPV)
+                res[[i]] <- data.table(risk = cutpoints[i],
+                                       TPR=TPRi,
+                                       SE.TPR=SE.TPR,
+                                       FPR=FPRi,
+                                       SE.FPR=SE.FPR,
+                                       PPV=PPV,
+                                       SE.PPV=SE.PPV,
+                                       NPV=NPV,
+                                       SE.NPV=SE.NPV)
             }
             do.call("rbind",res)
         }
-        output <- list(res.cut=aucDT[, cutpoint.helper.fun(FPR,TPR,risk,ipcwCases,ipcwControls1,ipcwControls2, N, riskRegression_time,times[1],riskRegression_status*riskRegression_event,cens.model,nth.times[1],conservative, MC, cutpoints,se.fit),by=list(model,times)])
+        output <- list(res.cut=aucDT[, cutpoint.helper.fun(FPR = FPR,
+                                                           TPR = TPR,
+                                                           risk = risk,
+                                                           ipcwCases = ipcwCases,
+                                                           ipcwControls1 = ipcwControls1,
+                                                           ipcwControls2 = ipcwControls2,
+                                                           N = N,
+                                                           riskRegression_time = riskRegression_time,
+                                                           times = times[1],
+                                                           riskRegression_event = riskRegression_status*riskRegression_event,
+                                                           cens.model = cens.model,
+                                                           nth.times = nth.times[1],
+                                                           conservative = conservative,
+                                                           IC.G = MC,
+                                                           cutpoints = cutpoints,
+                                                           se.fit = se.fit),by=list(model,times)])
     }
     else if (ROC) {
         if (is.null(breaks)){

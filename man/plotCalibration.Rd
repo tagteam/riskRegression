@@ -10,7 +10,7 @@ plotCalibration(
   times,
   method = "nne",
   cens.method,
-  round = TRUE,
+  round = 2,
   bandwidth = NULL,
   q = 10,
   bars = FALSE,

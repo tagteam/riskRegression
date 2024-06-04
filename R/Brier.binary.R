@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:03) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (07:21) 
+## Last-Updated: Jun  4 2024 (15:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,8 @@ Brier.binary <- function(DT,
                          dolist,
                          keep.residuals=FALSE,
                          ...){
-    residuals=Brier=risk=model=ReSpOnSe=lower=upper=se=riskRegression_ID=IF.Brier=NULL
-    DT[,residuals:=(ReSpOnSe-risk)^2]
+    residuals=Brier=risk=model=riskRegression_event=lower=upper=se=riskRegression_ID=IF.Brier=NULL
+    DT[,residuals:=(riskRegression_event-risk)^2]
     if (se.fit==1L){
         data.table::setkey(DT,model,riskRegression_ID)
         score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=list(model)]
@@ -86,7 +86,7 @@ Brier.binary <- function(DT,
                     list(iid.decomp = DT[,data.table::data.table(riskRegression_ID,model,IF.Brier)]))
     }
     if (keep.residuals[[1]] == TRUE) {
-        output <- c(output,list(residuals=DT[,data.table::data.table(riskRegression_ID,ReSpOnSe,model,risk,residuals)]))
+        output <- c(output,list(residuals=DT[,data.table::data.table(riskRegression_ID,riskRegression_event,model,risk,residuals)]))
     }
     output
 }
