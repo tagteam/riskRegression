@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Dec 19 2023 (14:13) 
+## last-updated: Jun  4 2024 (08:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 392
+##     Update #: 397
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -135,7 +135,7 @@ plotCalibration <- function(x,
                             times,
                             method="nne",
                             cens.method,
-                            round=TRUE,
+                            round=2,
                             bandwidth=NULL,
                             q=10,
                             bars=FALSE,
@@ -428,11 +428,11 @@ plotCalibration <- function(x,
                    ## to avoid memory explosion ...
                    ## a difference in the 3 digit should
                    ## not play a role for the single subject.
-                   if (round==TRUE){
+                   if (as.numeric(round)>0){
                        if (!is.null(bandwidth) && bandwidth[1]>=1){
                            ## message("No need to round predicted probabilities to calculate calibration in the large")
                        } else{
-                           p <- round(p,2)
+                           p <- round(p,round)
                        }
                    }
                    p <- na.omit(p)
@@ -460,7 +460,7 @@ plotCalibration <- function(x,
                                ## plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                ## Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                            }else{
-                               ## local Kaplan-Meier/Aalen-Johansen 
+                               ## local Kaplan-Meier/Aalen-Johansen
                                if (cens.method=="local"){
                                    if(x$response.type=="survival"){
                                        censcode <- pframe[status==0,status[1]]

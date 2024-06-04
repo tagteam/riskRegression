@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (07:20) 
+## Last-Updated: Jun  4 2024 (09:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 48
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,7 +19,6 @@ getPerformanceData <- function(testdata,
                                traindata=NULL,
                                trainseed=NULL,
                                response.type,
-                               response.dim,
                                neworder,
                                debug,
                                times,
@@ -38,12 +37,10 @@ getPerformanceData <- function(testdata,
     looping <- length(traindata)>0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
-    response <- testdata[,1:response.dim,with=FALSE]
-    response[,riskRegression_ID:=testdata[["riskRegression_ID"]]]
+    rr_vars <- grep("^riskRegression_",names(testdata))
+    response <- testdata[,rr_vars,with=FALSE]
     setkey(response,riskRegression_ID)
-    X <- testdata[,-c(1:response.dim),with=FALSE]
-    ## restore sanity
-    setnames(X,sub("^protectedName.","",names(X)))
+    X <- testdata[,-rr_vars,with=FALSE]
     if (debug) message("\nExtracted test set and prepared output object")
     # }}}
     # {{{ collect pred as long format data.table
@@ -55,11 +52,8 @@ getPerformanceData <- function(testdata,
     ## where status has 0,1,2 but now event history response has status=0,1
     ## the original response is still there
     if(!is.null(traindata)){
-        trainX <- traindata[,-c(1:response.dim),with=FALSE]
-        ## restore sanity
-        setnames(trainX,sub("^protectedName.","",names(trainX)))
-        ## trainX <- copy(traindata)
-        trainX[,riskRegression_ID:=NULL]
+        rr_vars <- grep("^riskRegression_",names(testdata))
+        trainX <- traindata[,-rr_vars,with=FALSE]
     }
     pred <- data.table::rbindlist(lapply(levs, function(f){
         ## add object specific arguments to predictRisk methods
