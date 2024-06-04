@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun 30 2023 (16:09) 
+## Last-Updated: Jun  4 2024 (07:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 13
+##     Update #: 14
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -33,7 +33,7 @@ AUC.survival <- function(DT,
                          IC.data,
                          cutpoints,
                          ...){
-    ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
+    riskRegression_ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     cause <- 1
     aucDT <- DT[model>0]
     ## remove null model comparisons
@@ -143,7 +143,7 @@ AUC.survival <- function(DT,
         aucDT[,nth.times:=as.numeric(factor(times))]
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
-        data.table::setorder(aucDT,model,times,ID)
+        data.table::setorder(aucDT,model,times,riskRegression_ID)
         aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],
                                              time,
                                              status,
@@ -172,7 +172,7 @@ AUC.survival <- function(DT,
         }
         if (keep.iid[[1]] == TRUE && se.fit[[1]] == TRUE) {
             output <- c(output,
-                        list(iid.decomp = aucDT[,data.table::data.table(ID,model,times,IF.AUC)]))
+                        list(iid.decomp = aucDT[,data.table::data.table(riskRegression_ID,model,times,IF.AUC)]))
         }
         
     }

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Jun 30 2023 (11:26) 
+## Last-Updated: Jun  4 2024 (07:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,7 @@ AUC.binary <- function(DT,
                        ROC,
                        cutpoints,
                        ...){
-    PPV=NPV=Prisks=Prisks2=model=risk=ReSpOnSe=FPR=TPR=ID=NULL
+    PPV=NPV=Prisks=Prisks2=model=risk=ReSpOnSe=FPR=TPR=riskRegression_ID=NULL
     ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
     delongtest <-  function(risk,
                             score,
@@ -157,7 +157,7 @@ AUC.binary <- function(DT,
     
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
-    data.table::setkey(aucDT,model,ID)
+    data.table::setkey(aucDT,model,riskRegression_ID)
     if (!is.null(cutpoints)){
         ROC <- TRUE
     }
@@ -206,7 +206,7 @@ AUC.binary <- function(DT,
         }
     }
     if (length(dolist)>0 || (se.fit[[1]]==1L)){
-        xRisk <- data.table::dcast(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
+        xRisk <- data.table::dcast(aucDT[],riskRegression_ID~model,value.var="risk")[,-1,with=FALSE]
         delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
                                  dolist=dolist,

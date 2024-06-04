@@ -521,7 +521,7 @@ Score.list <- function(object,
                        roc.grid=switch(roc.method,"vertical"=seq(0,1,.01),"horizontal"=seq(1,0,-.01)),
                        cutpoints = NULL,
                        ...){
-    se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
+    se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
     # }}}
     theCall <- match.call()
@@ -671,10 +671,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         N <- as.numeric(NROW(data))
         neworder <- 1:N
     }
-    ## add ID variable for merging purposes and because output has long format
-    ## if data.table data contains a variable N the code data[,ID:=1:N] does not
+    ## add riskRegression_ID variable for merging purposes and because output has long format
+    ## if data.table data contains a variable N the code data[,riskRegression_ID:=1:N] does not
     ## work hence we do it like this
-    data[["ID"]]=1:N
+    data[["riskRegression_ID"]]=1:N
     if (response.type=="survival")
         formula <- stats::update(formula,"prodlim::Hist(time,status)~.")
     if (response.type=="competing.risks")
@@ -938,7 +938,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                 }
                 margFit <- prodlim::prodlim(margForm,data=data)
                 ## position.cause is the result of match(cause, states)
-                jack <- data.table(ID=data[["ID"]],
+                jack <- data.table(riskRegression_ID=data[["riskRegression_ID"]],
                                    times=rep(times,rep(N,NT)),
                                    pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
                 if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
@@ -1098,7 +1098,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
             traindata=data[split.method$index(b)]
-            ## setkey(traindata,ID)
+            ## setkey(traindata,riskRegression_ID)
             testids <- (match(1:N,unique(split.method$index(b)),nomatch=0)==0)
             ## NOTE: subset.data.table preserves order
             testdata <- subset(data,testids)
@@ -1169,10 +1169,10 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     ## cb
     if (debug) message("setup data for cross-validation performance")
     Response <- data[,c(1:response.dim),with=FALSE]
-    Response[,ID:=data[["ID"]]]
+    Response[,riskRegression_ID:=data[["riskRegression_ID"]]]
     Response.names <- names(Response)
-    Response.names <- Response.names[Response.names!="ID"]
-    setkey(Response,ID)
+    Response.names <- Response.names[Response.names!="riskRegression_ID"]
+    setkey(Response,riskRegression_ID)
     ## ## Show format for the data in DT.B
     ## cat(paste("\nDT.B for method:", split.method$name, "\n"))
     ## print(DT.B)
@@ -1242,7 +1242,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                                                     conservative,
                                                                     cens.model,
                                                                     response.dim,
-                                                                    ID,
+                                                                    riskRegression_ID,
                                                                     cause)})
       names(crossvalPerf) <- metrics
       ## copy paste from bootcv; same method to calculate ROC
@@ -1256,7 +1256,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         }
         crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
           DT.b <- DT.B[b==j]
-          N.b <- length(unique(DT.b[["ID"]]))
+          N.b <- length(unique(DT.b[["riskRegression_ID"]]))
           if(!is.null(progress.bar)){
             setTxtProgressBar(pb1, j)
           }
@@ -1351,7 +1351,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         }
         crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             DT.b <- DT.B[b==j]
-            N.b <- length(unique(DT.b[["ID"]]))
+            N.b <- length(unique(DT.b[["riskRegression_ID"]]))
             if(!is.null(progress.bar)){
                 setTxtProgressBar(pb1, j)
             }
@@ -1452,9 +1452,9 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             c(.SD[1,Response.names,with=FALSE],
               list(risk=mean(risk),
                    sd.risk=sd(risk),
-                   oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"ID")]
+                   oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"riskRegression_ID")]
         crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-        setcolorder(crossvalPerf[["risks"]]$score,c("ID",byvars,Response.names,"risk","sd.risk"))
+        setcolorder(crossvalPerf[["risks"]]$score,c("riskRegression_ID",byvars,Response.names,"risk","sd.risk"))
     }
     # }}}
     # {{{ collect data for calibration plots
@@ -1466,15 +1466,15 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             crossvalPerf[["Calibration"]]$plotframe <- DT.B[model!=0,{
                 c(.SD[1,Response.names,with=FALSE],
                   list(risk=mean(risk),
-                       oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"ID")]
-            setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID",byvars,Response.names,"risk"))
+                       oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"riskRegression_ID")]
+            setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("riskRegression_ID",byvars,Response.names,"risk"))
         }
         crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         if (keep.residuals[[1]]==FALSE && split.method$name[[1]]=="LeaveOneOutBoot"){
             crossvalPerf$Brier$Residuals <- NULL
         }
         if (cens.type=="rightCensored")
-            crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
+            crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("riskRegression_ID","times"))
     }
     # }}}
 }

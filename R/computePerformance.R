@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: Jun 30 2023 (13:50) 
+## Last-Updated: Jun  4 2024 (07:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 20
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -92,7 +92,7 @@ computePerformance <- function(DT,
         if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
             out[["Calibration"]]$plotframe <- DT[model!=0]
         else{
-            out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("ID","times"))
+            out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("riskRegression_ID","times"))
         }
         out[["Calibration"]]$plotframe[,model:=factor(model,levels=models$levels,labels=models$labels)]
     }

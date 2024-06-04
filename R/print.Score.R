@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Feb  6 2023 (15:49) 
+## last-updated: Jun  4 2024 (07:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 68
+##     Update #: 69
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -136,9 +136,9 @@ print.scorerisks <- function(x,B,digits=3,response.type,...){
         data.table::setkeyv(x$score,c("times","risk"))
     print(x$score,digits=digits)
     if ("times"%in%names(x$score))
-        print(data.table::dcast(x$score,times+ID~model,value.var="risk"))
+        print(data.table::dcast(x$score,times+riskRegression_ID~model,value.var="risk"))
     else
-        print(data.table::dcast(x$score,ID~model,value.var="risk"))
+        print(data.table::dcast(x$score,riskRegression_ID~model,value.var="risk"))
 }
 
 
