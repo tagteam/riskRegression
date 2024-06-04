@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun  4 2024 (11:44) 
+## Last-Updated: Jun  4 2024 (11:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 15
+##     Update #: 16
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -33,7 +33,7 @@ AUC.survival <- function(DT,
                          IC.data,
                          cutpoints,
                          ...){
-    riskRegression_ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
+    riskRegression_ID=model=times=risk=Cases=riskRegression_time=riskRegression_status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     cause <- 1
     aucDT <- DT[model>0]
     ## remove null model comparisons

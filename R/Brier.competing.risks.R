@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  4 2024 (07:21) 
+## Last-Updated: Jun  4 2024 (11:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 7
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -33,30 +33,30 @@ Brier.competing.risks <- function(DT,
                                   states,
                                   IC.data,
                                   ...){
-    IC0=nth.times=riskRegression_ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
+    IC0=nth.times=riskRegression_ID=riskRegression_time=times=riskRegression_event=Brier=raw.Residuals=risk=residuals=WTi=Wt=riskRegression_status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     thecause <- match(cause,states,nomatch=0)
     if (length(thecause)==0) stop("Cannot identify cause of interest")
-    DT[time<=times & status==1 & event==thecause,residuals:=(1-risk)^2/WTi]
-    DT[time<=times & status==1 & event!=thecause,residuals:=(risk)^2/WTi]
-    DT[time<=times & status==0,residuals:=0]
-    DT[time>times,residuals:=(risk)^2/Wt]
+    DT[riskRegression_time<=times & riskRegression_status==1 & riskRegression_event==thecause,residuals:=(1-risk)^2/WTi]
+    DT[riskRegression_time<=times & riskRegression_status==1 & riskRegression_event!=thecause,residuals:=(risk)^2/WTi]
+    DT[riskRegression_time<=times & riskRegression_status==0,residuals:=0]
+    DT[riskRegression_time>times,residuals:=(risk)^2/Wt]
     ## deal with censored observations before 
-    DT[time<=times & status==0,residuals:=0]
+    DT[riskRegression_time<=times & riskRegression_status==0,residuals:=0]
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
-        ## data.table::setorder(DT,model,times,time,-status)
+        ## data.table::setorder(DT,model,times,riskRegression_time,-riskRegression_status)
         data.table::setorder(DT,model,times,riskRegression_ID)
         DT[,nth.times:=as.numeric(factor(times))]
         DT[,IC0:=residuals-mean(residuals),by=list(model,times)]
         DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                              time=time,
+                                              time=riskRegression_time,
                                               IC0,
                                               residuals=residuals,
                                               IC.G=MC,
                                               cens.model=cens.model,
                                               conservative = conservative,
                                               nth.times=nth.times[1],
-                                              event = status*event),by=list(model,times)]
+                                              riskRegression_event = riskRegression_status*riskRegression_event),by=list(model,times)]
         score <- DT[,data.table(Brier=sum(residuals)/N,
                                 se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
         if (se.fit==TRUE){
@@ -96,7 +96,7 @@ Brier.competing.risks <- function(DT,
         output <- list(score=score)
     }
     if (keep.residuals) {
-        output <- c(output,list(residuals=DT[,c("riskRegression_ID","time","status","model","times","risk","residuals"),with=FALSE]))
+        output <- c(output,list(residuals=DT[,c("riskRegression_ID","riskRegression_time","riskRegression_status","model","times","risk","residuals"),with=FALSE]))
     }
     if (keep.vcov[[1]] && se.fit[[1]]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
