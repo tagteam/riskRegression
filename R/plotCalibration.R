@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun  4 2024 (15:08) 
+## last-updated: Jun  4 2024 (19:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 398
+##     Update #: 399
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -401,7 +401,7 @@ plotCalibration <- function(x,
                    }else{
                        if(x$response.type=="survival"){
                            censcode <- pframe[status==0,status[1]]
-                           qfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~pcut,data=pframe)
+                           qfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_status,cens.code=censcode)~pcut,data=pframe)
                            plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                                 Obs=predict(qfit,
                                                             newdata=data.frame(pcut=levels(pcut)),
@@ -410,7 +410,7 @@ plotCalibration <- function(x,
                                                             times=tp,type="cuminc"))
                        }else{
                            censcode <- pframe[status==0,event[1]]
-                           qfit <- prodlim::prodlim(prodlim::Hist(time,event,cens.code=censcode)~pcut,data=pframe)
+                           qfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_event,cens.code=censcode)~pcut,data=pframe)
                            n.cause <- match(x$cause,x$states)
                            plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                                 Obs=predict(qfit,
@@ -464,7 +464,7 @@ plotCalibration <- function(x,
                                if (cens.method=="local"){
                                    if(x$response.type=="survival"){
                                        censcode <- pframe[status==0,status[1]]
-                                       pfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       pfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_status,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
                                        plotFrame=data.frame(Pred=sort(unique(p)),
                                                             Obs=predict(pfit,
                                                                         newdata=data.frame(p=sort(unique(p))),
@@ -474,7 +474,7 @@ plotCalibration <- function(x,
                                    }else{
                                        censcode <- pframe[status==0,event[1]]
                                        ## pframe[,Event:=factor(event,levels=1:(length(x$states)+1),labels=c(x$states,censcode))]
-                                       pfit <- prodlim::prodlim(prodlim::Hist(time,event,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       pfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_event,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
                                        n.cause <- match(x$cause,x$states)
                                        plotFrame=data.frame(Pred=sort(unique(p)),
                                                             Obs=predict(pfit,
