@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Dec  9 2023 (09:28) 
+## Last-Updated: Jun  4 2024 (07:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 240
+##     Update #: 241
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -194,9 +194,9 @@ plotRisk <- function(x,
     if (missing(xlab)) xlab <- paste0("Risk (%, ",modelnames[1],")")
     if (missing(ylab)) ylab <- paste0("Risk (%, ",modelnames[2],")")
     if (x$response.type=="binary"){
-        ppframe <- data.table::dcast(pframe,ID~model,value.var="risk")
+        ppframe <- data.table::dcast(pframe,riskRegression_ID~model,value.var="risk")
     }else{
-        ppframe <- data.table::dcast(pframe,times+ID~model,value.var="risk")
+        ppframe <- data.table::dcast(pframe,times+riskRegression_ID~model,value.var="risk")
     }
     pred.m1 <- ppframe[[m1]]
     pred.m2 <- ppframe[[m2]]

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun 30 2023 (16:09) 
+## Last-Updated: Jun  4 2024 (07:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 26
+##     Update #: 27
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -35,7 +35,7 @@ AUC.competing.risks <- function(DT,
                                 IC.data,
                                 cutpoints,
                                 ...){
-    ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
+    riskRegression_ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     ## assign Weights before ordering
@@ -157,7 +157,7 @@ AUC.competing.risks <- function(DT,
         
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
-        data.table::setorder(aucDT,model,times,ID)
+        data.table::setorder(aucDT,model,times,riskRegression_ID)
         aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],time,status*event, WTi, Wt, risk, MC, AUC[1],nth.times[1], conservative[[1]], cens.model), by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
@@ -175,7 +175,7 @@ AUC.competing.risks <- function(DT,
         }
         if (keep.iid[[1]] == TRUE && se.fit[[1]] == TRUE) {
             output <- c(output,
-                        list(iid.decomp = aucDT[,data.table::data.table(ID,model,cause,times,IF.AUC)]))
+                        list(iid.decomp = aucDT[,data.table::data.table(riskRegression_ID,model,cause,times,IF.AUC)]))
         }
     }
     ## add score to object

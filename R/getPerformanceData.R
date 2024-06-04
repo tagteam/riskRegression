@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Jan 26 2024 (06:33) 
+## Last-Updated: Jun  4 2024 (07:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 42
+##     Update #: 43
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,15 +32,15 @@ getPerformanceData <- function(testdata,
                                object,
                                object.classes,
                                NT){
-    ID=model = risk = NULL
+    riskRegression_ID=model = risk = NULL
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
     looping <- length(traindata)>0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
     response <- testdata[,1:response.dim,with=FALSE]
-    response[,ID:=testdata[["ID"]]]
-    setkey(response,ID)
+    response[,riskRegression_ID:=testdata[["riskRegression_ID"]]]
+    setkey(response,riskRegression_ID)
     X <- testdata[,-c(1:response.dim),with=FALSE]
     ## restore sanity
     setnames(X,sub("^protectedName.","",names(X)))
@@ -59,7 +59,7 @@ getPerformanceData <- function(testdata,
         ## restore sanity
         setnames(trainX,sub("^protectedName.","",names(trainX)))
         ## trainX <- copy(traindata)
-        trainX[,ID:=NULL]
+        trainX[,riskRegression_ID:=NULL]
     }
     pred <- data.table::rbindlist(lapply(levs, function(f){
         ## add object specific arguments to predictRisk methods
@@ -68,7 +68,7 @@ getPerformanceData <- function(testdata,
         }
         ## predictions given as numeric values
         if (f[1]!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
-            ## sort predictions by ID
+            ## sort predictions by riskRegression_ID
             if (!is.null(dim(object[[f]]))) {## input matrix
                 if (response.type=="binary"){
                     p <- do.call("predictRisk", c(list(object=c(object[[f]])),args))[neworder]
@@ -107,12 +107,12 @@ getPerformanceData <- function(testdata,
             }
         }
         if (response.type%in%c("survival","competing.risks")){
-            out <- data.table(ID=testdata[["ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
-            setkey(out,model,times,ID)
+            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
+            setkey(out,model,times,riskRegression_ID)
             out
         } else {
-            out <- data.table(ID=testdata[["ID"]],model=f,risk=p)
-            setkey(out,model,ID)
+            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p)
+            setkey(out,model,riskRegression_ID)
             out
         }
     }))
@@ -152,8 +152,8 @@ getPerformanceData <- function(testdata,
         }else{
             Wt <- data.table(times=rep(times,rep(N,NT)),
                              Wt=c(Weights$IPCW.times),
-                             ID=testdata$ID)
-            pred <- merge(pred,Wt,by=c("ID","times"))
+                             riskRegression_ID=testdata$riskRegression_ID)
+            pred <- merge(pred,Wt,by=c("riskRegression_ID","times"))
         }
         if (debug) message("merged the weights with input for performance metrics")
     } else {
@@ -163,7 +163,7 @@ getPerformanceData <- function(testdata,
     if (debug) message("added weights to predictions")
     # }}}
     # {{{ merge with response
-    DT=merge(response,pred,by="ID")
+    DT=merge(response,pred,by="riskRegression_ID")
     DT
 }
 

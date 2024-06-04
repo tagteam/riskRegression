@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Mar 14 2019 (09:08) 
+## last-updated: Jun  4 2024 (07:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 306
+##     Update #: 307
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@ getQuantile <- function(x,Fx,Q){
 }
 
 riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
-    reference=model=ReSpOnSe=risk=cause=X=ID=NULL
+    reference=model=ReSpOnSe=risk=cause=X=riskRegression_ID=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
     else Q <- sort(Q)
@@ -41,7 +41,7 @@ riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
     if (length(dolist)>0){
         contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
-            setorder(DT,model,ID)
+            setorder(DT,model,riskRegression_ID)
             DTdiff <- DT[model%in%g[-1]]
             DTref <- rep(DT[model==g[1],risk],length(unique(DTdiff$model)))
             DTdiff[,X:=risk-DTref]
@@ -68,7 +68,7 @@ riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
 
 
 riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
-    model=event=X=reference=status=times=cause=risk=Wt=WTi=cuminc=ID=NULL
+    model=event=X=reference=status=times=cause=risk=Wt=WTi=cuminc=riskRegression_ID=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95) else Q <- sort(Q) ##
     ## retrospectively (looking back from time t)
@@ -140,7 +140,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     if (length(dolist)>0){
         contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
-            setorder(DT,model,times,ID)
+            setorder(DT,model,times,riskRegression_ID)
             DTdiff <- DT[model%in%g[-1]]
             DTref <- rep(DT[model==g[1],risk],length(unique(DTdiff$model)))
             DTdiff[,X:=risk-DTref]
@@ -166,7 +166,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
 }
 
 riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
-    model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=ID=NULL
+    model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=riskRegression_ID=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
     else Q <- sort(Q)
@@ -246,7 +246,7 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
     if (length(dolist)>0){
         contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
-            setorder(DT,model,times,ID)
+            setorder(DT,model,times,riskRegression_ID)
             DTdiff <- DT[model%in%g[-1]]
             DTref <- rep(DT[model==g[1],risk],length(unique(DTdiff$model)))
             DTdiff[,X:=risk-DTref]

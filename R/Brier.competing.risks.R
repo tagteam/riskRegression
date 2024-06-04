@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Nov 22 2023 (15:19) 
+## Last-Updated: Jun  4 2024 (07:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -33,7 +33,7 @@ Brier.competing.risks <- function(DT,
                                   states,
                                   IC.data,
                                   ...){
-    IC0=nth.times=ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
+    IC0=nth.times=riskRegression_ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     thecause <- match(cause,states,nomatch=0)
     if (length(thecause)==0) stop("Cannot identify cause of interest")
@@ -45,7 +45,7 @@ Brier.competing.risks <- function(DT,
     DT[time<=times & status==0,residuals:=0]
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## data.table::setorder(DT,model,times,time,-status)
-        data.table::setorder(DT,model,times,ID)
+        data.table::setorder(DT,model,times,riskRegression_ID)
         DT[,nth.times:=as.numeric(factor(times))]
         DT[,IC0:=residuals-mean(residuals),by=list(model,times)]
         DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
@@ -96,14 +96,14 @@ Brier.competing.risks <- function(DT,
         output <- list(score=score)
     }
     if (keep.residuals) {
-        output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals"),with=FALSE]))
+        output <- c(output,list(residuals=DT[,c("riskRegression_ID","time","status","model","times","risk","residuals"),with=FALSE]))
     }
     if (keep.vcov[[1]] && se.fit[[1]]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
     }
     if (keep.iid[[1]] && se.fit[[1]] == TRUE) {
         output <- c(output,
-                    list(iid.decomp = DT[,data.table::data.table(ID,model,cause,times,IF.Brier)]))
+                    list(iid.decomp = DT[,data.table::data.table(riskRegression_ID,model,cause,times,IF.Brier)]))
     }
     output
 }

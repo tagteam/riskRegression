@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun 30 2023 (10:59) 
+## Last-Updated: Jun  4 2024 (07:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 5
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -31,7 +31,7 @@ Brier.survival <- function(DT,
                            keep.residuals=FALSE,
                            IC.data,
                            ...){
-    IC0=IPCW=nth.times=ID=time=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
+    IC0=IPCW=nth.times=riskRegression_ID=time=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     DT[time<=times & status==1,residuals:=(1-risk)^2/WTi]
     DT[time<=times & status==0,residuals:=0]
@@ -39,7 +39,7 @@ Brier.survival <- function(DT,
     
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## data.table::setorder(DT,model,times,time,-status)
-        data.table::setorder(DT,model,times,ID)
+        data.table::setorder(DT,model,times,riskRegression_ID)
         DT[,nth.times:=as.numeric(factor(times))]
         DT[,IC0:=residuals-mean(residuals),by=list(model,times)]
         DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
@@ -92,16 +92,16 @@ Brier.survival <- function(DT,
     }
     if (keep.iid[1] && se.fit[1] == TRUE) {
         output <- c(output,
-                    list(iid.decomp = DT[,data.table::data.table(ID,model,times,IF.Brier)]))
+                    list(iid.decomp = DT[,data.table::data.table(riskRegression_ID,model,times,IF.Brier)]))
     }
     if (keep.residuals) {
         if (all(c("Wt","WTi")%in%names(DT))){
             DT[,IPCW:=1/WTi]
             DT[time>=times,IPCW:=1/Wt]
             DT[time<times & status==0,IPCW:=0]
-            output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals","IPCW"),with=FALSE]))
+            output <- c(output,list(residuals=DT[,c("riskRegression_ID","time","status","model","times","risk","residuals","IPCW"),with=FALSE]))
         }else{
-            output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals"),with=FALSE]))
+            output <- c(output,list(residuals=DT[,c("riskRegression_ID","time","status","model","times","risk","residuals"),with=FALSE]))
         }
     }
     output
