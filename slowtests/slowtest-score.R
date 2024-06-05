@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (09:25) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (07:02) 
+## Last-Updated: Jun  5 2024 (18:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 13
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -314,20 +314,31 @@ if (requireNamespace("pec",quietly=TRUE)){
         ## predictRisk(fit.lrr,times=c(1,10,100,1000),newdata=Melanoma)
         fit.arr2 <- ARR(Hist(time,status)~thick+age,data=Melanoma,cause=1)
         fit.arr2a <- ARR(Hist(time,status)~tp(thick,power=1),data=Melanoma,cause=1)
-        fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
-        system.time(old <- pec(list(ARR=fit.arr2a,ARR.power=fit.arr2b,LRR=fit.lrr),
-                               data=Melanoma,
-                               formula=Hist(time,status)~1,
-                               cause=1, B=10,split.method="none"))
+        ## fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
+        system.time(old <- pec(list(
+                        ARR=fit.arr2a,
+                        ## ARR.power=fit.arr2b,
+                        LRR=fit.lrr),
+                        data=Melanoma,
+                        formula=Hist(time,status)~1,
+                        times = c(500,1000,2000,3000),
+                        exact = FALSE,
+                        start = NULL,
+                        cause=1, B=10,split.method="none"))
         ## predictRisk(fit.arr2a,newdata=Melanoma[1:10,],times=0)
-        system.time(new <- Score(list(ARR=fit.arr2a,ARR.power=fit.arr2b,LRR=fit.lrr),
-                                 data=Melanoma,conf.int=0,
-                                 times=c(0,sort(unique(Melanoma$time))),
-                                 metrics="brier",plots=NULL,summary=NULL,
-                                 formula=Hist(time,status)~1,
-                                 cause=1, B=10,split.method="none"))
-        nix <- lapply(1:4,function(m){
-            expect_equal(ignore_attr=TRUE,new$Brier$score[model==names(new$models)[m]][["Brier"]],
+        system.time(new <- Score(list(
+                        ARR=fit.arr2a,
+                        ## ARR.power=fit.arr2b,
+                        LRR=fit.lrr),
+                        data=Melanoma,se.fit = FALSE,
+                        ## times=c(0,sort(unique(Melanoma$time))),
+                        metrics="brier",plots=NULL,summary=NULL,
+                        formula=Hist(time,status)~1,
+                        times = c(500,1000,2000,3000),
+                        cause=1, B=10,split.method="none"))
+        nix <- lapply(1:3,function(m){
+            expect_equal(ignore_attr=TRUE,
+                         new$Brier$score[model==names(new$models)[m]][["Brier"]],
                          old$AppErr[[names(old$AppErr)[[m]]]])})
     })
 }

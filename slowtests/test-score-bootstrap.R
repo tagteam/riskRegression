@@ -6,14 +6,17 @@ library(randomForestSRC)
 
 test_that("loob survival",{
     set.seed(8)
-    learndat=sampleData(200,outcome="survival")
+    ## learndat=sampleData(200,outcome="survival")
+    learndat=sampleData(38,outcome="survival")
     cox1a = coxph(Surv(time,event)~X6,data=learndat,x=TRUE,y=TRUE)
     cox2a = coxph(Surv(time,event)~X7+X8+X9,data=learndat,x=TRUE,y=TRUE)
     ## leave-one-out bootstrap
     set.seed(5)
-    loob.se0 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=FALSE,progress.bar=NULL)
+    loob.se0 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=FALSE,progress.bar=NULL,verbose = -1)
     set.seed(5)
-    loob.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=TRUE,progress.bar=NULL)
+    loob.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=TRUE,progress.bar=NULL,verbose = -1)
+    # covariate dependent censoring
+    loob.se1a <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~X1,data=learndat,times=5,split.method="loob",B=100,se.fit=TRUE,progress.bar=NULL,verbose = -1)
     ## set.seed(5)
     ## loob.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=TRUE,metrics="brier",conservative=TRUE)
     expect_equal(ignore_attr=TRUE,loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)

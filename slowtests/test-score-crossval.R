@@ -7,6 +7,8 @@ library(data.table)
 library(ranger)
 context("riskRegression")
 
+
+
 #does give some warnings probably, nothing too serious
 test.cv <- function(){
   type.cvs <- c("cv5","loob", "bootcv")
@@ -17,7 +19,8 @@ test.cv <- function(){
                 list(data = "survival", model = "coxph", response = "Surv(time,event)",left.extra = "x", right.extra = TRUE), 
                 list(data = "competing.risks", model = "CSC", response = "Hist(time,event)"))
   for (cv in type.cvs){
-    for (typ in types){
+      for (typ in types){
+          browser()
       cat(paste0("Testing ", typ$data, " data with ",cv, "  \n"))
       test_that(paste0("Testing ", typ$data, " data with ",cv),{
         set.seed(18)

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun  5 2024 (07:24) 
+## Last-Updated: Jun  5 2024 (17:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 43
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -81,7 +81,7 @@ AUC.competing.risks <- function(DT,
             den_FPR<-sum(ipcwControls1+ipcwControls2)
             indeces <- sindex(risk,cutpoints,comp = "greater",TRUE)
             res <- list()
-            # FIXME
+            # FIXME: the order is according to -risk but why? is that necessary?
             ordered <- order(riskRegression_time) ## can probably move this outside to improve computation time, for now keep it
             for (i in 1:length(cutpoints)){
                 den_PPV <- sum(ipcwCases[risk > cutpoints[i]]+ipcwControls1[risk > cutpoints[i]] + ipcwControls2[risk > cutpoints[i]])
@@ -210,8 +210,8 @@ AUC.competing.risks <- function(DT,
         sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
-    data.table::setkey(score,model,times)
-    aucDT <- merge(score,aucDT,all=TRUE)
+    aucDT <- merge(score,aucDT,by = c("model","times"),all=TRUE)
+    data.table::setkey(aucDT,model,times)
     if (se.fit[[1]]==1L){
         aucDT[,nth.times:=as.numeric(factor(times))]
         
@@ -230,16 +230,16 @@ AUC.competing.risks <- function(DT,
                                              conservative = conservative[[1]],
                                              cens.model = cens.model), by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
-        data.table::setkey(se.score,model,times)
-        score <- score[se.score]
+        score <- score[se.score,,on = c("model","times")]
+        data.table::setkey(score,model,times)
         if (se.fit==1L){
             score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
             score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
         }else{
             score[,se:=NULL]
         }
+        aucDT <- aucDT[score, ,on = c("model","times")]
         data.table::setkey(aucDT,model,times)
-        aucDT <- aucDT[score]
         if (keep.vcov[[1]] == TRUE){
             output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
         }

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:03) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (07:25) 
+## Last-Updated: Jun  5 2024 (14:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 9
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -51,8 +51,8 @@ Brier.binary <- function(DT,
     if (length(dolist)>0){
         ## merge with Brier score
         data.table::setkey(DT,model)
-        data.table::setkey(score,model)
-        DT <- DT[score]
+        DT <- DT[score,,on = c("model")]
+        data.table::setkey(DT,model)
         if (se.fit[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,
                                                              IF=residuals,

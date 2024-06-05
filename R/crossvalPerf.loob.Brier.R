@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:16) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (15:08) 
+## Last-Updated: Jun  5 2024 (18:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 37
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,16 +17,15 @@
 crossvalPerf.loob.Brier <- function(times,
                                     mlevs,
                                     se.fit,
-                                    response.type,
                                     NT,
-                                    Response,
+                                    response.type,
+                                    response.names,
                                     cens.type,
                                     Weights,
                                     split.method,
                                     N,
                                     B,
                                     DT.B,
-                                    data,
                                     dolist,
                                     alpha,
                                     byvars,
@@ -37,7 +36,7 @@ crossvalPerf.loob.Brier <- function(times,
                                     conservative,
                                     cens.model,
                                     cause){
-    riskRegression_status = riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- riskRegression_status0 <- IBS <- NULL
+    riskRegression_status = riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- reference <- riskRegression_status0 <- IBS <- NULL
     ## sum across bootstrap samples where subject i is out of bag
     if (cens.type=="rightCensored"){
         if (response.type=="survival"){
@@ -59,7 +58,13 @@ crossvalPerf.loob.Brier <- function(times,
     }
     ## for each individual sum the residuals of the bootstraps where this individual is out-of-bag
     ## divide by number of times out-off-bag later
-    DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=sum(residuals)),by=c(byvars,"riskRegression_ID")]
+    ## keep response and weights for re-merging later
+    if (response.type%in%c("survival","competing.risks")){
+        DT.info <- DT.B[,c(response.names,"riskRegression_ID","WTi","Wt"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]
+    }else{
+        DT.info <- DT.B[,c(response.names,"riskRegression_ID"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]
+    }
+    DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=sum(residuals)), by=c(byvars,"riskRegression_ID")]
     ## get denominator
     if (split.method$name=="LeaveOneOutBoot"){
         ind.mat <- do.call("cbind",(lapply(1:B,split.method$index)))
@@ -92,26 +97,10 @@ crossvalPerf.loob.Brier <- function(times,
         ## se.brier <- DT.B[,list(se=sd(IC0, na.rm=TRUE)/sqrt(N)),by=byvars]
         ## DT.B[,Brier:=NULL]
         if (cens.type[1]=="rightCensored" && !conservative){
-            # merge with
-            ## FIXME HERE
-            rr_vars <- grep("^riskRegression_",names(data))
-            DT.B <- data[,rr_vars,with=FALSE][DT.B,,on="riskRegression_ID"]
+            # merge with response, riskRegression_ID and weights
+            DT.B <- DT.info[DT.B,,on="riskRegression_ID"]
             DT.B[,nth.times:=as.numeric(factor(times))]
-            WW <- data.table(riskRegression_ID=1:N,WTi=Weights$IPCW.subject.times,key="riskRegression_ID")
-            ## merge WW with DT.B by riskRegression_ID, while retaining the order of DT.B
-            DT.B <- merge(DT.B,WW,by="riskRegression_ID")
-            ## DT.B[,WTi:=rep(Weights$IPCW.subject.times,NF+length(nullobject))]
-            if (Weights$method=="marginal"){
-                Wt <- data.table(times=times,Wt=Weights$IPCW.times)
-                ## OBS: many digits in times may cause merge problems
-                DT.B <- merge(DT.B,Wt,by=c("times"))
-            }else{
-                Wt <- data.table(times=rep(times,rep(N,NT)),
-                                 Wt=c(Weights$IPCW.times),
-                                 # FIXME HERE
-                                 riskRegression_ID=data$riskRegression_ID)
-                DT.B <- merge(DT.B,Wt,by=c("riskRegression_ID","times"))
-            }
+            data.table::setkeyv(DT.B,c(byvars,"riskRegression_ID"))
             if (cens.type=="uncensored"){
                 DT.B[,IF.Brier:= residuals]
                 score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=byvars]
@@ -232,26 +221,20 @@ crossvalPerf.loob.Brier <- function(times,
             DT.B[,IPCW:=1/WTi]
             DT.B[riskRegression_time>=times,IPCW:=1/Wt]
             DT.B[riskRegression_time<times & riskRegression_status==0,IPCW:=0]
-            output <- c(output,list(residuals=DT.B[,c("riskRegression_ID",names(response),"model","times","risk","residuals","IPCW"),with=FALSE]))
+            output <- c(output,list(residuals=DT.B[,c(names(response),"model","times","risk","residuals","IPCW"),with=FALSE]))
         }else{
-            output <- c(output,list(residuals=DT.B[,c("riskRegression_ID",names(response),"model","times","risk","residuals"),with=FALSE]))
+            output <- c(output,list(residuals=DT.B[,c(names(response),"model","times","risk","residuals"),with=FALSE]))
         }
     }
     if (!is.null(output$score)){
         output$score[,model:=factor(model,levels=mlevs,mlabels)]
-        if (response.type%in%c("survival","competing.risks"))
-            setkey(output$score,model,times)
-        else
-            setkey(output$score,model)
+        data.table::setkeyv(output$score,byvars)
     }
     ## set model and reference in model comparison results
     if (!is.null(output$contrasts)>0){
         output$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
         output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
-        if (response.type%in%c("survival","competing.risks"))
-            setkey(output$score,model,times)
-        else
-            setkey(output$score,model)
+        data.table::setkeyv(output$score,byvars)
     }
     return(output)
 }

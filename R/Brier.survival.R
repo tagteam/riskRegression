@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  5 2024 (07:24) 
+## Last-Updated: Jun  5 2024 (14:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 19
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -32,8 +32,8 @@ Brier.survival <- function(DT,
                            ...){
     IC0=IPCW=nth.times=riskRegression_ID = riskRegression_time = riskRegression_status=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
-    DT[riskRegression_time<=times & status==1,residuals:=(1-risk)^2/WTi]
-    DT[riskRegression_time<=times & status==0,residuals:=0]
+    DT[riskRegression_time<=times & riskRegression_status==1,residuals:=(1-risk)^2/WTi]
+    DT[riskRegression_time<=times & riskRegression_status==0,residuals:=0]
     DT[riskRegression_time>times,residuals:=(risk)^2/Wt]
     
     if (se.fit[[1]]==1L){
@@ -61,18 +61,17 @@ Brier.survival <- function(DT,
     data.table::setkey(score,model,times)
     if (length(dolist)>0L){
         ## merge with Brier score
+        DT <- DT[score,,on = c("model","times")]
         data.table::setkey(DT,model,times)
-        ## data.table::setkey(score,model,times)
-        DT <- DT[score]
         if (se.fit[[1]]==TRUE){
-            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
+            contrasts.Brier <- DT[,getComparisons(dt = data.table(x=Brier,IF=IF.Brier,model=model),
                                                   NF=NF,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  se.fit=se.fit),by=list(times)]
+                                                  se.fit=TRUE),by=list(times)]
         }else{
-            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),
+            contrasts.Brier <- DT[,getComparisons(dt = data.table(x=Brier,model=model),
                                                   NF=NF,
                                                   N=N,
                                                   alpha=alpha,

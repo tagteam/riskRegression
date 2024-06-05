@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  5 2024 (07:24) 
+## Last-Updated: Jun  5 2024 (14:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 10
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -68,10 +68,9 @@ Brier.competing.risks <- function(DT,
     }
     data.table::setkey(score,model,times)
     if (length(dolist)>0){
-        data.table::setkey(DT,model,times)
         ## merge with Brier score
-        DT <- DT[score]
-        data.table::setkey(score,model,times)
+        DT <- DT[score, ,on = c("model","times")]
+        data.table::setkey(DT,model,times)
         if (se.fit[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
                                                   NF=NF,
