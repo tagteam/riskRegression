@@ -67,7 +67,6 @@
 ##'        variability of the estimate of the inverse probability of censoring weights when calculating standard
 ##'        errors for prediction performance parameters. This can potentially reduce computation time and memory usage
 ##'        at a usually very small expense of a slightly higher standard error.
-##' @param multi.split.test Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate multi-split tests. This argument is ignored when \code{split.method} is "none".
 ##' @param conf.int Either logical or a numeric value between 0 and 1. In right censored data,
 ##'     confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the
 ##'     computation of confidence intervals. \code{TRUE} computes 95 percent confidence
@@ -497,7 +496,6 @@ Score.list <- function(object,
                        null.model=TRUE,
                        se.fit=TRUE,
                        conservative=FALSE,
-                       multi.split.test=FALSE,
                        conf.int=.95,
                        contrasts=TRUE,
                        probs=c(0,0.25,0.5,0.75,1),
@@ -709,17 +707,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             on.exit(parallel::stopCluster(cl))
             doParallel::registerDoParallel(cl=cl,cores=ncpus)
         })
-        if (split.method$name[1]=="BootCv" && multi.split.test[1]==TRUE){
-            if ("AUC" %in% metrics) {
-                warning("Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE")
-                multi.split.test=FALSE
-            }else{
-                if (se.fit==TRUE & conservative==FALSE){
-                    warning("Cannot do deal with conservative=FALSE when also multi.split.test=TRUE. Forced conservative=TRUE.")
-                }
-                conservative=TRUE
-            }
-        }
     }
 
     # }}}
@@ -810,7 +797,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     }else{
         stopifnot(is.logical(se.fit)||se.fit[[1]]==0||se.fit[[1]]==1)
     }
-    if (split.method$internal.name=="noplan") multi.split.test <- FALSE
     if (se.fit[1]==1L) {
         if (is.numeric(conf.int) && conf.int[1]<1 && conf.int[1]>0)
             alpha <- 1-conf.int
@@ -989,7 +975,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       se.fit=se.fit,
                                       conservative=conservative,
                                       cens.model=cens.model,
-                                      multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
                                       keep.vcov=keep.vcov,
                                       keep.iid=keep.iid,
@@ -1171,7 +1156,6 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                          se.fit=se.fit,
                                          conservative=conservative,
                                          cens.model=cens.model,
-                                         multi.split.test=multi.split.test,
                                          keep.residuals=FALSE,
                                          keep.vcov=FALSE,
                                          keep.iid = FALSE,
@@ -1225,7 +1209,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         ## copy paste from bootcv; same method to calculate ROC
         if (ROC){
             ## implement ROC here
-            if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
+            if (parallel=="snow") exports <- c("DT.B","N.b","cens.model") else exports <- NULL
             if (!is.null(progress.bar)){
                 if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
                 pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
@@ -1252,7 +1236,6 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                    se.fit=FALSE,
                                    conservative=TRUE,
                                    cens.model=cens.model,
-                                   multi.split.test=multi.split.test,
                                    keep.residuals=FALSE,
                                    keep.vcov=FALSE,
                                    keep.iid =FALSE,
@@ -1317,7 +1300,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     else if (split.method$name=="BootCv"){
         # {{{ bootcv
         ## implement ROC here
-        if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
+        if (parallel=="snow") exports <- c("DT.B","N.b","cens.model") else exports <- NULL
         if (!is.null(progress.bar)){
             if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
             pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
@@ -1347,7 +1330,6 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                se.fit=FALSE,
                                conservative=TRUE,
                                cens.model=cens.model,
-                               multi.split.test=multi.split.test,
                                keep.residuals=FALSE,
                                keep.vcov=FALSE,
                                keep.iid = FALSE,
@@ -1366,7 +1348,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         if (!is.null(progress.bar)){
             cat("\n")
         }
-        crossvalPerf <- lapply(metrics,function(m) crossvalPerf.bootcv(m,crossval,se.fit,multi.split.test,keep.cv,byvars,alpha))
+        crossvalPerf <- lapply(metrics,function(m) crossvalPerf.bootcv(m,crossval,se.fit,keep.cv,byvars,alpha))
         names(crossvalPerf) <- metrics
         
         if ("ROC" %in% plots){

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jun  4 2024 (19:08) 
+## Last-Updated: Jun  5 2024 (07:24) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 9
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -22,7 +22,6 @@ Brier.competing.risks <- function(DT,
                                   cens.model,
                                   keep.vcov=FALSE,
                                   keep.iid=FALSE,
-                                  multi.split.test,
                                   alpha,
                                   N,
                                   NT,
@@ -43,7 +42,7 @@ Brier.competing.risks <- function(DT,
     DT[riskRegression_time>times,residuals:=(risk)^2/Wt]
     ## deal with censored observations before 
     DT[riskRegression_time<=times & riskRegression_status==0,residuals:=0]
-    if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
+    if (se.fit[[1]]==1L){
         ## data.table::setorder(DT,model,times,riskRegression_time,-riskRegression_status)
         data.table::setorder(DT,model,times,riskRegression_ID)
         DT[,nth.times:=as.numeric(factor(times))]
@@ -73,13 +72,12 @@ Brier.competing.risks <- function(DT,
         ## merge with Brier score
         DT <- DT[score]
         data.table::setkey(score,model,times)
-        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
+        if (se.fit[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
                                                   NF=NF,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  multi.split.test=multi.split.test,
                                                   se.fit=se.fit),by=list(times)]
         }else{
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),
@@ -87,7 +85,6 @@ Brier.competing.risks <- function(DT,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  multi.split.test=FALSE,
                                                   se.fit=FALSE),by=list(times)]
         }
         setnames(contrasts.Brier,"delta","delta.Brier")

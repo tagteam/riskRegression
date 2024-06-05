@@ -1,5 +1,5 @@
 # Function to calculate cross-validation performance
-crossvalPerf.bootcv <- function(m,crossval,se.fit,multi.split.test,keep.cv,byvars,alpha){
+crossvalPerf.bootcv <- function(m,crossval,se.fit,keep.cv,byvars,alpha){
   ## score
   if (length(crossval[[1]][[m]]$score)>0){
     cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
@@ -17,23 +17,14 @@ crossvalPerf.bootcv <- function(m,crossval,se.fit,multi.split.test,keep.cv,byvar
     cv.score <- NULL
     bootcv.score <- NULL
   }
-  ## contrasts and multi-split test
+  ## contrasts 
   if (length(crossval[[1]][[m]]$contrasts)>0){
     cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))
     delta.m <- paste0("delta.",m)
-    bootcv.contrasts <- switch(as.character(se.fit+3*multi.split.test),
-                               "4"={
-                                 cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
-                                                                      lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
-                                                                      upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE),
-                                                                      p=median(.SD[["p"]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m,"p")]
-                               },
+    bootcv.contrasts <- switch(as.character(se.fit),
                                "1"={cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
                                                                          lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
                                                                          upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m)]
-                               },
-                               "3"={cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
-                                                                         p=median(.SD[["p"]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m,"p")]
                                },
                                "0"={
                                  bootcv.contrasts <- cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=delta.m]

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (15:24) 
+## Last-Updated: Jun  5 2024 (07:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 16
+##     Update #: 17
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,6 @@ AUC.binary <- function(DT,
                        cens.model="none",
                        keep.vcov=FALSE,
                        keep.iid=FALSE,
-                       multi.split.test,
                        alpha,
                        N,
                        NT,
@@ -38,7 +37,6 @@ AUC.binary <- function(DT,
                             response,
                             cause,
                             alpha,
-                            multi.split.test,
                             se.fit,
                             keep.vcov) {
         cov=lower=upper=p=AUC=se=lower=upper=NULL
@@ -108,11 +106,6 @@ AUC.binary <- function(DT,
                 deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
             }
             out <- list(score = score, contrasts = deltaAUC)
-            ##if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
-            ##    deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)
-            ##}else{
-            ##    deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
-            ##}
         }else{
             out <- list(score = score, contrasts = NULL)
         }
@@ -210,7 +203,6 @@ AUC.binary <- function(DT,
                                  response=aucDT[model==model[1],riskRegression_event],
                                  cause="1",
                                  alpha=alpha,
-                                 multi.split.test=multi.split.test,
                                  se.fit=se.fit,
                                  keep.vcov=keep.vcov)
         output$score <- delong.res$score
