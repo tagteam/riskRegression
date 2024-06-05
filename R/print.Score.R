@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Jun  4 2024 (07:22) 
+## last-updated: Jun  5 2024 (07:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 69
+##     Update #: 70
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -51,7 +51,6 @@ print.Score <- function(x,digits,...){
             x$split.method$M,
             ".\n",
             ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,"\nThe 'confidence intervals' are bootstrap quantiles"),""),
-            ifelse(x$call$multi.split.test,"\nThe 'p-values' are median p-values across the splits",""),
             "\n",
             sep="")
     },"LeaveOneOutBoot"={

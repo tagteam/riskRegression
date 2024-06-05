@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun  4 2024 (14:34) 
+## Last-Updated: Jun  5 2024 (07:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 29
+##     Update #: 30
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -23,7 +23,6 @@ AUC.survival <- function(DT,
                          cens.model,
                          keep.vcov=FALSE,
                          keep.iid=FALSE,
-                         multi.split.test,
                          alpha,
                          N,
                          NT,
@@ -191,7 +190,7 @@ AUC.survival <- function(DT,
     
     data.table::setkey(score,model,times)
     aucDT <- merge(score,aucDT,all=TRUE)
-    if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
+    if (se.fit[[1]]==1L){
         aucDT[,nth.times:=as.numeric(factor(times))]
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,riskRegression_time,-riskRegression_status)
@@ -230,19 +229,18 @@ AUC.survival <- function(DT,
     ## add score to object
     output <- c(list(score=score),output)
     if (length(dolist)>0){
-        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
+        if (se.fit[[1]]==TRUE){
             contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
                                                    NF=NF,
                                                    N=N,
                                                    alpha=alpha,
-                                                   dolist=dolist,multi.split.test=multi.split.test,se.fit=se.fit),by=list(times)]
+                                                   dolist=dolist,se.fit=se.fit),by=list(times)]
         }else{
             contrasts.AUC <- score[,getComparisons(data.table(x=AUC,model=model),
                                                    NF=NF,
                                                    N=N,
                                                    alpha=alpha,
                                                    dolist=dolist,
-                                                   multi.split.test=FALSE,
                                                    se.fit=FALSE),by=list(times)]
         }
         setnames(contrasts.AUC,"delta","delta.AUC")

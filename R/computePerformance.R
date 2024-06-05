@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: Jun  4 2024 (12:06) 
+## Last-Updated: Jun  5 2024 (07:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 22
+##     Update #: 23
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -29,7 +29,6 @@ computePerformance <- function(DT,
                                se.fit,
                                conservative,
                                cens.model,
-                               multi.split.test,
                                keep.residuals,
                                keep.vcov,
                                keep.iid,
@@ -58,7 +57,6 @@ computePerformance <- function(DT,
                   se.fit=se.fit,
                   conservative=conservative,
                   cens.model=cens.model,
-                  multi.split.test=multi.split.test,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
                   keep.iid=keep.iid,                  

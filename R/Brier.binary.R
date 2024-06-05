@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:03) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (15:08) 
+## Last-Updated: Jun  5 2024 (07:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,6 @@ Brier.binary <- function(DT,
                          cens.model="none",
                          keep.vcov=FALSE,
                          keep.iid=FALSE,
-                         multi.split.test,
                          alpha,
                          N,
                          NT,
@@ -54,7 +53,7 @@ Brier.binary <- function(DT,
         data.table::setkey(DT,model)
         data.table::setkey(score,model)
         DT <- DT[score]
-        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
+        if (se.fit[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,
                                                              IF=residuals,
                                                              model=model),
@@ -62,7 +61,6 @@ Brier.binary <- function(DT,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  multi.split.test=multi.split.test,
                                                   se.fit=se.fit)]
         }else{
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),
@@ -70,7 +68,6 @@ Brier.binary <- function(DT,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  multi.split.test=FALSE,
                                                   se.fit=FALSE)]
         }
         setnames(contrasts.Brier,"delta","delta.Brier")
