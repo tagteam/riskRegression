@@ -9,7 +9,7 @@ plotCalibration(
   models,
   times,
   method = "nne",
-  cens.method,
+  cens.method = "local",
   round = 2,
   bandwidth = NULL,
   q = 10,

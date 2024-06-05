@@ -1,11 +1,11 @@
 ### AUC.binary.R --- 
 #----------------------------------------------------------------------
-## Author: Thomas Alexander Gerds
+## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (07:25) 
+## Last-Updated: Jun  5 2024 (14:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 17
+##     Update #: 19
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -173,6 +173,7 @@ AUC.binary <- function(DT,
             res.cut <- list()
             for (i in 1:length(cutpoints)){
                 temp.TPR <- subset(temp.TPR.ic,cutpoints==cutpoints[i])
+                # FIXME: merge on what?
                 aucDT.temp <- merge(aucDT,temp.TPR)
                 some.fun <- function(riskRegression_event,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cut,N){
                     meanY <- mean(riskRegression_event)

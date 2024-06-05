@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  3 2016 (13:30) 
 ## Version: 
-## last-updated: Jun  5 2024 (07:23) 
+## last-updated: Jun  5 2024 (07:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 53
+##     Update #: 54
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,10 @@ getComparisons <- function(dt,NF,N,alpha,dolist=NF:1,se.fit){
                            lower=lower,
                            upper=upper,
                            p=p)
+            }else{
+                data.table(model=theta[model%in%g[-1]][["model"]],
+                           reference=g[1],
+                           delta=delta)
             }
         }))
     } else {

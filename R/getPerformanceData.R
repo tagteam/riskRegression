@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (09:08) 
+## Last-Updated: Jun  5 2024 (18:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 48
+##     Update #: 66
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,7 +30,8 @@ getPerformanceData <- function(testdata,
                                cens.type,
                                object,
                                object.classes,
-                               NT){
+                               NT,
+                               verbose){
     riskRegression_ID=model = risk = NULL
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
@@ -38,8 +39,8 @@ getPerformanceData <- function(testdata,
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
     rr_vars <- grep("^riskRegression_",names(testdata))
-    response <- testdata[,rr_vars,with=FALSE]
-    setkey(response,riskRegression_ID)
+    testresponse <- testdata[,rr_vars,with=FALSE]
+    data.table::setkey(testresponse,riskRegression_ID)
     X <- testdata[,-rr_vars,with=FALSE]
     if (debug) message("\nExtracted test set and prepared output object")
     # }}}
@@ -67,11 +68,7 @@ getPerformanceData <- function(testdata,
                 if (response.type=="binary"){
                     p <- do.call("predictRisk", c(list(object=c(object[[f]])),args))[neworder]
                 }else{
-                    ## if(!is.null(include.times)){ ## remove columns at times beyond max time
-                    ## p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[neworder,])
-                    ## } else{
                     p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[neworder,])
-                    ## }
                 }
             }
             else{ ## either binary or only one time point
@@ -85,7 +82,7 @@ getPerformanceData <- function(testdata,
                 model.f$call$data <- trainX
                 trained.model <- try(eval(model.f$call),silent=TRUE)
                 if (inherits(x=trained.model,what="try-error")){
-                    message(paste0("Failed to train the following model:"))
+                    if (verbose>1)message(paste0("Failed to train the following model:"))
                     try(eval(model.f$call),silent=FALSE)
                     stop()
                 }
@@ -102,17 +99,18 @@ getPerformanceData <- function(testdata,
         }
         if (response.type%in%c("survival","competing.risks")){
             out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
-            setkey(out,model,times,riskRegression_ID)
+            byvars <- c("model","times")
+            data.table::setkey(out,model,times,"riskRegression_ID")
             out
         } else {
             out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p)
+            byvars <- c("model")
             setkey(out,model,riskRegression_ID)
             out
         }
     }))
     if (any(is.na(pred$risk))) {
-        ## browser(skipCalls = 1)
-        message("Table of missing values in predicted risks:")
+        if (verbose>1)message("Table of missing values in predicted risks:")
         pred[,model:=factor(model,levels=levs,labels)]
         if (response.type[1] == "binary"){
             print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model)])
@@ -128,27 +126,30 @@ getPerformanceData <- function(testdata,
         if (cens.type=="rightCensored"){
             Weights <- testweights
             ## add subject specific weights
-            set(response,j="WTi",value=Weights$IPCW.subject.times)
+            set(testresponse,j="WTi",value=Weights$IPCW.subject.times)
         } else {
             if (cens.type=="uncensored"){
                 Weights <- list(IPCW.times=rep(1,NT),IPCW.subject.times=matrix(1,ncol=NT,nrow=N))
                 Weights$method <- "marginal"
-                set(response,j="WTi",value=1)
+                set(testresponse,j="WTi",value=1)
             } else{
                 stop("Cannot handle this type of censoring.")
             }
         }
         ## add time point specific weights
         if (Weights$method=="marginal"){
-            Wt <- data.table(times=times,Wt=Weights$IPCW.times)
-            ## OBS: many digits in times may cause merge problems
-            pred <- merge(pred,Wt,by=c("times"))
-        }else{
-            Wt <- data.table(times=rep(times,rep(N,NT)),
-                             Wt=c(Weights$IPCW.times),
-                             riskRegression_ID=testdata$riskRegression_ID)
-            pred <- merge(pred,Wt,by=c("riskRegression_ID","times"))
+            Wt <- data.table(times = times,Wt=c(Weights$IPCW.times))
+            pred <- Wt[pred,,on="times"]
+            data.table::setkey(pred,model,times,riskRegression_ID)
+        }else{ # here as many weights as there are subjects at each element of times
+            Wt <- rbindlist(lapply(1:length(times),function(s){
+                data.table(riskRegression_ID = testresponse$riskRegression_ID,
+                           times=rep(times[[s]],nrow(Weights$IPCW.times)),
+                           Wt=Weights$IPCW.times[,s])
+            }))
+            pred <- Wt[pred,,on=c("riskRegression_ID","times")]
         }
+        data.table::setkey(pred,model,times,riskRegression_ID)
         if (debug) message("merged the weights with input for performance metrics")
     } else {
         ## if (response.type=="binary")
@@ -157,10 +158,10 @@ getPerformanceData <- function(testdata,
     if (debug) message("added weights to predictions")
     # }}}
     # {{{ merge with response
-    DT=merge(response,pred,by="riskRegression_ID")
+    DT=merge(testresponse,pred,by="riskRegression_ID")
+    data.table::setkey(DT,riskRegression_ID)
     DT
 }
-
 
 #----------------------------------------------------------------------
 ### getPerformanceData.R ends here

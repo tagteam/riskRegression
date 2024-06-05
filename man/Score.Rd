@@ -21,7 +21,6 @@ Score(object, ...)
   null.model = TRUE,
   se.fit = TRUE,
   conservative = FALSE,
-  multi.split.test = FALSE,
   conf.int = 0.95,
   contrasts = TRUE,
   probs = c(0, 0.25, 0.5, 0.75, 1),
@@ -46,6 +45,7 @@ Score(object, ...)
   roc.grid = switch(roc.method, vertical = seq(0, 1, 0.01), horizontal = seq(1, 0,
     -0.01)),
   cutpoints = NULL,
+  verbose = 2,
   ...
 )
 }
@@ -112,8 +112,6 @@ variability of the estimate of the inverse probability of censoring weights when
 errors for prediction performance parameters. This can potentially reduce computation time and memory usage
 at a usually very small expense of a slightly higher standard error.}
 
-\item{multi.split.test}{Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate multi-split tests. This argument is ignored when \code{split.method} is "none".}
-
 \item{conf.int}{Either logical or a numeric value between 0 and 1. In right censored data,
 confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the
 computation of confidence intervals. \code{TRUE} computes 95 percent confidence
@@ -148,10 +146,15 @@ Cox regression (\code{"cox"}) both applied to the censored times. If the right h
 the Kaplan-Meier method is used even if this argument is set to \code{"cox"}. Also implemented is a template for users specifying other models to estimate the IPCW. Here the user
 should be supply a function, taking as input a \code{"formula"} and \code{"data"}. This does come at the cost of only being able to calculate conservative confidence intervals.}
 
-\item{split.method}{Method for cross-validation. Right now the only choices are \code{bootcv}, \code{cvk} and \code{loob}. In the first case, bootstrap learning sets
-are drawn with our without replacement (argument \code{M}) from \code{data}. The data not included in the current bootstrap learning
-set are used as validation set to compute the prediction performance. In the second case, k-fold cross-validation is performed. Note that k has to be an explicit number, e.g. 5 or 10,
-when passing this as an argument. In the third case, leave-one-out bootstrap cross-validation is performed for the Brier score and leave-pair-out bootstrap cross-validation is performed for the AUC.}
+\item{split.method}{Method for cross-validation. Right now the available choices are
+\itemize{
+\item \code{"bootcv"} bootstrap cross-validation. Argument \code{B} controls the number of bootstraps.
+\item \code{"cv5"} 5-fold cross-validation. Argument \code{B} controls how many times to repeat 5-fold crossvalidation.
+\item \code{"cv10"} 10-fold cross-validation. Argument \code{B} controls how many times to repeat 10-fold crossvalidation.
+\item \code{"cvk"} k-fold cross-validation for any value of k between 2 and N-1 where N is the sample size. Argument \code{B} controls how many times to repeat k-fold crossvalidation.
+\item \code{"loob"} leave-one-out bootstrap cross-validation is performed for the Brier score and leave-pair-out bootstrap cross-validation is performed for the AUC. Argument \code{B} controls the number of bootstraps.
+\item \code{"none"} no data splitting
+}}
 
 \item{B}{Number of bootstrap sets for cross-validation. \code{B} should be set to 1, when k-fold cross-validation is used.}
 
@@ -214,6 +217,8 @@ obtained for different data splits during crossvalidation.}
 \item{cutpoints}{If not \code{NULL}, estimates and standard errors of the TPR (True Positive Rate), 
 FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value) 
 are given at the \code{cutpoints}. These values are saved in \code{object$AUC$res.cut}.}
+
+\item{verbose}{Verbosity level. Set to '-1' or 'FALSE' to get complete silence. Set to '0' to quiet all messages and warnings but keep the progress.bar. Set to '1' to see warnings and to '2' (the default) to see both warnings and messages.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

@@ -1,11 +1,10 @@
 getCensoringWeights <- function(formula,
                                 data,
-                                response,
                                 times,
                                 cens.model,
-                                response.type,
                                 influence.curve=FALSE,
-                                censoring.save.memory){
+                                censoring.save.memory,
+                                verbose){
     data <- copy(data)
     if((cens.model != "KaplanMeier")){
         if (length(attr(terms(formula),"factors"))==0){
@@ -25,10 +24,9 @@ getCensoringWeights <- function(formula,
                            IPCW.subject.times=IPCW.subject.times,
                            method=cens.model,IC.data=NULL)
                if (influence.curve==TRUE){
-                  #Should not have to calculate IF for Nelson-AAlen
-                  out <- c(out,
-                           list(IC=NULL))
-                  
+                   # Do not yet calculate IF for Nelson-AAlen
+                   # this happens later
+                  out <- c(out,list(IC=NULL))
                    # out <- c(out,
                    #          list(IC=IC_Nelson_Aalen_cens_time(time=data$riskRegression_time,status=data$riskRegression_status)))
                    ## list(IC=data[,getInfluenceCurve.NelsonAalen(time=riskRegression_time,riskRegression_status=riskRegression_status)]))
@@ -66,7 +64,6 @@ getCensoringWeights <- function(formula,
                minimumIncrement <- min(incrementsOfTime[incrementsOfTime > 0]) #need > 0 in case of ties
                IPCW.subject.times <- as.numeric(rms::survest(fit,newdata=wdata,times=Y-minimumIncrement/2,what='parallel',se.fit=FALSE)) #Y-minimumIncrement/2
                # subject.times <- Y[(((Y<=max(times))*riskRegression_status)==1)]
-               
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
                if (influence.curve==TRUE){
                    TiMinus = Y-minimumIncrement/2
@@ -109,15 +106,15 @@ getCensoringWeights <- function(formula,
                stop("Use stratification with Cox instead. ")
            },
            {
-               warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")
+               if (verbose>0)warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")
                vv <- all.vars(formula(delete.response(terms(formula))))
                new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_status)",paste0("~",paste0(paste(vv,collapse = "+")))))
                wdata <- copy(data)
                wdata[,riskRegression_status:=1-riskRegression_status]
                input <- list(formula=new.formula,data=wdata)
-               message("Fitting censoring model to data ...", appendLF = FALSE)
+               if (verbose>1)message("Fitting censoring model to data ...", appendLF = FALSE)
                fit <- do.call(cens.model,input)
-               message("done!")
+               if (verbose>1)message("done!")
                if (influence.curve){
                    if (is.null(data[["event"]])){
                        new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_status==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
@@ -126,9 +123,9 @@ getCensoringWeights <- function(formula,
                        new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
                    }
                    input <- list(formula=new.formula,data=wdata)
-                   message("Fitting time model to data ...", appendLF = FALSE)
+                   if (verbose>0)message("Fitting time model to data ...", appendLF = FALSE)
                    fit.time <- do.call(cens.model,input)
-                   message("done!")
+                   if (verbose>0)message("done!")
                }
                else {
                    fit.time <- NULL
@@ -141,7 +138,11 @@ getCensoringWeights <- function(formula,
                # times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
                IPCW.subject.times <- diag(1-predictRisk(fit,wdata,wdata$time,1)) #computational problem with predictRisk
                IPCW.times <- 1-predictRisk(fit,wdata,times,1)
-               out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
+               out <- list(
+                   IPCW.times=IPCW.times,
+                   IPCW.subject.times=IPCW.subject.times,
+                   method=cens.model,
+                   IC.data=IC.data)
            })
     out$dim <- ifelse(cens.model=="KaplanMeier" || cens.model == "marginal",0,1)
     out

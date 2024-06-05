@@ -53,11 +53,12 @@ getResponse <- function(formula,cause,data,vars){
             if (responseNames[2]=="Surv"){
                 formula[[2]][[1]] <- as.name("Hist")
             }
-            response <- unclass(eval(formula[[2]],data))
-            ## m <- stats::model.frame(formula=formula,
-            ## data=data,
-            ## na.action=na.fail)
-            ## response <- unclass(stats::model.response(m))
+            temp <- unclass(eval(formula[[2]],data))
+            response <- data.table::as.data.table(temp)
+            data.table::setattr(response,"states",attr(temp,"states"))
+            data.table::setattr(response,"event",attr(temp,"event"))
+            data.table::setattr(response,"model",attr(temp,"model"))
+            data.table::setattr(response,"cens.type",attr(temp,"cens.type"))
         }
         else{
             stop("Cannot assign response type.")

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:20) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (15:08) 
+## Last-Updated: Jun  5 2024 (17:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 11
+##     Update #: 21
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,16 +17,15 @@
 crossvalPerf.loob.AUC <- function(times,
                                   mlevs,
                                   se.fit,
-                                  response.type,
                                   NT,
-                                  Response,
+                                  response.type,
+                                  response.names,
                                   cens.type,
                                   Weights,
                                   split.method,
                                   N,
                                   B,
                                   DT.B,
-                                  data,
                                   dolist,
                                   alpha,
                                   byvars,
@@ -36,6 +35,7 @@ crossvalPerf.loob.AUC <- function(times,
                                   cause,
                                   # crossvalPerf.loob.Brier has more arguments
                                   ...) {
+    Response <- DT.B[,c(response.names,"riskRegression_ID"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]
     # initializing output
     bfold <- fold <- AUC <- riskRegression_event <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  riskRegression_event <- riskRegression_time <- riskRegression_status0 <- riskRegression_ID <- NULL
     if (response.type=="binary") {
@@ -67,7 +67,8 @@ crossvalPerf.loob.AUC <- function(times,
     cause <- as.numeric(cause)
     rm(ind.mat)
     # first index for c++ function
-    first_hits <- sindex(Response[["riskRegression_time"]],times)-1
+    if (response.type%in%c("survival","competing.risks"))
+        first_hits <- sindex(Response[["riskRegression_time"]],times)-1
     for (s in 1:NT){
         if (response.type=="binary"){
             t <- 0
@@ -77,7 +78,7 @@ crossvalPerf.loob.AUC <- function(times,
         }else{
             t <- times[s]
             if (response.type == "survival"){
-                Response$riskRegression_status0 <- Response$riskRegression_status
+                Response[,riskRegression_status0 := riskRegression_status]
             }
             else { # competing risks
                 oldEvent <- Response$riskRegression_event
@@ -85,7 +86,7 @@ crossvalPerf.loob.AUC <- function(times,
                 cause1ID <- oldEvent == 1
                 oldEvent[causeID] <- 1
                 oldEvent[cause1ID] <- cause
-                Response$riskRegression_status0 <- Response$riskRegression_status * oldEvent
+                Response[,riskRegression_status0 := riskRegression_status * oldEvent]
                 # need a status variable with value
                 # 0 = censored
                 # 1 = cause of interest
@@ -98,7 +99,7 @@ crossvalPerf.loob.AUC <- function(times,
         }
         # censoring weights
         if (cens.type=="rightCensored"){ 
-            if (Weights$method!="cox"){
+            if (Weights$method == "marginal"){
                 Wt <- Weights$IPCW.times[s]
             }else{
                 Wt <- Weights$IPCW.times[,s]
@@ -111,8 +112,8 @@ crossvalPerf.loob.AUC <- function(times,
         w.controls <- weights[controls.index]
         n.cases <- sum(cases.index)
         n.controls <- sum(controls.index)
-        riskRegression_ID.case <- data[cases.index,]$riskRegression_ID
-        riskRegression_ID.controls <- data[controls.index,]$riskRegression_ID
+        riskRegression_ID.case <- Response[cases.index,]$riskRegression_ID
+        riskRegression_ID.controls <- Response[controls.index,]$riskRegression_ID
         muCase <- sum(w.cases)
         muControls <- sum(w.controls)
         Phi <- (1/N^2)*muCase*muControls
@@ -136,7 +137,11 @@ crossvalPerf.loob.AUC <- function(times,
                 }
                 risk.mat <- matrix(NA,nrow=N,ncol=n.col)
                 risk.mat[split.index] <- DTrisk
-                res <- aucLoobFun(riskRegression_ID.case,riskRegression_ID.controls,risk.mat,split.index,weights)
+                res <- aucLoobFun(riskRegression_ID.case,
+                                  riskRegression_ID.controls,
+                                  risk.mat,
+                                  split.index,
+                                  weights)
                 ic0Case <- res[["ic0Case"]]
                 ic0Control <- res[["ic0Control"]]
                 warn <- res[["warn"]]
