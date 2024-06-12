@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:20) 
 ## Version: 
-## Last-Updated: Jun 12 2024 (08:45) 
+## Last-Updated: Jun 12 2024 (12:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 40
+##     Update #: 42
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-crossvalPerf.loob.AUC1 <- function(times,
+crossvalPerf.loob.AUC <- function(times,
                                   mlevs,
                                   se.fit,
                                   NT,
