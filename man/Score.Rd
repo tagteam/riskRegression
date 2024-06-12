@@ -38,7 +38,6 @@ Score(object, ...)
   errorhandling = "pass",
   keep,
   predictRisk.args,
-  debug = 0L,
   censoring.save.memory = FALSE,
   breaks = seq(0, 1, 0.01),
   roc.method = "vertical",
@@ -192,8 +191,6 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
-\item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
-
 \item{censoring.save.memory}{Only relevant in censored data where censoring weigths are obtained with
 Cox regression and argument \code{conservative} is set to \code{FALSE}. If \code{TRUE}, save memory by not storing the influence function
 of the cumulative hazard of the censoring as a matrix when calculating standard errors
@@ -218,7 +215,9 @@ obtained for different data splits during crossvalidation.}
 FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value) 
 are given at the \code{cutpoints}. These values are saved in \code{object$AUC$res.cut}.}
 
-\item{verbose}{Verbosity level. Set to '-1' or 'FALSE' to get complete silence. Set to '0' to quiet all messages and warnings but keep the progress.bar. Set to '1' to see warnings and to '2' (the default) to see both warnings and messages.}
+\item{verbose}{Verbosity level. Set to '-1' or 'FALSE' to get complete silence. Set to '0' to quiet all messages and warnings but keep the progress.bar.
+Set to '1' to see warnings and to '2' (the default) to see both warnings and messages.
+If 3 or higher, the program produces debug messages.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

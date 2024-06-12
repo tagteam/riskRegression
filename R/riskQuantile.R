@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Jun  4 2024 (15:49) 
+## last-updated: Jun  6 2024 (06:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 309
+##     Update #: 310
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,7 +68,7 @@ riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
 
 
 riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
-    model=event=X=reference=status=times=cause=risk=Wt=WTi=cuminc=riskRegression_ID=NULL
+    model=event=X=reference=status=times=cause=risk=Wt=WTi=cuminc=riskRegression_ID = riskRegression_status = riskRegression_time=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95) else Q <- sort(Q) ##
     ## retrospectively (looking back from time t)
@@ -166,7 +166,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
 }
 
 riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
-    model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=riskRegression_ID=NULL
+    model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=riskRegression_ID <- riskRegression_time = riskRegression_event = NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
     else Q <- sort(Q)
