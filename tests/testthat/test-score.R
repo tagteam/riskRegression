@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Sep 17 2022 (07:00) 
+## last-updated: Jun 10 2024 (11:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 172
+##     Update #: 179
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,7 +19,23 @@ library(survival)
 library(rms)
 library(riskRegression)
 library(data.table)
+## install.packages("riskRegression",lib = "~/tmp/")
 context("riskRegression")
+
+# {{{ toy data
+## test_that("toy data", {
+    ## d <- data.frame(time=c(1,2,3,4,5,6),event=c(1,0,1,0,1,0),X=c(1,3,1,2,9,-18))
+    ## detach("package:riskRegression",unload = TRUE)
+    ## library(riskRegression)    
+    ## x = Score(list(X = d$X),data=d,times=1:6,formula=Hist(time,event)~1,metrics="auc")
+    ## x
+    ## detach("package:riskRegression",unload = TRUE)
+    ## library(riskRegression,lib.loc = "~/tmp")
+    ## x1 = Score(list(X = d$X),data=d,times=1:5,formula=Hist(time,event)~1,metrics="auc")
+    ## x1
+    ## all.equal(x$AUC$score,x1$AUC$score)
+## })
+# }}}
 
 # {{{ Missing values
 test_that("Missing values in data", {

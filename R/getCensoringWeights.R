@@ -98,7 +98,10 @@ getCensoringWeights <- function(formula,
                        IC <- list(censoring.save.memory = censoring.save.memory, IC.weights = IC.weights)
                    }
                    else {
-                       IC <- list(censoring.save.memory = censoring.save.memory,fit=fit,wdata=wdata, TiMinus = TiMinus)
+                       IC <- list(censoring.save.memory = censoring.save.memory,
+                                  fit=fit,
+                                  wdata=wdata,
+                                  TiMinus = TiMinus)
                    }
                    out <- c(out,list(IC=IC))
                }

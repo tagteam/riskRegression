@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:20) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (17:57) 
+## Last-Updated: Jun 12 2024 (08:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 21
+##     Update #: 40
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-crossvalPerf.loob.AUC <- function(times,
+crossvalPerf.loob.AUC1 <- function(times,
                                   mlevs,
                                   se.fit,
                                   NT,
@@ -33,11 +33,16 @@ crossvalPerf.loob.AUC <- function(times,
                                   conservative,
                                   cens.model,
                                   cause,
-                                  # crossvalPerf.loob.Brier has more arguments
+                                  # crossvalPerf.loob.Brier has other/more arguments
                                   ...) {
-    Response <- DT.B[,c(response.names,"riskRegression_ID"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]
+    bfold <- fold <- AUC <- riskRegression_event <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  riskRegression_event <- riskRegression_time <- riskRegression_status0 <- riskRegression_status <- riskRegression_ID <- .I <- NULL
+    print(key(DT.B))
+    if (cens.type == "rightCensored"){
+        Response <- DT.B[,c(response.names,"riskRegression_ID","WTi","Wt"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]
+    }else{
+        Response <- DT.B[,c(response.names,"riskRegression_ID"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]}
+    setkey(Response,riskRegression_ID)
     # initializing output
-    bfold <- fold <- AUC <- riskRegression_event <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  riskRegression_event <- riskRegression_time <- riskRegression_status0 <- riskRegression_ID <- NULL
     if (response.type=="binary") {
         auc.loob <- data.table(expand.grid(times=0,model=mlevs)) #add times to auc.loob; now we can write less code for the same thing!
         times <- 0
@@ -98,13 +103,8 @@ crossvalPerf.loob.AUC <- function(times,
             controls.index <- controls.index1 | controls.index2
         }
         # censoring weights
-        if (cens.type=="rightCensored"){ 
-            if (Weights$method == "marginal"){
-                Wt <- Weights$IPCW.times[s]
-            }else{
-                Wt <- Weights$IPCW.times[,s]
-            }
-            weights <- as.numeric(1/Wt * controls.index1  + 1/Weights$IPCW.subject.times * (cases.index | controls.index2))
+        if (cens.type=="rightCensored"){
+            weights <- as.numeric(1/Response$Wt * controls.index1  + 1/Response$WTi * (cases.index | controls.index2))
         }else{ ## uncensored
             weights <- rep(1,N)
         }

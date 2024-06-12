@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun  5 2024 (17:51) 
+## Last-Updated: Jun 10 2024 (08:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 45
+##     Update #: 50
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -14,7 +14,6 @@
 #----------------------------------------------------------------------
 ##
 ### Code:
-
 AUC.survival <- function(DT,
                          breaks=NULL,
                          MC,

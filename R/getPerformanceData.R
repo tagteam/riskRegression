@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (18:02) 
+## Last-Updated: Jun  7 2024 (08:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 66
+##     Update #: 77
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,6 @@ getPerformanceData <- function(testdata,
                                trainseed=NULL,
                                response.type,
                                neworder,
-                               debug,
                                times,
                                cause,
                                levs,
@@ -32,9 +31,8 @@ getPerformanceData <- function(testdata,
                                object.classes,
                                NT,
                                verbose){
-    riskRegression_ID=model = risk = NULL
-    # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-    Brier=IPA=IBS=NULL
+    riskRegression_ID=model = risk = Brier = IPA = IBS = NULL
+    # inherit everything else from parent frame: object, nullobject, NT, times, cause.
     looping <- length(traindata)>0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
@@ -42,7 +40,7 @@ getPerformanceData <- function(testdata,
     testresponse <- testdata[,rr_vars,with=FALSE]
     data.table::setkey(testresponse,riskRegression_ID)
     X <- testdata[,-rr_vars,with=FALSE]
-    if (debug) message("\nExtracted test set and prepared output object")
+    if (verbose>2) message("\nExtracted test set and prepared output object")
     # }}}
     # {{{ collect pred as long format data.table
     args <- switch(response.type,"binary"={list(newdata=X)},
@@ -75,7 +73,7 @@ getPerformanceData <- function(testdata,
                 p <- do.call("predictRisk", c(list(object=object[[f]]),args))[neworder]
             }
         }else{
-            # predictions given as model which needs training in crossvalidation loops
+            # prediction models are trained here in crossvalidation loops
             if (looping){
                 set.seed(trainseed)
                 if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
@@ -110,16 +108,20 @@ getPerformanceData <- function(testdata,
         }
     }))
     if (any(is.na(pred$risk))) {
-        if (verbose>1)message("Table of missing values in predicted risks:")
-        pred[,model:=factor(model,levels=levs,labels)]
-        if (response.type[1] == "binary"){
-            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model)])
+        if (verbose>1){message("Table of missing values in predicted risks:")
+            pred[,model:=factor(model,levels=levs,labels)]
+            if (response.type[1] == "binary"){
+                cat("\n")
+                print(pred[is.na(risk),data.table::data.table("Missing values" = .N),by = list(model)])
+                stop("Missing values in predicted risk detected.")
+            } else{
+                cat("\n")
+                print(pred[is.na(risk),data.table::data.table("Missing values" = .N),by = list(model,times)])
+            }
             stop("Missing values in predicted risk detected.")
-        } else
-            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model,times)])
-        stop("Missing values in predicted risk detected.")
+        }
     }
-    if (debug) message("\nTrained the model(s) and extracted the predictions")
+    if (verbose>2) message("\nTrained the model(s) and extracted the predictions")
     # }}}
     # {{{ merge with Weights (IPCW inner loop)
     if (response.type %in% c("survival","competing.risks")){
@@ -150,12 +152,12 @@ getPerformanceData <- function(testdata,
             pred <- Wt[pred,,on=c("riskRegression_ID","times")]
         }
         data.table::setkey(pred,model,times,riskRegression_ID)
-        if (debug) message("merged the weights with input for performance metrics")
+        if (verbose>2) message("merged the weights with input for performance metrics")
     } else {
         ## if (response.type=="binary")
         Weights <- NULL
     }
-    if (debug) message("added weights to predictions")
+    if (verbose>2) message("added weights to predictions")
     # }}}
     # {{{ merge with response
     DT=merge(testresponse,pred,by="riskRegression_ID")

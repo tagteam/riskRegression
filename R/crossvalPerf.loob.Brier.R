@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:16) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (18:00) 
+## Last-Updated: Jun  6 2024 (18:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 55
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,7 +22,6 @@ crossvalPerf.loob.Brier <- function(times,
                                     response.names,
                                     cens.type,
                                     Weights,
-                                    split.method,
                                     N,
                                     B,
                                     DT.B,
@@ -35,8 +34,9 @@ crossvalPerf.loob.Brier <- function(times,
                                     keep.residuals,
                                     conservative,
                                     cens.model,
-                                    cause){
-    riskRegression_status = riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- reference <- riskRegression_status0 <- IBS <- NULL
+                                    cause,
+                                    ...){
+    riskRegression_status <- riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- reference <- riskRegression_status0 <- IBS <- Wt <- .I <- response <- NULL
     ## sum across bootstrap samples where subject i is out of bag
     if (cens.type=="rightCensored"){
         if (response.type=="survival"){
@@ -64,38 +64,22 @@ crossvalPerf.loob.Brier <- function(times,
     }else{
         DT.info <- DT.B[,c(response.names,"riskRegression_ID"),with = FALSE][DT.B[,.I[1],by = "riskRegression_ID"]$V1]
     }
-    DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=sum(residuals)), by=c(byvars,"riskRegression_ID")]
-    ## get denominator
-    if (split.method$name=="LeaveOneOutBoot"){
-        ind.mat <- do.call("cbind",(lapply(1:B,split.method$index)))
-        Ib <- split.method$B-tabulate(unlist(apply(ind.mat,2,unique)))
-        rm(ind.mat)
-        ## REMOVE ME
-        ## Ib <- Ib[order(data$riskRegression_ID)]
-        if (any(Ib==0)) {
-            warning("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
-            Ib.include <- Ib!=0
-            Ib <- Ib[Ib.include]
-            ## don't subset residuals, they are only
-            ## available for those with Ib.include==1
-            ## DT.B <- DT.B[Ib.include]
-        } else Ib.include <- NULL
-    }else{## cv-k crossvalidation
-        Ib <- rep(split.method$B,N)
-    }
-    ## Ib is the count of how many times subject i is out of bag
-    ## the order of Ib matches the order of riskRegression_ID
+    DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=mean(residuals),n.oob = .N), by=c(byvars,"riskRegression_ID")]
+    never.oob <- N-length(unique(DT.B$riskRegression_ID))
+    ## n.oob is the count of how many times subject i is out of bag
+    ## the order of n.oob matches the order of riskRegression_ID
     ## within groups defined by times and model (byvars)
     data.table::setkeyv(DT.B,c(byvars,"riskRegression_ID"))
-    DT.B[,residuals:=residuals/Ib]
+    ## DT.B[,residuals:=residuals/Ib]
     ## leave-one-out bootstrap estimate
     DT.B[,Brier:=mean(residuals),by=byvars]
     ## standard error via influence function
     if (se.fit==1L){
         ## influence function when censoring model is known or data are uncensored
         DT.B[,IC0:=residuals-Brier]
-        ## se.brier <- DT.B[,list(se=sd(IC0, na.rm=TRUE)/sqrt(N)),by=byvars]
-        ## DT.B[,Brier:=NULL]
+        if (never.oob>0) {
+            conservative <- TRUE
+        }
         if (cens.type[1]=="rightCensored" && !conservative){
             # merge with response, riskRegression_ID and weights
             DT.B <- DT.info[DT.B,,on="riskRegression_ID"]
@@ -221,9 +205,9 @@ crossvalPerf.loob.Brier <- function(times,
             DT.B[,IPCW:=1/WTi]
             DT.B[riskRegression_time>=times,IPCW:=1/Wt]
             DT.B[riskRegression_time<times & riskRegression_status==0,IPCW:=0]
-            output <- c(output,list(residuals=DT.B[,c(names(response),"model","times","risk","residuals","IPCW"),with=FALSE]))
+            output <- c(output,list(residuals=DT.B[,c(response.names,"model","times","risk","residuals","IPCW"),with=FALSE]))
         }else{
-            output <- c(output,list(residuals=DT.B[,c(names(response),"model","times","risk","residuals"),with=FALSE]))
+            output <- c(output,list(residuals=DT.B[,c(response.names,"model","times","risk","residuals"),with=FALSE]))
         }
     }
     if (!is.null(output$score)){
@@ -236,6 +220,7 @@ crossvalPerf.loob.Brier <- function(times,
         output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
         data.table::setkeyv(output$score,byvars)
     }
+    attr(output,"n_subjects_never_oob") = never.oob
     return(output)
 }
 
