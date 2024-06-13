@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 24 2023 (17:36) 
+## last-updated: Jun 13 2024 (19:54) 
 ##           By: Brice Ozenne
-##     Update #: 2323
+##     Update #: 2327
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1422,6 +1422,7 @@ ate_checkArgs <- function(call,
 
 ## * helpers
 ## ** coef.ate
+#' @export
 coef.ate <- function(object, ...){
     name.coef <- interaction(object$meanRisk[["treatment"]],object$meanRisk[["time"]])
     value.coef <- object$meanRisk[[paste0("meanRisk.",object$estimator[1])]]
@@ -1429,6 +1430,7 @@ coef.ate <- function(object, ...){
 }
 
 ## ** vcov.ate
+#' @export
 vcov.ate <- function(object, ...){
     if(is.null(object$iid)){
         stop("Missing iid decomposition in object \n",
@@ -1445,6 +1447,7 @@ vcov.ate <- function(object, ...){
 }
 
 ## ** nobs.multinom
+#' @export
 nobs.multinom <- function(object,...){
     NROW(object$residuals)
 }

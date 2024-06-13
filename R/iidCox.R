@@ -459,16 +459,20 @@ iidCox.CauseSpecificCox <- function(object, newdata = NULL,
 ## * is.iidCox
 `is.iidCox` <- function(object) UseMethod("is.iidCox")
 
+#' @export
 is.iidCox.default <- function(object){
     return(NA)
 }
 
+#' @export
 is.iidCox.coxph <- function(object){
     return(!is.null(object$iid))
 }
+#' @export
 is.iidCox.cph <- is.iidCox.coxph
+#' @export
 is.iidCox.phreg <- is.iidCox.coxph
-
+#' @export
 is.iidCox.CauseSpecificCox <- function(object){
     out <- all(unlist(lapply(object$models, function(iM){!is.null(iM$iid)})))
     return(out)
