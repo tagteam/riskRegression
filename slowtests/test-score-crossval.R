@@ -7,7 +7,25 @@ library(data.table)
 library(ranger)
 context("riskRegression")
 
+test_that("loob binary",{
+    set.seed(8)
+    learndat=sampleData(38,outcome="binary")
+    f1 = glm(Y~X6,data=learndat,family = "binomial")
+    f2 = glm(Y~X7+X8+X9,data=learndat,family = "binomial")
+    ## leave-one-out bootstrap
+    x <- Score(list(f1,f2),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=FALSE,seed = 5,verbose = -1,contrast = 0L,metrics = "auc")
+    y <- Score(list(f1,f2),formula=Y~1,data=learndat,split.method="loob",B=10,se.fit=FALSE,seed = 5,verbose = -1,contrast = 0L,metrics = "auc")
+})
 
+test_that("loob survival",{
+    set.seed(8)
+    learndat=sampleData(38,outcome="survival")
+    cox1a = coxph(Surv(time,event)~X6,data=learndat,x=TRUE,y=TRUE)
+    cox2a = coxph(Surv(time,event)~X7+X8+X9,data=learndat,x=TRUE,y=TRUE)
+    ## leave-one-out bootstrap
+    x <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="loob",B=100,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    y <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="loob",B=10,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+})
 
 #does give some warnings probably, nothing too serious
 test.cv <- function(){
@@ -20,7 +38,6 @@ test.cv <- function(){
                 list(data = "competing.risks", model = "CSC", response = "Hist(time,event)"))
   for (cv in type.cvs){
       for (typ in types){
-          browser()
       cat(paste0("Testing ", typ$data, " data with ",cv, "  \n"))
       test_that(paste0("Testing ", typ$data, " data with ",cv),{
         set.seed(18)

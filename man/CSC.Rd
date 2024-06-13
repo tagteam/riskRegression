@@ -125,13 +125,17 @@ library(survival)
 fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             data=Melanoma,
             surv.type="surv",cause=2)
-## now this does not work
-try(predictRisk(fit5.2,cause=1,newdata=Melanoma,times=4))
+## now this does not work because the object was fitted with surv.type='surv'
+try(predictRisk(fit5.2,cause=1,newdata=Melanoma,times=4000))
 
 ## but this does
 predictRisk(fit5.2,cause=2,newdata=Melanoma,times=100)
 predict(fit5.2,cause=2,newdata=Melanoma,times=100)
 predict(fit5.2,cause=2,newdata=Melanoma[4,],times=100)
+
+fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
+            data=Melanoma,
+            surv.type="hazard",cause=2)
 
 }
 \references{

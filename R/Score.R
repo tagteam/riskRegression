@@ -527,7 +527,7 @@ Score.list <- function(object,
                        cutpoints = NULL,
                        verbose = 2,
                        ...){
-    se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=riskRegression_time=riskRegression_time_status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=riskRegression_event=residuals=event=riskRegression_status = NULL
+    se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=riskRegression_time=riskRegression_time_status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=riskRegression_event=residuals=event=riskRegression_status = j = NULL
     # }}}
     theCall <- match.call()
     # {{{ decide about metrics and plots
@@ -886,6 +886,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         if (verbose>0) if (!missing(times) && (!is.null(times)) && (times[1]!=FALSE))
                                   warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
         times <- NULL
+        maxtime <- NULL
         NT <- 1
     }
     # }}}
@@ -1201,17 +1202,46 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             crossvalPerf <- lapply(metrics, function(m){
                 # either crossvalPerf.loob.AUC or crossvalPerf.loob.Brier
                 cvploob = paste0("crossvalPerf.loob.",m)
-                do.call(cvploob,list(times = times,mlevs = mlevs,se.fit = se.fit,NT = NT,response.type = response.type,response.names = response.names,cens.type = cens.type,Weights = Weights,split.method = split.method,N = N,B = B,DT.B = DT.B,dolist = dolist,alpha = alpha,byvars = byvars,mlabels = mlabels,ipa = ipa,ibs = ibs,keep.residuals = keep.residuals,conservative = conservative,cens.model = cens.model,cause = cause))
+                do.call(cvploob,list(times = times,
+                                     mlevs = mlevs,
+                                     se.fit = se.fit,
+                                     NT = NT,
+                                     response.type = response.type,
+                                     response.names = response.names,
+                                     cens.type = cens.type,
+                                     Weights = Weights,
+                                     N = N,
+                                     B = B,
+                                     DT.B = DT.B,
+                                     dolist = dolist,
+                                     alpha = alpha,
+                                     byvars = byvars,
+                                     mlabels = mlabels,
+                                     ipa = ipa,
+                                     ibs = ibs,
+                                     keep.residuals = keep.residuals,
+                                     conservative = conservative,
+                                     cens.model = cens.model,
+                                     cause = cause))
             })
             names(crossvalPerf) <- metrics
-            if ((verbose > 0) && ("Brier" %in% metrics) && (attr(crossvalPerf[["Brier"]],"n_subjects_never_oob")>0)){
-                warning("Of ",
-                        N,
-                        " subjects ",
-                        attr(crossvalPerf[["Brier"]],"n_subjects_never_oob"),
-                        " are never out of bag.\n",
-                        ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"),
-                        "To fix this, you have to increase the number of bootstrap replications (argument 'B').")
+            if ((verbose > 0)){
+                if (("Brier" %in% metrics) && (attr(crossvalPerf[["Brier"]],"n_subjects_never_oob")>0)){
+                    warning("Of ",
+                            N,
+                            " subjects ",
+                            attr(crossvalPerf[["Brier"]],"n_subjects_never_oob"),
+                            " are never out of bag.\n",
+                            ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"),
+                            "To fix this, you have to increase the number of bootstrap replications (argument 'B').")
+                }else{
+                    if (("AUC" %in% metrics) && (attr(crossvalPerf[["AUC"]],"subjects_never_oob")>0)){
+                        warning("Some pairs of subjects are never out of bag at the same time.\n",
+                                ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"),
+                                "To fix this, you could increase the number of bootstrap replications (argument 'B').")
+                    }
+
+                }
             }
             names(crossvalPerf) <- metrics
             ## copy paste from bootcv; same method to calculate ROC
@@ -1507,6 +1537,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                             alpha=alpha,
                             plots=plots,
                             summary=summary,
+                            maxtime = maxtime,
                             missing.predictions=missing.predictions,
                             off.predictions=off.predictions,
                             call=theCall))

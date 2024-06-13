@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (11:47) 
 ## Version: 
-## Last-Updated: Jun  8 2024 (07:57) 
+## Last-Updated: Jun 13 2024 (17:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2
+##     Update #: 9
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,11 +14,22 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationList, MC, cens.model, Wt, auc,nth.times){
+getInfluenceFunction.AUC.censoring.term <- function(time,
+                                                    event,
+                                                    t,
+                                                    IFcalculationList,
+                                                    MC,
+                                                    cens.model,
+                                                    Wt,
+                                                    auc,
+                                                    nth.times){
     if (cens.model[[1]] == "KaplanMeier"){
         ind.controls<-rep(NA,length(time))
         controls.index1 <- IFcalculationList[["controls1"]]
         controls.index2 <- IFcalculationList[["controls2"]]
+        if ((sum(controls.index1)+sum(controls.index2)) == 0){
+            return(numeric(length(time)))
+        }
         ind.controls[controls.index1] <- 1
         ind.controls[controls.index2] <- 0
         start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
@@ -38,6 +49,11 @@ getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationL
     }
     else if (cens.model[[1]] == "cox"){
         n <- length(time)
+        cases.index <- IFcalculationList[["cases"]]
+        controls.index <- IFcalculationList[["controls"]]
+        if ((sum(controls.index)+sum(controls.index)) == 0){
+            return(numeric(length(time)))
+        }
         ic0Case <- IFcalculationList[["ic0Case"]]
         ic0Control <- IFcalculationList[["ic0Control"]]
         Phi <- IFcalculationList[["muCase"]] * IFcalculationList[["muControls"]] / (n*n)
@@ -45,8 +61,6 @@ getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationL
         muCase <- IFcalculationList[["muCase"]]
         muControls <- IFcalculationList[["muControls"]]
         aucLPO <- auc
-        cases.index <- IFcalculationList[["cases"]]
-        controls.index <- IFcalculationList[["controls"]]
         w.cases <- weights[cases.index]
         w.controls <- weights[controls.index]
         if (!MC$censoring.save.memory){
