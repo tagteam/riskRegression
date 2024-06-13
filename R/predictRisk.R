@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Dec 19 2023 (17:08) 
-##           By: Thomas Alexander Gerds
-##     Update #: 532
+## last-updated: Jun 13 2024 (19:55) 
+##           By: Brice Ozenne
+##     Update #: 533
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -770,6 +770,7 @@ predictRisk.survfit <- function(object,newdata,times,...){
     p
 }
 
+##' @export
 predict.survfit <- function(object,newdata,times,bytimes=TRUE,type="cuminc",fill="last",...){
     if (length(class(object))!=1 || class(object)[[1]]!="survfit" || object$type[[1]] !="right")
         stop("Predictions only available \nfor class 'survfit', possibly stratified Kaplan-Meier fits.\n For class 'cph' Cox models see survest.cph.")
