@@ -27,14 +27,14 @@ getInfluenceCurve.AUC <- function(t,
     }
     else {
         conservativeIFcalculation[["ic0"]]+getInfluenceFunction.AUC.censoring.term(time = time,
-                                                                          event = event,
-                                                                          t = t,
-                                                                          IFcalculationList = conservativeIFcalculation,
-                                                                          MC = MC,
-                                                                          cens.model = cens.model,
-                                                                          Wt = Wt,
-                                                                          auc = auc,
-                                                                          nth.times = nth.times)
+                                                                                   event = event,
+                                                                                   t = t,
+                                                                                   IFcalculationList = conservativeIFcalculation,
+                                                                                   MC = MC,
+                                                                                   cens.model = cens.model,
+                                                                                   Wt = Wt,
+                                                                                   auc = auc,
+                                                                                   nth.times = nth.times)
     }
 }
 

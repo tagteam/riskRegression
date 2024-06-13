@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:16) 
 ## Version: 
-## Last-Updated: Jun  6 2024 (18:04) 
+## Last-Updated: Jun 13 2024 (09:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 55
+##     Update #: 56
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,8 +34,7 @@ crossvalPerf.loob.Brier <- function(times,
                                     keep.residuals,
                                     conservative,
                                     cens.model,
-                                    cause,
-                                    ...){
+                                    cause){
     riskRegression_status <- riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- reference <- riskRegression_status0 <- IBS <- Wt <- .I <- response <- NULL
     ## sum across bootstrap samples where subject i is out of bag
     if (cens.type=="rightCensored"){

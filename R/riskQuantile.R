@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Jun  6 2024 (06:51) 
+## last-updated: Jun 13 2024 (15:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 310
+##     Update #: 313
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -166,7 +166,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
 }
 
 riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
-    model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=riskRegression_ID <- riskRegression_time = riskRegression_event = NULL
+    model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=riskRegression_ID = riskRegression_time = riskRegression_event = NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
     else Q <- sort(Q)
@@ -246,7 +246,7 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
     if (length(dolist)>0){
         contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
-            setorder(DT,model,times,riskRegression_ID)
+            setorderv(DT,cols = c("model","times","riskRegression_ID"))
             DTdiff <- DT[model%in%g[-1]]
             DTref <- rep(DT[model==g[1],risk],length(unique(DTdiff$model)))
             DTdiff[,X:=risk-DTref]
