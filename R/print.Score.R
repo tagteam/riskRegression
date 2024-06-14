@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Jun  5 2024 (07:27) 
+## last-updated: Jun 14 2024 (07:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 70
+##     Update #: 71
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -50,7 +50,8 @@ print.Score <- function(x,digits,...){
             " each of size ",
             x$split.method$M,
             ".\n",
-            ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,"\nThe 'confidence intervals' are bootstrap quantiles"),""),
+            ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,
+                                        "\nThe 'confidence intervals' are bootstrap quantiles"),""),
             "\n",
             sep="")
     },"LeaveOneOutBoot"={
@@ -63,7 +64,8 @@ print.Score <- function(x,digits,...){
             " each of size ",
             x$split.method$M,
             ".\n",
-            "The 'confidence intervals' and 'p-values' are obtained with the delta method after bootstrap.\n",
+            ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,
+                                        "The 'confidence intervals' and 'p-values' are obtained with the delta method after bootstrap.\n"),""),
             sep="")
     })
     if (x$split.method$internal.name == "crossval"){

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:20) 
 ## Version: 
-## Last-Updated: Jun 13 2024 (15:40) 
+## Last-Updated: Jun 14 2024 (07:46) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 93
+##     Update #: 97
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -238,10 +238,10 @@ crossvalPerf.loob.AUC <- function(times,
                                                            dolist=dolist,
                                                            se.fit=TRUE)]
                 }
-                setnames(contrasts.AUC,"delta","delta.AUC")
-                output <- c(output,list(contrasts=contrasts.AUC))
             }
         }
+        setnames(contrasts.AUC,"delta","delta.AUC")
+        output <- c(output,list(contrasts=contrasts.AUC))
     }
     if (!is.null(output$score)){
         output$score[,model:=factor(model,levels=mlevs,mlabels)]
