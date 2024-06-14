@@ -19,12 +19,20 @@ test_that("loob binary",{
 
 test_that("loob survival",{
     set.seed(8)
-    learndat=sampleData(38,outcome="survival")
+    learndat=sampleData(188,outcome="survival")
     cox1a = coxph(Surv(time,event)~X6,data=learndat,x=TRUE,y=TRUE)
-    cox2a = coxph(Surv(time,event)~X7+X8+X9,data=learndat,x=TRUE,y=TRUE)
+    cox2a = coxph(Surv(time,event)~X1+X9,data=learndat,x=TRUE,y=TRUE)
     ## leave-one-out bootstrap
     x <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="loob",B=100,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
     y <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="loob",B=10,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    z <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="loob",M = .632*nrow(learndat),B=100,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    ## 10-fold, 7-fold, 5-fold, 2-fold
+    a <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="cv10",B=1,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    b <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="cv7",B=2,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    c <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="cv2",B=20,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    d <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="cv5",B=2,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
+    ## bootcv
+    e <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,seed = 5,split.method="bootcv",B=100,se.fit=FALSE,progress.bar=NULL,metrics = "auc",verbose = -1)
 })
 
 #does give some warnings probably, nothing too serious

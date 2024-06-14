@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jun 10 2024 (11:55) 
+## last-updated: Jun 14 2024 (07:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 179
+##     Update #: 180
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -234,6 +234,7 @@ test_that("binary outcome: AUC", {
 ## library(survival)
 ## library(riskRegression)
 ## library(rms)
+## library(pec)
 ## data(pbc)
 ## pbc <- na.omit(pbc)
 ## pbc$time=pbc$time+rnorm(nrow(pbc),sd=.1)
