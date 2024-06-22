@@ -575,10 +575,10 @@ Score.list <- function(object,
     if ((!missing(cutpoints)) && (!missing(split.method)) && tolower(split.method) != "none")
         if (verbose>0) warning("Calculation of sensitivities, specificities and predictive values only implemented for argument split.method='none'.\n
                 Argument 'cutpoints' is ignored.")
-    if ("Calibration" %in% plots) {
+    ## if ("Calibration" %in% plots) {
         ## add pseudo if needed
-        if (!("pseudo" %in% cens.method)) cens.method <- c(cens.method,"pseudo")
-    }
+        ## if (!("pseudo" %in% cens.method)) cens.method <- c(cens.method,"pseudo")
+    ## }
 
     # }}}
     # {{{ censoring model arguments
@@ -922,10 +922,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                 # need to communicate the censoring code of the event variable
                 # produced by Hist via model.frame in case of competing risks
                 if (response.type=="competing.risks"){
-                    censcode <- data[status==0,event[1]]
-                    margForm <- Hist(time,event,cens.code=censcode)~1
+                    censcode <- data[riskRegression_status==0,riskRegression_event[1]]
+                    margForm <- Hist(riskRegression_time,riskRegression_event,cens.code=censcode)~1
                 }else{
-                    censcode <- data[status==0,status[1]]
+                    censcode <- data[riskRegression_status==0,riskRegression_status[1]]
                     margForm <- update(formula,".~1")
                 }
                 margFit <- prodlim::prodlim(margForm,data=data)
@@ -935,6 +935,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                    pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
                 if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
             }
+        }else{
+            jack <- NULL
         }
     } else{
         Weights <- NULL

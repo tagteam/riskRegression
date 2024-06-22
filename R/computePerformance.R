@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: Jun  5 2024 (07:27) 
+## Last-Updated: Jun 17 2024 (10:15) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 23
+##     Update #: 24
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -84,12 +84,10 @@ computePerformance <- function(DT,
     # }}}
     # {{{ collect data for calibration plots
     if ("Calibration" %in% plots){
-        if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
-            out[["Calibration"]]$plotframe <- DT[model!=0]
-        else{
-            out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("riskRegression_ID","times"))
-        }
+        out[["Calibration"]]$plotframe <- DT[model!=0]
         out[["Calibration"]]$plotframe[,model:=factor(model,levels=models$levels,labels=models$labels)]
+        if (length(jack)>0)
+            out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("riskRegression_ID","times"))
     }
     # }}}
     ## make sure that Brier score comes first, so that we can remove the null.model afterwards
