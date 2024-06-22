@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jun  4 2024 (19:12) 
+## Last-Updated: Jun 22 2024 (08:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 243
+##     Update #: 249
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -89,7 +89,7 @@ plotRisk <- function(x,
                      preclipse=0,
                      preclipse.shade=FALSE,
                      ...){
-    model = riskRegression_event = riskRegression_time = risk = status = event = cause = NULL
+    model = riskRegression_event = riskRegression_time = risk = riskRegression_status = cause = NULL
     if (is.null(x$risks$score)) stop("No predicted risks in object. You should set summary='risks' when calling Score.")
     if (!is.null(x$null.model)){
         pframe <- x$risks$score[model!=x$null.model]
@@ -112,9 +112,9 @@ plotRisk <- function(x,
     if (missing(models)){
         models <- pframe[,levels(model)[1:2]]
     }else{
-        if (any(!(models %in% unique(pframe$models)))){
+        if (any(!(models %in% unique(pframe$model)))){
             stop(paste0("Fitted object does not contain models named: ",paste0(models,collapse = ", "),
-                        "\nAvailable models are named: ",paste0(unique(pframe$models),collapse = ", ")))
+                        "\nAvailable models are named: ",paste0(unique(pframe$model),collapse = ", ")))
         }
         if (is.na(models[2])) stop("Need two models for a scatterplot of predicted risks")
         fitted.models <- x$models
@@ -145,7 +145,7 @@ plotRisk <- function(x,
         if  (x$response.type=="survival"){
             Rfactor <- pframe[model==modelnames[1],
             {
-                r <- factor(status,levels = c(-1,0,1),labels = c("No event","Censored","Event"))
+                r <- factor(riskRegression_status,levels = c(-1,0,1),labels = c("No event","Censored","Event"))
                 r[riskRegression_time>times] <- "No event"
                 r
             }]
@@ -154,17 +154,16 @@ plotRisk <- function(x,
             # sort such that event-free, censored, current cause, cr1, cr2, ...
             Rfactor <- pframe[model==modelnames[1],{
                 # need to use x$states as object$states is always sorted no matter the cause of interest
-                if (any(status == 0)){
-                    r = factor(as.character(event),levels = 0:(nCR+2),labels = c("No event",x$states,"Censored"))
+                if (any(riskRegression_status == 0)){
+                    r = factor(as.character(riskRegression_event),levels = 0:(nCR+2),labels = c("No event",x$states,"Censored"))
                 } else{
-                    r = factor(as.character(event),levels = 0:(nCR+1),labels = c("No event",x$states))
+                    r = factor(as.character(riskRegression_event),levels = 0:(nCR+1),labels = c("No event",x$states))
                 }
-                ## r[status == 0] = "Censored"
                 r[riskRegression_time>times] = "No event"
                 # check if all states are anonymous numbers
                 if (suppressWarnings(sum(is.na(as.numeric(states))) == 0)){
                     if (nCR == 1){
-                        if (any(status == 0))
+                        if (any(riskRegression_status == 0))
                             r = factor(r,
                                        levels = c("No event","Censored",states),
                                        labels = c("No event","Censored","Event","Competing risk"))
@@ -173,7 +172,7 @@ plotRisk <- function(x,
                                        levels = c("No event",states),
                                        labels = c("No event","Event","Competing risk"))
                     }else{
-                        if (any(status == 0))
+                        if (any(riskRegression_status == 0))
                             r = factor(r,
                                        levels = c("No event","Censored",states),
                                        labels = c("No event","Censored","Event",paste0("Competing risk ",1:nCR)))
@@ -246,8 +245,14 @@ plotRisk <- function(x,
                 paste(paste(this.legend),collapse = "\n"))
     }
     if (x$response.type == "competing.risks") {
-        message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n\n",
-                paste(this.legend,collapse = "\n"),"\n\nwhere the event type values (",paste(states,collapse = ", "),") in the data correspond to labels:\n Event, ",ifelse(nCR == 1,"Competing risk",paste0("Competing risk ",1:nCR,collapse = ", "))
+        message("Counts of events and censored are evaluated at the prediction time horizon (times=",
+                times,
+                "):\n\n",
+                paste(this.legend,collapse = "\n"),
+                "\n\nwhere the event type values (",
+                paste(states,collapse = ", "),
+                ") in the data correspond to labels:\n Event, ",
+                ifelse(nCR == 1,"Competing risk",paste0("Competing risk ",1:nCR,collapse = ", "))
                 )
     }
     legend.DefaultArgs <- list(legend=this.legend,

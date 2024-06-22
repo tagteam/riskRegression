@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (09:25) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (18:13) 
+## Last-Updated: Jun 17 2024 (10:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 13
+##     Update #: 15
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -83,7 +83,6 @@ test_that("competing risks outcome: robustness against order of data set",{
     expect_equal(ignore_attr=TRUE,s3$AUC,s3b$AUC)
 })
 # }}}
-
 # {{{ "survival outcome: Brier Score pec vs Score"
 if (requireNamespace("pec",quietly=TRUE)){
     test_that("survival outcome: Brier Score pec vs Score",{
@@ -100,7 +99,6 @@ if (requireNamespace("pec",quietly=TRUE)){
     })
 }
 # }}}
-
 # {{{ "survival outcome: matrix input"
 test_that("survival outcome: matrix input",{
     set.seed(112)
@@ -145,7 +143,7 @@ test_that("Number of models and time points", {
         ## expect_equal(ignore_attr=TRUE,r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     }
 })
-
+# }}}
 # {{{ "Bootstrap cross validation
 test_that("Number of models and time points", {
     if (!requireNamespace("pec",quietly=TRUE)){
@@ -180,7 +178,6 @@ test_that("Number of models and time points", {
     }
 })
 # }}}
-
 # {{{ "LOOB: Number of models and time points"
 test_that("LOOB: Number of models and time points", {   
     library(testthat)
@@ -228,9 +225,7 @@ test_that("LOOB: Number of models and time points", {
     expect_equal(ignore_attr=TRUE,A1$Brier$score[model=="fit1"&times==365.25*4],
                  A$Brier$score[model=="fit1"&times==365.25*4])
 })
-
-
-
+# }}}
 # {{{ "vcov AUC"
 test_that("vcov AUC",{
     set.seed(112)
@@ -248,7 +243,7 @@ test_that("vcov AUC",{
     expect_equal(ignore_attr=TRUE,dim(test$AUC$vcov),c(4,4))
 })
 # }}}
-
+# {{{ LOOB binary
 ## GIVES WARNING 
 ## already exporting variable(s): data, split.method, Weights, N, trainseeds
 test_that("loob binary",{
@@ -275,7 +270,8 @@ test_that("loob binary",{
     expect_equal(ignore_attr=TRUE,loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
     expect_equal(ignore_attr=TRUE,loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
 })
-
+# }}}
+# {{{ bootcv binary
 test_that("bootcv binary (multi.state.test)",{
     learndat=sampleData(200,outcome="binary")
     lr1a = glm(Y~X6,data=learndat,family=binomial)
@@ -302,7 +298,7 @@ test_that("bootcv binary (multi.state.test)",{
     ## expect_equal(ignore_attr=TRUE,bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
     ## }
 })
-
+# }}}
 # {{{ "Brier score"
 if (requireNamespace("pec",quietly=TRUE)){
     test_that("Brier score",{
