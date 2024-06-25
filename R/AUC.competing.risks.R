@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun  5 2024 (17:52) 
+## Last-Updated: Jun 25 2024 (09:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 44
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -173,7 +173,7 @@ AUC.competing.risks <- function(DT,
             }
             do.call("rbind",res)
         }
-        output <- list(res.cut=aucDT[, cutpoint.helper.fun(FPR = FPR,
+        output <- list(cutpoints=aucDT[, cutpoint.helper.fun(FPR = FPR,
                                                            TPR = TPR,
                                                            risk = risk,
                                                            ipcwCases = ipcwCases,

@@ -312,7 +312,6 @@ Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas
    (3):751--763, 2020.
 }
 \seealso{
-\code{\link{as.data.table}} to extract the estimates in a \code{data.table} object.
 \code{\link{autoplot.ate}} for a graphical representation the standardized risks.
 \code{\link{confint.ate}} to compute (pointwise/simultaneous) confidence intervals and (unadjusted/adjusted) p-values, possibly using a transformation.
 \code{\link{summary.ate}} for a table containing the standardized risks over time and treatment/strata.

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (11:46) 
 ## Version: 
-## Last-Updated: Jun  6 2024 (18:01) 
+## Last-Updated: Jun 25 2024 (13:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 13
+##     Update #: 14
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -53,7 +53,6 @@ getInfluenceCurve.Brier <- function(t,
             IF.Brier <- IC0+as.numeric(rowSumsCrossprod(as.matrix(residuals),ic.weights,0)) / N
         }
         else {
-            browser(skipCalls = TRUE)
             wdata <- IC.G[["wdata"]]
             fit <- IC.G[["fit"]]
             TiMinus <- IC.G[["TiMinus"]]

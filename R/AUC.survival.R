@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun 10 2024 (08:01) 
+## Last-Updated: Jun 25 2024 (09:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 50
+##     Update #: 52
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -150,11 +150,19 @@ AUC.survival <- function(DT,
                 else {
                     NPV <- NA
                 }
-                res[[i]] <- data.table(risk = cutpoints[i], TPR=TPRi, SE.TPR=SE.TPR,FPR=FPRi, SE.FPR=SE.FPR,PPV=PPV,SE.PPV=SE.PPV,NPV=NPV,SE.NPV=SE.NPV)
+                res[[i]] <- data.table(risk = cutpoints[i],
+                                       TPR=TPRi,
+                                       SE.TPR=SE.TPR,
+                                       FPR=FPRi,
+                                       SE.FPR=SE.FPR,
+                                       PPV=PPV,
+                                       SE.PPV=SE.PPV,
+                                       NPV=NPV,
+                                       SE.NPV=SE.NPV)
             }
             do.call("rbind",res)
         }
-        output <- list(res.cut=aucDT[,
+        output <- list(cutpoints=aucDT[,
                                      cutpoint.helper.fun(FPR = FPR,
                                                          TPR = TPR,
                                                          risk = risk,

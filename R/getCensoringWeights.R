@@ -109,7 +109,7 @@ getCensoringWeights <- function(formula,
                stop("Use stratification with Cox instead. ")
            },
            {
-               if (verbose>0)warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")
+               if (verbose>0)warning("Using other models (than Cox and Kaplan-Meier) for getting the censoring weights is under construction.  ")
                vv <- all.vars(formula(delete.response(terms(formula))))
                new.formula<-as.formula(paste0("Surv(riskRegression_time,riskRegression_status)",paste0("~",paste0(paste(vv,collapse = "+")))))
                wdata <- copy(data)
