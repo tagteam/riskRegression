@@ -164,7 +164,7 @@
 #' obtained for different data splits during crossvalidation.
 ##' @param cutpoints If not \code{NULL}, estimates and standard errors of the TPR (True Positive Rate), 
 ##' FPR (False Positive Rate), PPV (Positive Predictive Value), and NPV (Negative Predictive Value) 
-##' are given at the \code{cutpoints}. These values are saved in \code{object$AUC$res.cut}.
+##' are given at the \code{cutpoints}. These values are saved in \code{object$AUC$cutpoints}.
 ##' @param verbose Verbosity level. Set to '-1' or 'FALSE' to get complete silence. Set to '0' to quiet all messages and warnings but keep the progress.bar.
 ##' Set to '1' to see warnings and to '2' (the default) to see both warnings and messages.
 ##' If 3 or higher, the program produces debug messages. 

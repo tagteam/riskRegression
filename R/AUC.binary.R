@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (14:50) 
+## Last-Updated: Jun 25 2024 (12:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -65,37 +65,25 @@ AUC.binary <- function(DT,
             setcolorder(score,c("model","AUC"))
         }
         names(auc) <- 1:nauc
-        ## q1 <- auc/(2 - auc)
-        ## q2 <- 2 * auc^2/(1 + auc)
-        ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
         if (length(dolist)>0){
-            ## ncomp <- nauc * (nauc - 1)/2
             ncomp <- length(dolist)
             delta.AUC <- numeric(ncomp)
             se <- numeric(ncomp)
             model <- numeric(ncomp)
             reference <- numeric(ncomp)
             ctr <- 1
-
             Qnorm <- qnorm(1 - alpha/2)
             for (d in dolist){
                 i <- d[1]
-                ## for (i in 1:(nauc - 1)) {
-                ## for (j in (i + 1):nauc) {
                 for (j in d[-1]) {
                     delta.AUC[ctr] <- auc[j]-auc[i]
                     if (se.fit[[1]]){
-                        ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
                         LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
-                        ## print(c(1/LSL,rms::matinv(LSL)))
                         se[ctr] <- sqrt(LSL)
                     }
-                    ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
-                    ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
                     model[ctr] <- modelnames[j]
                     reference[ctr] <- modelnames[i]
                     ctr <- ctr + 1
-                    ## }
                 }
             }
             deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
@@ -163,34 +151,37 @@ AUC.binary <- function(DT,
     } else{
         AUC <- score[,list(AUC=0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))),by=list(model)]
         ROC <- score
-        
         if(!is.null(cutpoints)){
-            temp.fun <- function(risk,cutpoints,TPR,FPR,PPV,NPV,Prisks,Prisks2){
+            temp.TPR.ic <- score[,{
                 temp <- pmin(prodlim::sindex(risk,cutpoints,comp = "greater"),length(risk))
-                data.table(TPR=TPR[temp],FPR=FPR[temp],PPV=PPV[temp],NPV=NPV[temp],Prisks=Prisks[temp],Prisks2=Prisks2[temp],cutpoints=cutpoints)
-            }
-            temp.TPR.ic <- score[,temp.fun(risk,cutpoints,TPR,FPR,PPV,NPV,Prisks,Prisks2),by=list(model)]
-            res.cut <- list()
+                data.table(TPR=TPR[temp],
+                           FPR=FPR[temp],
+                           PPV=PPV[temp],
+                           NPV=NPV[temp],
+                           Prisks=Prisks[temp],
+                           Prisks2=Prisks2[temp],
+                           cutpoints=cutpoints)
+            },by=list(model)]
+            results <- list()
             for (i in 1:length(cutpoints)){
                 temp.TPR <- subset(temp.TPR.ic,cutpoints==cutpoints[i])
-                # FIXME: merge on what?
-                aucDT.temp <- merge(aucDT,temp.TPR)
-                some.fun <- function(riskRegression_event,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cut,N){
+                aucDT.temp <- merge(aucDT,temp.TPR,by = "model")
+                cut <- aucDT.temp$cutpoints[[i]]
+                results[[i]] <- aucDT.temp[,{
                     meanY <- mean(riskRegression_event)
-                    out <- list(TPR = TPR[1], 
+                    out <- list(cutpoint = cut,
+                                TPR = TPR[1], 
                                 SE.TPR = sd(riskRegression_event/meanY * ((risk > cut)-TPR))/sqrt(N), 
                                 FPR = FPR[1], 
                                 SE.FPR = sd((1-riskRegression_event)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
                                 PPV = PPV[1],
                                 SE.PPV = sd((risk > cut)/Prisks[1] * (riskRegression_event - PPV))/sqrt(N),
                                 NPV = NPV[1], 
-                                SE.NPV = sd((risk <= cut)/Prisks2[1] * ((1-riskRegression_event) - NPV))/sqrt(N), 
-                                cutpoint = cut)
+                                SE.NPV = sd((risk <= cut)/Prisks2[1] * ((1-riskRegression_event) - NPV))/sqrt(N))
                     out
-                }
-                res.cut[[i]] <- aucDT.temp[,some.fun(riskRegression_event,risk,TPR,FPR,PPV,NPV,Prisks,Prisks2,cutpoints[i],N), by = list(model)]
+                }, by = list(model)]
             }
-            output <- list(score=AUC,ROC=ROC, res.cut=do.call("rbind",res.cut))
+            output <- list(score=AUC,ROC=ROC, cutpoints=do.call("rbind",results))
         }
         else {
             output <- list(score=AUC,ROC=ROC)
