@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: May 23 2023 (11:30) 
-##           By: Thomas Alexander Gerds
-##     Update #: 934
+## Last-Updated: sep  2 2024 (12:35) 
+##           By: Brice Ozenne
+##     Update #: 985
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,6 @@ ATE_TI <- function(object.event,
                    landmark,
                    cause,
                    level.censoring,
-                   n.contrasts,
                    levels,
                    n.censor,
                    estimator,
@@ -37,7 +36,6 @@ ATE_TI <- function(object.event,
                    eventVar.status,
                    censorVar.time,
                    censorVar.status,
-                   type.multistate,
                    return.iid.nuisance,
                    data.index,
                    method.iid,
@@ -107,13 +105,12 @@ ATE_TI <- function(object.event,
                                    )
 
         ## *** jump time for the censoring process
-        time.jumpC <- sort(mydata[[censorVar.time]][(mydata[[censorVar.status]] == level.censoring)])
+        time.jumpC <- unique(sort(mydata[[censorVar.time]][(mydata[[censorVar.status]] == level.censoring)]))
         index.obsSINDEXjumpC <- do.call(cbind,lapply(times, function(tau){
             prodlim::sindex(jump.times = time.jumpC, eval.times = pmin(mydata[[censorVar.time]],tau)-tol)
         }))
         index.lastjumpC <- max(index.obsSINDEXjumpC)
         time.jumpC <- time.jumpC[1:index.lastjumpC]
-
     }
     if(attr(estimator,"integral")){
         ## *** jump time index of the event time stopped at tau
@@ -126,7 +123,7 @@ ATE_TI <- function(object.event,
         beforeTau.nJumpC <- sapply(times, function(iTau){sum(time.jumpC <= iTau)})
         beforeTau.nJumpC.n0 <- beforeTau.nJumpC[beforeTau.nJumpC!=0]
     }
-    
+
     ## ** compute predictions
     ## *** treatment model
     if(attr(estimator,"IPTW")){
@@ -215,57 +212,60 @@ ATE_TI <- function(object.event,
         }
     }
 
-    ## ** Compute augmentation term
+    ## ** Compute augmentation term 
     if(attr(estimator,"integral")){
-        ## absolute risk at event times
-        predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
-                                 iid = (method.iid==2)*return.iid.nuisance)
-        F1.tau <- predTempo[,1:n.times,drop=FALSE]
-        F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
-        if((method.iid==2)*return.iid.nuisance){
-            out$store$iid.nuisance.outcome <- attr(predTempo,"iid")
-        }
-        
-        ## survival at all jump of the censoring process
-        S.jump <- predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
-                              iid = (method.iid==2)*return.iid.nuisance)
-        if((method.iid==2)*return.iid.nuisance){
-            out$store$iid.nuisance.survival <- attr(S.jump,"iid")
-            attr(S.jump,"iid") <- NULL
-        }
+        augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
 
-        ## martingale for the censoring process
-        ## at all times of jump of the censoring process
-        G.jump <- 1-predictRisk(object.censor, newdata = mydata, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
-                                product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
+        ## integral is sum over individuals from 0 to min(T_i,\tau) of dM_i^C. It is therefore non-0 only if:
+        ## - some of the requested times are after the first censoring time 
+        ## - some of the censoring jump times are before the event times (always the case?)
+        if(index.lastjumpC>0 && any(beforeEvent.jumpC)){ 
+            
+            ## absolute risk at event times
+            predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
+                                     iid = (method.iid==2)*return.iid.nuisance)
+            F1.tau <- predTempo[,1:n.times,drop=FALSE]
+            F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
+            if((method.iid==2)*return.iid.nuisance){
+                out$store$iid.nuisance.outcome <- attr(predTempo,"iid")
+            }
         
-        if(return.iid.nuisance && (method.iid==2)){
-            out$store$iid.nuisance.censoring <- -attr(G.jump,"iid")
-            attr(G.jump,"iid") <- NULL
-        }
+            ## survival at all jump of the censoring process
+            S.jump <- predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
+                                  iid = (method.iid==2)*return.iid.nuisance)
+            if((method.iid==2)*return.iid.nuisance){
+                out$store$iid.nuisance.survival <- attr(S.jump,"iid")
+                attr(S.jump,"iid") <- NULL
+            }
+
+            ## martingale for the censoring process
+            ## at all times of jump of the censoring process
+            G.jump <- 1-predictRisk(object.censor, newdata = mydata, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
+                                    product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
         
-        dN.jump <- do.call(rbind,lapply(1:n.obs, function(iObs){(mydata[[eventVar.time]][iObs] == time.jumpC)*(mydata[[eventVar.status]][iObs] == level.censoring)}))
-        dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
-        if((method.iid==2)*return.iid.nuisance){
-            out$store$iid.nuisance.martingale <- dLambda.jump$hazard.iid
-        }
-
-        dM.jump <- dN.jump - dLambda.jump$hazard
-
-        ## integral
-        integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
-        integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
-        index.beforeEvent.jumpC <- which(beforeEvent.jumpC)
-        if(length(index.beforeEvent.jumpC)>0){
+            if(return.iid.nuisance && (method.iid==2)){
+                out$store$iid.nuisance.censoring <- -attr(G.jump,"iid")
+                attr(G.jump,"iid") <- NULL
+            }
+            dN.jump <- do.call(cbind,lapply(time.jumpC, function(iJump){(mydata[[eventVar.time]] == iJump)*(mydata[[eventVar.status]] == level.censoring)}))
+            dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
+            if((method.iid==2)*return.iid.nuisance){
+                out$store$iid.nuisance.martingale <- dLambda.jump$hazard.iid
+            }
+            dM.jump <- dN.jump - dLambda.jump$hazard
+            ## integral = \int_0^min(T_i,\tau) (F1(\tau|A_i,W_i)-F1(t|A_i,W_i)) / S(t|A_i,W_i) * dM_i^C(t)/Gc(t|A_i,W_i)
+            ##          = F1(\tau|A_i,W_i) \int_0^min(T_i,\tauf) dM_i^C(t) / (S(t|A_i,W_i) * Gc(t|A_i,W_i)) - \int_0^min(T_i,\tauf) F1(t|A_i,W_i) dM_i^C(t) / (S(t|A_i,W_i) * Gc(t|A_i,W_i))
+            integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
+            integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
+            index.beforeEvent.jumpC <- which(beforeEvent.jumpC) ## identify which increment to put in the integral, i.e. when the individual was still at risk of being censored
             integrand[index.beforeEvent.jumpC] <- dM.jump[index.beforeEvent.jumpC] / (G.jump[index.beforeEvent.jumpC] * S.jump[index.beforeEvent.jumpC])
             integrand2[index.beforeEvent.jumpC] <- F1.jump[index.beforeEvent.jumpC] * integrand[index.beforeEvent.jumpC]
+            integral <- rowCumSum(integrand)
+            integral2 <- rowCumSum(integrand2)
+            augTerm[,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
         }
-        integral <- rowCumSum(integrand)
-        integral2 <- rowCumSum(integrand2)
-        augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
-        augTerm[,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
     }
-       
+    
     ## ** Compute individual contribution to the ATE + influence function for the G-formula
     for(iC in 1:n.contrasts){ ## iC <- 1
         if(attr(estimator,"export.GFORMULA")){
