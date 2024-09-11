@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep  2 2024 (12:35) 
+## Last-Updated: sep  9 2024 (17:15) 
 ##           By: Brice Ozenne
-##     Update #: 985
+##     Update #: 993
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -141,7 +141,7 @@ ATE_TI <- function(object.event,
     if(attr(estimator,"IPCW")){
         iPred <- lapply(1:n.times, function(iT){
             1-predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iT]+1],
-                        diag = TRUE, product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
+                          diag = TRUE, product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
         })
             
         G.T_tau <- do.call(cbind,iPred)

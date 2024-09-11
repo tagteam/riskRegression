@@ -5,23 +5,23 @@
 \title{Logistic Regression Using IPCW}
 \usage{
 wglm(
-  regressor.event,
-  formula.censor,
+  formula.event,
   times,
   data,
+  formula.censor = ~1,
   cause = NA,
-  fitter = "coxph",
-  product.limit = FALSE
+  fitter = NULL,
+  product.limit = NULL
 )
 }
 \arguments{
-\item{regressor.event}{[formula] a formula with empty left hand side and the covariates for the logistic regression on the right hand side.}
-
-\item{formula.censor}{[formula] a formula used to fit the censoring model.}
+\item{formula.event}{[formula] a formula with a Surv object on the left hand side and the covariates for the logistic regression on the right hand side.}
 
 \item{times}{[numeric vector] time points at which to model the probability of experiencing an event.}
 
 \item{data}{[data.frame] dataset containing the time at which the event occured, the type of event, and regressors used to fit the censoring and logistic models.}
+
+\item{formula.censor}{[formula] an optional formula indicating on its right hand side the covariates for the censoring model.}
 
 \item{cause}{[character or numeric] the cause of interest. Defaults to the first cause.}
 
@@ -45,15 +45,16 @@ and where the outcome is the indicator of having experience the event of interes
 \examples{
 library(survival)
 
+#### simulate data ####
 set.seed(10)
 n <- 250
 tau <- 1:5
 d <- sampleData(n, outcome = "competing.risks")
-dFull <- d[event!=0] ## remove censoring
-dSurv <- d[event!=2] ## remove competing risk
+dFull <- d[event!=0] ## (artificially) remove censoring
+dSurv <- d[event!=2] ## (artificially) remove competing risk
 
 #### no censoring ####
-e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+e.wglm <- wglm(Surv(time,event) ~ X1, 
                times = tau, data = dFull, product.limit = TRUE)
 e.wglm ## same as a logistic regression
 
@@ -61,21 +62,19 @@ summary(ate(e.wglm, data = dFull, times = tau, treatment = "X1", verbose = FALSE
 
 #### right-censoring ####
 ## no covariante in the censoring model (independent censoring)
-eC.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+eC.wglm <- wglm(Surv(time,event) ~ X1,
                times = tau, data = dSurv, product.limit = TRUE)
 eC.wglm
 
 ## with covariates in the censoring model
-eC2.wglm <- wglm(regressor.event = ~ X1 + X8,
-                formula.censor = Surv(time,event==0) ~ X1*X8,
+eC2.wglm <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1*X8,
                  times = tau, data = dSurv)
 eC2.wglm
 
 #### Competing risks ####
 ## here Kaplan-Meier as censoring model
-eCR.wglm <- wglm(regressor.event = ~ X1,
-                 formula.censor = Surv(time,event==0) ~ strata(X1),
-                 times = tau, data = d, cause = 1, product.limit = TRUE)
+eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~strata(X1),
+                 times = tau, data = d)
 eCR.wglm
 
 }

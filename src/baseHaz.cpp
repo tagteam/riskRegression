@@ -18,7 +18,8 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
                                int nPatients,
                                double maxtime,
                                int cause,
-                               bool Efron);
+                               bool Efron,
+			       bool reverse);
 
 structExport subset_structExport(const structExport& resAll,
                                  const vector<double>& newtimes,
@@ -40,6 +41,7 @@ structExport subset_structExport(const structExport& resAll,
 //' @param nStrata number of strata 
 //' @param cause the status value corresponding to event.
 //' @param Efron whether Efron or Breslow estimator should be used in presence of ties.
+//' @param reverse whether censoring occurs before events in presence of ties.
 //' 
 //' @details WARNING stoptimes status eXb and strata must be sorted by strata, stoptimes, and status
 //' @export
@@ -54,7 +56,8 @@ List baseHaz_cpp(const NumericVector& starttimes,
                  int nPatients,
                  int nStrata,
                  int cause,
-                 bool Efron){
+                 bool Efron,
+		 bool reverse){
   
   vector<int> nObsStrata(nStrata,0);
   vector< vector<double> > starttimes_S(nStrata);
@@ -138,7 +141,7 @@ List baseHaz_cpp(const NumericVector& starttimes,
     // compute the hazard
     resH = baseHazStrata_cpp(starttimes_S[iter_s], stoptimes_S[iter_s], status_S[iter_s], eXb_S[iter_s],
                              nObsStrata[iter_s], maxtime, cause, 
-                             Efron);
+                             Efron, reverse);
     // subset results according to predtime
     if(nPredtimes>0){
       resH = subset_structExport(resH,
@@ -167,6 +170,7 @@ List baseHaz_cpp(const NumericVector& starttimes,
 }
 
 
+// * baseHazStrata_cpp
 structExport baseHazStrata_cpp(const vector<double>& starttimes,
 			       const vector<double>& stoptimes,
                                const vector<int>& status,
@@ -174,7 +178,8 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
                                int nPatients,
                                double maxtime,
                                int cause,
-                               bool Efron){
+                               bool Efron,
+			       bool reverse){
 
   // check whether there is left truncation
 
@@ -219,7 +224,7 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
   vector<double> cumhazard(nEventsLast, NA_REAL);
   
   vector<int> death(nEvents,0);
-  vector<double> sumEXb(nEvents), sumEXb2;
+  vector<double> sumEXb(nEvents,0.0);
   vector<double> sumEXb_event(nEvents,0.0); // only used if efron correction
 
 
@@ -234,41 +239,47 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
    for(int iterPat = nPatients-2 ; iterPat >= 0 ; iterPat--){
     if(stoptimes[iterPat] != stoptimes[iterPat+1]){
       index_tempo--;
-      sumEXb[index_tempo] = sumEXb[index_tempo+1];
+      sumEXb[index_tempo] += sumEXb[index_tempo+1]; // += instead of = is important when reverse is TRUE
     }
-    
+
     death[index_tempo] += (status[iterPat]==cause);
-    sumEXb[index_tempo] += eXb[iterPat];
+    if(reverse && status[iterPat]==0 && stoptimes[iterPat]==time[index_tempo]){
+      if(index_tempo>0){
+	sumEXb[index_tempo-1] += eXb[iterPat];
+      }else{
+	// nothing
+      }
+    }else{
+      sumEXb[index_tempo] += eXb[iterPat];
+    }
     if(Efron && (status[iterPat]==cause)){
       sumEXb_event[index_tempo] += eXb[iterPat];
     }
-  }
+   }
 
    //// correct for left truncation
    // test whether there is left truncation
    bool testAll = std::equal(starttimes.begin() + 1, starttimes.end(), starttimes.begin());
    
-  if(testAll==false){ 
-    bool ncv;
-    size_t indexTime;
+   if(testAll==false){ 
+     bool ncv;
+     size_t indexTime;
     
-    for(int iterPat = 0 ; iterPat < nPatients ; iterPat++){
-      indexTime = 0;
-      ncv = true;
-      while(indexTime < nEvents && ncv){
-	if(starttimes[iterPat] >= time[indexTime]){
-	  //remove the contribution of the patient if not included at the time of event
-	  sumEXb[indexTime] -= eXb[iterPat];	 
-	}else{
-	  ncv = false;
-	}
-	indexTime ++;	 
-      }
-    }     
+     for(int iterPat = 0 ; iterPat < nPatients ; iterPat++){
+       indexTime = 0;
+       ncv = true;
+       while(indexTime < nEvents && ncv){
+	 if(starttimes[iterPat] >= time[indexTime]){
+	   //remove the contribution of the patient if not included at the time of event
+	   sumEXb[indexTime] -= eXb[iterPat];	 
+	 }else{
+	   ncv = false;
+	 }
+	 indexTime ++;	 
+       }
+     }     
    }
-  
-  
-  
+    
   //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){
     
@@ -317,6 +328,7 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
   return res;
 }
 
+// * subset_structExport
 structExport subset_structExport(const structExport& resAll, const vector<double>& newtimes, 
                                  double emaxtimes,
                                  int nNew){

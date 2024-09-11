@@ -80,8 +80,6 @@ NULL
 #'
 #' Methods for evaluating risk predictions in censored event history analysis
 #' @keywords internal
-# "_PACKAGE"
-#' @docType package
 #' @name riskRegression-package
 #' @aliases riskRegression-package
 #' @useDynLib riskRegression, .registration=TRUE
@@ -102,5 +100,5 @@ NULL
 #' @importFrom graphics bxp abline axis box legend lines mtext par plot points segments text title polygon par boxplot
 #' @importFrom utils capture.output find head select.list setTxtProgressBar tail txtProgressBar
 #' @importFrom stats confint cov as.formula coef delete.response drop.terms family formula get_all_vars lm glm median model.frame model.matrix model.response na.fail na.omit nobs optim pnorm predict qnorm quantile rbinom reformulate rexp runif sd setNames smooth terms terms.formula time uniroot update update.formula var wilcox.test
-NULL
+"_PACKAGE"
 

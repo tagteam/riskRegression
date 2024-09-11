@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: maj  2 2023 (09:44) 
+## Last-Updated: sep 11 2024 (15:55) 
 ##           By: Brice Ozenne
-##     Update #: 381
+##     Update #: 682
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,18 +15,21 @@
 ## 
 ### Code:
 
-## * wglm
+## * wglm (documentation)
 #' @title Logistic Regression Using IPCW
 #' @description Logistic regression over multiple timepoints
 #' where right-censoring is handled using inverse probability of censoring weighting (IPCW). 
 #'
-#' @param regressor.event [formula] a formula with empty left hand side and the covariates for the logistic regression on the right hand side.
-#' @param formula.censor [formula] a formula used to fit the censoring model.
+#' @param formula.event [formula] a formula with a Surv object on the left hand side and the covariates for the logistic regression on the right hand side.
+#' @param formula.censor [formula] an optional formula indicating on its right hand side the covariates for the censoring model.
 #' @param times [numeric vector] time points at which to model the probability of experiencing an event.
 #' @param data [data.frame] dataset containing the time at which the event occured, the type of event, and regressors used to fit the censoring and logistic models.
 #' @param cause [character or numeric] the cause of interest. Defaults to the first cause. 
 #' @param fitter [character] routine to fit the Cox regression models.
+#' @param ties [character] method used to handle ties when using a Cox model (\code{"breslow"} or \code{"efron"}).
+#' Ignored if fitter equals to \code{"prodlim"}.
 #' @param product.limit [logical] if \code{TRUE} the survival is computed using the product limit estimator.
+#' @param store [vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} and/or \code{iid="full"}.
 #'
 #' @details First, a Cox model is fitted (argument formula.censor)
 #' and the censoring probabilities are computed relative to each timepoint (argument times) to obtain the censoring weights.
@@ -35,18 +38,21 @@
 #' 
 #' @return an object of class \code{"wglm"}.
 #'
+
+## * wglm (examples)
 #' @examples
 #' library(survival)
-#' 
+#'
+#' #### simulate data ####
 #' set.seed(10)
 #' n <- 250
 #' tau <- 1:5
 #' d <- sampleData(n, outcome = "competing.risks")
-#' dFull <- d[event!=0] ## remove censoring
-#' dSurv <- d[event!=2] ## remove competing risk
+#' dFull <- d[event!=0] ## (artificially) remove censoring
+#' dSurv <- d[event!=2] ## (artificially) remove competing risk
 #'
 #' #### no censoring ####
-#' e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+#' e.wglm <- wglm(Surv(time,event) ~ X1, 
 #'                times = tau, data = dFull, product.limit = TRUE)
 #' e.wglm ## same as a logistic regression
 #'
@@ -54,36 +60,53 @@
 #'
 #' #### right-censoring ####
 #' ## no covariante in the censoring model (independent censoring)
-#' eC.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+#' eC.wglm <- wglm(Surv(time,event) ~ X1,
 #'                times = tau, data = dSurv, product.limit = TRUE)
 #' eC.wglm
 #'
 #' ## with covariates in the censoring model
-#' eC2.wglm <- wglm(regressor.event = ~ X1 + X8,
-#'                 formula.censor = Surv(time,event==0) ~ X1*X8,
+#' eC2.wglm <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1*X8,
 #'                  times = tau, data = dSurv)
 #' eC2.wglm
 #' 
 #' #### Competing risks ####
 #' ## here Kaplan-Meier as censoring model
-#' eCR.wglm <- wglm(regressor.event = ~ X1,
-#'                  formula.censor = Surv(time,event==0) ~ strata(X1),
-#'                  times = tau, data = d, cause = 1, product.limit = TRUE)
+#' eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~X1,
+#'                  times = tau, data = d)
 #' eCR.wglm
-#' 
+#' summary(eCR.wglm)
+#' eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~X1,
+#'                  times = tau, data = d)
+
+## * wglm (code)
+
 #' @export
-wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
-                 fitter = "coxph", product.limit = FALSE){
+wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
+                 fitter = NULL, ties = NULL, product.limit = NULL, store = NULL){
     
     tol <- 1e-12
-    varSurv <- SurvResponseVar(formula.censor)
+    mycall <- match.call()
+
+    ## ** check arguments
+    ## *** formula.event
+    if(inherits(formula.event,"formula")==FALSE){
+        stop("Argument \'formula.event' should be a formula. \n")
+    }
+    varSurv <- SurvResponseVar(formula.event)
+
+    if(!is.null(attr(varSurv$status,"call")) && attr(varSurv$status,"call")!=varSurv$status){
+        stop("Mismatch between input and processed Surv element in argument \'formula.event\'. \n",
+             "User-input vs. processed: \"",varSurv$status,"\" vs. \"",attr(varSurv$status,"call"),"\".\n",
+             "This error may arise when performing operation on the fly in Surv instead of creating a new variable. \n")
+    }
+    
+    ## *** times
     newname <- paste0("XX_",varSurv$status,".",times,"_XX")
     obs.newname <- paste0("XX_observed.",times,"_XX")
     IPCW.newname <- paste0("XX_IPCW.",times,"_XX")
     n.times <- length(times)
-    
-    ## ** check arguments
-    fitter <- match.arg(fitter,c("coxph","cph","phreg"))
+
+    ## *** data
     if(any(newname %in% names(data))){
         stop("Argument \'data\' should not have a column named \"",paste0(newname[newname %in% names(data)],collapse="\" \""),"\"\n",
              "This name is used internally \n.")
@@ -96,54 +119,144 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
         stop("Argument \'data\' should not have a column named \"",paste0(IPCW.newname[IPCW.newname %in% names(data)],collapse="\" \""),"\"\n",
              "This name is used internally \n.")
     }
+    if((varSurv$time %in% names(data) == FALSE) || (varSurv$status %in% names(data) == FALSE)){
+        stop("Mismatch between argument \'formula.event\' and argument \'data\'. \n",
+             "Could not find the variable(s) \'",paste(setdiff(c(varSurv$time,varSurv$status), names(data)), collapse = "\', \'"),"\' \n.")
+    }
     if(any(is.na(data))){
         warning("Argument \'data\' contains missing values. \n")
     }
 
-    ## ** fit censoring model
-    object.censor <- do.call(fitter, list(formula = formula.censor, data = data, x=TRUE,y=TRUE))
+    init.Hist <- Hist(time = data[[varSurv$time]], event = data[[varSurv$status]])
+    allStates <- c(attr(init.Hist, "cens.code"),attr(init.Hist, "states"))
+    code.cens <- attr(init.Hist, "cens.code")
+    any.cens <- any((data[[varSurv$status]] == code.cens)*(data[[varSurv$time]]<=max(times)))
 
-    ## ** extract information
-    recoverCensor <- object.censor$y[,"status"]
-    recoverTime <- object.censor$y[,"time"]
-    recoverStatus <- data[[varSurv$status]]
-    if(is.na(cause)){
-        cause <- sort(recoverStatus[recoverCensor!=1])[1]
-    }
-    allCauses <- sort(unique(recoverStatus[recoverCensor!=1]))
-    n.censor <- sapply(times, function(iTime){sum((recoverTime<iTime)*recoverCensor)})
+    data.time <- data[[varSurv$time]]
+    data.status <- data[[varSurv$status]]
     
-    ## ** create glm object
-    out <- list(fit = vector(mode = "list", length = n.times))
-    for(iTime in 1:n.times){
-        iFormula.glm <- update(regressor.event, paste0(newname[iTime],"~."))
-        data[[newname[iTime]]] <- (data[[varSurv$status]]==cause)*(recoverTime<=times[iTime])
-        data[[obs.newname[iTime]]] <- (1-(recoverCensor==1)*(recoverTime<times[iTime])) ## equivalent to status>0 or eventtime>=tau
+    ## *** cause
+    if(length(cause)>1){
+        stop("Argument \'cause\' should have length 1. \n")
+    }else if(is.null(cause) || is.na(cause)){
+        cause <- attr(init.Hist, "states")[1]
+    }else if(cause %in% attr(init.Hist, "states") == FALSE){
+        stop("Invalid cause: should be one of \"",paste(attr(init.Hist, "states"), collapse = "\", \""),"\". \n")
+    }
 
-        if(n.censor[iTime]>0){
-            iPred <- predictRisk(object.censor, diag = TRUE, newdata = data, times = pmin(recoverTime, times[iTime]) - tol,
-                                 type = "survival", product.limit = product.limit)
-            data[[IPCW.newname[[iTime]]]] <- ifelse(data[[obs.newname[iTime]]],1/iPred[,1],0)
-            out$fit[[iTime]] <- suppressWarnings(do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
-                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]])))
-            ## Warning message:
-            ##             In eval(family$initialize) : non-integer #successes in a binomial glm!
+    ## *** formula.censor
+    if(inherits(formula.censor,"formula")==FALSE){
+        stop("Argument \'formula.censor' should be a formula. \n")
+    }
+    if(length(formula.censor)!=2){
+        stop("Argument \'formula.censor\' should not have a length hand side. \n")
+    }
 
-            out$fit[[iTime]]$time.prior.weights <- pmin(recoverTime, times[iTime]) - tol
-            out$fit[[iTime]]$prior.weights2 <- ifelse(data[[obs.newname[iTime]]],1/iPred[,1]^2,0)
+    ## *** fitter
+    if(is.null(fitter)){
+        regvar.censor <- all.vars(formula.censor)
+        if(length(regvar.censor)>0 && grepl("strata",regvar.censor)){
+            fitter <- "coxph"
+        }else if(length(regvar.censor)>0 && grepl("strat",regvar.censor)){
+            fitter <- "cph"
+        }else if(length(regvar.censor)==0 || all(sapply(regvar.censor, function(iVar){is.factor(data[[iVar]]) || is.character(data[[iVar]]) || is.logical(data[[iVar]])}))){
+            fitter <- "prodlim"
         }else{
-            IPCW.newname[[iTime]] <- NA
-            out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm,
-                                                         family = stats::binomial(link = "logit"), data = data))
+            fitter <- "coxph"
+        }
+    }else{
+        fitter <- match.arg(fitter,c("coxph","cph","prodlim"))
+    }
+
+    if(any.cens == 0){
+        fitter <- "prodlim"
+        product.limit <- TRUE
+    }else if(any.cens && fitter != "prodlim"){
+        allTime.cens <- unique(data.time[data.status==code.cens])
+        allTime.event <- unique(data.time[data.status==cause])
+        M.dist <- as.matrix(stats::dist(c(allTime.cens,allTime.event)))
+        diag(M.dist) <- Inf
+        Mred.dist <- M.dist[1:length(allTime.cens),length(allTime.cens) + (1:length(allTime.event)),drop=FALSE]
+        if(any(Mred.dist==0)){
+            if(any(Mred.dist>0 & Mred.dist<5e-5)){
+                message("Possible issue due to difference in event times below 5e-5. \n",
+                        "Internally adds 1e-6 to censored event times with fitters other than prodlim to break ties. \n")
+            }            
+        }else{
+            ## no censoring happening at the same time as an event
+            Mred.dist <- NULL
         }
     }
 
+    ## *** product limit
+    if(is.null(product.limit)){
+        product.limit <- fitter == "prodlim"
+    }
+
+    ## *** ties
+    if(is.null(ties)){
+        ties <- ifelse(product.limit,"breslow","efron")
+    }else{
+        ties <- match.arg(ties, c("breslow","efron"))
+    }
+
+    ## ** fit censoring model
+    ## NOTE: censoring times survival probability should sum up to 1. This is the case when censoring is always posterior to the event, i.e., one should break ties.
+    if(any.cens && fitter %in% c("coxph","cph")){
+        if(!is.null(Mred.dist)){ ## add extra time to censoring as it occurs after a possible event
+            txt.censorSurv <- paste0("Surv(time = ",varSurv$time,"+ 1e-6*(",varSurv$status,"==",code.cens,"), event = ",varSurv$status,"==",code.cens,")",deparse(formula.censor))
+        }else{ ## no ambiguity as no ties
+            txt.censorSurv <- paste0("Surv(time = ",varSurv$time,", event = ",varSurv$status,"==",code.cens,")",deparse(formula.censor))
+        }
+        formula.censorSurv <- stats::as.formula(eval(parse(text = txt.censorSurv)))
+        if(fitter == "coxph"){
+            object.censor <- coxph(formula = formula.censorSurv, data = data, x = TRUE, y = TRUE, ties = ties)
+        }else if(fitter == "cph"){
+            object.censor <- cph(formula = formula.censorSurv, data = data, x = TRUE, y = TRUE, method = ties)
+        }        
+    }else if(any.cens && fitter == "prodlim"){
+        formula.censorSurv <- stats::as.formula(eval(parse(text = paste0("Hist(time = ",varSurv$time,", event = ",varSurv$status,")",deparse(formula.censor)))))
+        object.censor <- prodlim::prodlim(formula.censorSurv, data = data, reverse = TRUE)
+        object.censor$method.ties <- ties ## to be read by coxBaseEstimator in predictCox
+    }else{
+        object.censor <- NULL
+    }
+
+    ## ** create glm object
+    n.censor <- vector(mode = "numeric", length = n.times)
+    out <- list(fit = vector(mode = "list", length = n.times))
+    for(iTime in 1:n.times){## iTime <- 1
+        iFormula.glm <- update(formula.event, paste0(newname[iTime],"~."))
+        
+        n.censor[iTime] <- sum((data.time<times[iTime])*(data.status == code.cens))
+        data[[newname[iTime]]] <- (data.time<=times[iTime])*(data.status==cause) ## 1 only if event of interest occured before the current timepoint
+        data[[obs.newname[iTime]]] <- (1-(data.status == code.cens)*(data.time<times[iTime])) ## 1 if non-censored (i.e. already dead or censored later) and 0 if censored before the current time
+
+        iIndex <- which(data[[obs.newname[iTime]]]>0)
+        if(n.censor[iTime]>0){
+            iPred <- predictRisk(object.censor, diag = TRUE, newdata = data[iIndex,,drop=FALSE], times = pmin(data.time[iIndex], times[iTime]) - tol,
+                                 type = "survival", product.limit = product.limit)[,1]
+        }else{
+            iPred <- rep(1, length(iIndex))
+        }        
+        data[[IPCW.newname[[iTime]]]] <- 0
+        data[[IPCW.newname[[iTime]]]][iIndex] <- 1/iPred ## 1/P[not-censored] if not censored and 0 otherwise
+        
+        out$fit[[iTime]] <- suppressWarnings(do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
+                                                                      data = data, weights = data[[IPCW.newname[[iTime]]]])))
+        ## Warning message:
+        ##             In eval(family$initialize) : non-integer #successes in a binomial glm!
+        out$fit[[iTime]]$time.prior.weights <- pmin(data.time, times[iTime]) - tol
+        out$fit[[iTime]]$prior.weights2 <- rep(0, NROW(data))
+        out$fit[[iTime]]$prior.weights2[iIndex] <- 1/iPred^2
+    }
+
     ## ** export
-    out$call <- match.call()
-    out$formula <- update(as.formula(paste0(varSurv$status,"~.")),regressor.event)
+    out$call <- mycall
+    out$formula <- formula.event
     out$n <- NROW(data)
     out$n.censor <- n.censor
-    out$cox <- object.censor
+    out$model.censor <- object.censor
     out$data <- data
     out$var.outcome <- varSurv$status
     out$var.time <- varSurv$time
@@ -151,8 +264,9 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
     out$name.outcome <- newname
     out$times <- times
     out$theCause <- cause
-    out$causes <- allCauses
+    out$causes <- allStates
     out$product.limit <- product.limit
+    out$fitter <- fitter
     class(out) <- append("wglm",class(out))
     return(out)
 }
@@ -181,9 +295,14 @@ coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
         }
     }
     n.times <- length(times)
-    
+
     M.coef <- do.call(rbind,setNames(lapply(object$fit, coef),object$time))
-    return(M.coef[object$times %in% times,,drop=simplifies])
+    if(simplifies && length(times)==1){
+        out <- stats::setNames(M.coef[object$times %in% times,], colnames(M.coef))
+    }else{
+        out <- M.coef[object$times %in% times,,drop=FALSE]
+    }
+    return(out)
 }
 
 ## * summary.wglm
@@ -209,17 +328,7 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
     
     out <- setNames(vector(mode = "list", length = n.times), times)
     if(print){
-        if(length(object$causes)>1){
-            text.CR <- paste0("for cause ",object$theCause)
-        }else{
-            text.CR <- ""
-        }
-        if(any(object$n.censor>0)){
-            text.IPCW <- "IPCW "
-        }else{
-            text.IPCW <- ""
-        }
-        cat("     ",text.IPCW,"logistic regression ",text.CR,": \n",sep="")
+        print(object, short = TRUE)
     }
     for(iTime in 1:n.times){
         iTime2 <- which(object$times == times[iTime])
@@ -230,16 +339,15 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
             out[[iTime]][,4] <- 2*(1-pnorm(abs(out[[iTime]][,3])))
         }
         if(print){
-            cat("----------------------------------------------------------------------------------\n")
-            cat("  - time: ",times[iTime],"\n",sep="")
-            if(!is.na(eval(object$name.IPCW[[iTime2]]))){                
-                print(as.call(list(quote(glm),eval(object$fit[[iTime2]]$call$formula),family = quote(binomial(link="logit")), weights = eval(object$name.IPCW[[iTime2]]))))
-            }else{
-                print(as.call(list(quote(glm),eval(object$fit[[iTime2]]$call$formula),family = quote(binomial(link="logit")))))
-            }
+            cat("  ------ time: ",times[iTime]," ----------------------------------------------\n",sep="")
+            iIPCW <- object$data[[object$name.IPCW[iTime]]]
+            cat("  - number (events, no event, censoring): ",sum(object$fit[[iTime]]$y),", ",object$n-sum(object$fit[[iTime]]$y)-object$n.censor[iTime],", ",object$n.censor[iTime],"\n",sep="")
+            cat("  - IPCW (min,median,max): ",paste(round(quantile(iIPCW[iIPCW>0], c(0,0.5,1)), digits = 5), collapse = ", "),"\n",sep="")
             cat("\n")
-            print(out[[iTime]])
-            cat("----------------------------------------------------------------------------------\n")
+            iPrint <- out[[iTime]]
+            rownames(iPrint) <- paste0("  ",rownames(iPrint))
+            print(iPrint)
+            cat("\n")
         }
     }
 
@@ -248,7 +356,9 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
 
 ## * print.wglm
 #' @export
-print.wglm <- function(x, times = NULL, ...){
+print.wglm <- function(x, times = NULL, short = FALSE, ...){
+
+    ## ** prepare
     if(is.null(times)){
         times <- x$times
     }else{
@@ -261,7 +371,7 @@ print.wglm <- function(x, times = NULL, ...){
     n.times <- length(times)
     
     if(length(x$causes)>1){
-        text.CR <- paste0("for cause ",x$theCause)
+        text.CR <- paste0(" for cause ",x$theCause)
     }else{
         text.CR <- ""
     }
@@ -270,19 +380,35 @@ print.wglm <- function(x, times = NULL, ...){
     }else{
         text.IPCW <- ""
     }
-    cat("     ",text.IPCW,"logistic regression ",text.CR,": \n",sep="")
-    for(iTime in which(times %in% x$times)){
-        iTime2 <- which(x$times == times[iTime])
-        if(!is.na(eval(x$name.IPCW[[iTime2]]))){                
-            x$fit[[iTime2]]$call <- as.call(list(quote(glm),eval(x$fit[[iTime2]]$call$formula),family = quote(binomial(link="logit")), weights = eval(x$name.IPCW[[iTime2]])))
-        }else{
-            x$fit[[iTime2]]$call <- as.call(list(quote(glm),eval(x$fit[[iTime2]]$call$formula),family = quote(binomial(link="logit"))))
-        }
-        cat("----------------------------------------------------------------------------------\n")
-        cat("  - time: ",times[iTime],"\n",sep="")
-        print(x$fit[[iTime2]])
-        cat("----------------------------------------------------------------------------------\n")
+
+    if(any(x$n.censor>1)){
+        ff.censor <- stats::delete.response(stats::terms(formula(x$model.censor)))
     }
+    ff.outcome <- stats::delete.response(stats::terms(formula(x$formula)))
+    if(!short){
+        x.coef <- coef(x)
+        M.print <- cbind(n.censor = x$n.censor,
+                         n.event = sapply(x$fit, function(iM){sum(iM$y)}),
+                         "IPCW(max)" = sapply(x$name.IPCW, function(iName){max(x$data[[iName]])}),
+                         x.coef)
+        colnames(M.print)[-(1:3)] <- names(x.coef)
+        rownames(M.print) <- paste0("   ",x$times)    
+    }
+
+    ## ** print
+    cat("\t\t",text.IPCW,"logistic regression",text.CR," \n\n",sep="")
+    cat(" - structure: ",deparse(x$formula[[2]])," with possible states: ",paste(x$causes,collapse=", "),". \n",sep="")
+    if(any(x$n.censor>1)){
+        cat(" - censoring model: ",deparse(ff.censor)," (fitter: ",x$fitter," function). \n",sep="")
+    }
+    cat(" - outcome model: ",deparse(ff.outcome)," (fitter: glm function). \n",sep="")
+    cat(" - estimated regression parameters: \n")
+    if(!short){
+        print(M.print)
+    }
+    cat("\n")
+
+    return(NULL)
 }
 
 ## * score.wglm
@@ -334,7 +460,7 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
 
 ## * information.wglm
 #' @title Information for IPCW Logistic Regressions
-#' @description Compute the information (i.e. opposit of the expectation of the second derivative of the log-likelihood) for IPCW logistic regressions.
+#' @description Compute the information (i.e. opposite of the expectation of the second derivative of the log-likelihood) for IPCW logistic regressions.
 #'
 #' @param x a wglm object.
 #' @param times [numeric vector] time points at which the score should be output. 
@@ -430,17 +556,18 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         ## IF_\beta(O_i) = (S_i + n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O)) / (-dS/d\beta)
         ##               = (S_i + n*AIF_{W,X*(Y-pi)}(O_i) / I
         ## NOTE: IF_{W_O}(O_i) = dW(O,\eta)/d\eta \IF_\eta(O_i)
+        
         if(x$n.censor[iTime]>0){
-            n.obs <- stats::nobs(iObject)
+            n.obs <- sum(coxN(iObject))
             W2 <- iObject$prior.weights2
             X <- stats::model.matrix(iObject)
             pi <- stats::predict(iObject, type = "response")
             Y <- iObject$y
-
             factor <- TRUE        
+
             attr(factor,"factor") <- lapply(apply(colMultiply_cpp(X, -W2*(Y - pi)), 2, list), function(iVec){cbind(iVec[[1]])})
-            iPred <- predictRisk(x$cox, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
-                                 type = "survival", product.limit = FALSE, average.iid = factor, store.iid = "minimal")
+            iPred <- predictRisk(x$model.censor, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
+                                 type = "survival", product.limit = x$product.limit, average.iid = factor)
         }
 
         ## ** assemble uncertainty
@@ -456,7 +583,7 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         
         ## factor <- TRUE        
         ## attr(factor,"factor") <- lapply(apply(factor1 + factor2, 2, list), function(iVec){cbind(iVec[[1]])})
-        ## iPred <- predictRisk(x$cox, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
+        ## iPred <- predictRisk(x$model.censor, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
         ##                      type = "survival", product.limit = FALSE, average.iid = factor)
         ## out[[iTime]] <- out[[iTime]] - do.call(cbind,attr(iPred, "average.iid"))*NROW(x$data)
 
@@ -495,7 +622,7 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
         }
     }
     n.times <- length(times)
-    n.sample <- stats::nobs(object)
+    n.sample <- sum(coxN(object))
     n.newdata <- NROW(newdata)
 
     if(average.iid){

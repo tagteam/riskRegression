@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: Sep  6 2023 (09:51) 
-##           By: Thomas Alexander Gerds
-##     Update #: 173
+## Last-Updated: mar 23 2024 (16:31) 
+##           By: Brice Ozenne
+##     Update #: 174
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,7 +43,7 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
     
     if(is.null(x$times)){
         stop("Cannot convert to a data.table object when times is missing in object \n",
-             "set the argument \'keep.time\' to TRUE when calling the predict method \n")
+             "set the argument \'keep.times\' to TRUE when calling the predict method \n")
     }
     if(!is.matrix(x[[x$type[1]]])){ ## baseline hazard
         out <- as.data.table(x[c("times",x$type)])

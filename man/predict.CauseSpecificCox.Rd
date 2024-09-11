@@ -21,7 +21,7 @@
   confint = (se + band) > 0,
   average.iid = FALSE,
   product.limit = TRUE,
-  store.iid = "full",
+  store = NULL,
   diag = FALSE,
   max.time = NULL,
   ...
@@ -30,15 +30,13 @@
 \arguments{
 \item{object}{The fitted cause specific Cox model}
 
-\item{newdata}{[data.frame or data.table]  Contain the values of the predictor variables
+\item{newdata}{[data.frame or data.table] Contain the values of the predictor variables
 defining subject specific predictions relative to each cause.
 Should have the same structure as the data set used to fit the \code{object}.}
 
-\item{times}{[numeric vector] Time points at which to return
-the estimated absolute risk.}
+\item{times}{[numeric vector] Time points at which to return the estimated absolute risk.}
 
-\item{cause}{[integer/character] Identifies the cause of interest among the competing
-events.}
+\item{cause}{[integer/character] Identifies the cause of interest among the competing events.}
 
 \item{type}{[character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.}
 
@@ -64,14 +62,12 @@ They are computed applying the \code{confint} function to the output.}
 \item{product.limit}{[logical]. If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
-\item{store.iid}{[character] Implementation used to estimate the influence function and the standard error.
-Can be \code{"full"} or \code{"minimal"}.}
+\item{store}{[vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} or \code{iid="full"}.}
 
 \item{diag}{[logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
 otherwise it is only computed for the i-th observation at the i-th time.}
 
-\item{max.time}{[numeric] maximum time of the response of the fitted data.  Only relevant if
-model \code{response} element has been removed}
+\item{max.time}{[numeric] maximum time of the response of the fitted data.  Only relevant if model \code{response} element has been removed}
 
 \item{...}{not used.}
 }
@@ -83,7 +79,7 @@ This function computes the absolute risk as given by formula 2 of (Ozenne et al.
 Confidence intervals and confidence bands can be computed using a first order von Mises expansion.
 See the section "Construction of the confidence intervals" in (Ozenne et al., 2017).
 
-A detailed explanation about the meaning of the argument \code{store.iid} can be found
+A detailed explanation about the meaning of the argument \code{store = c(iid="full")} can be found
 in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 
 Note: for Cox regression models with time varying
@@ -99,12 +95,67 @@ and each time (dim 2).
 \examples{
 library(survival)
 library(prodlim)
+library(data.table)
+
+#######################
 #### generate data ####
+#######################
+
 set.seed(5)
 d <- sampleData(80,outcome="comp") ## training dataset
 nd <- sampleData(4,outcome="comp") ## validation dataset
-d$time <- round(d$time,1) ## create tied events
+d$time.round <- round(d$time,1) ## create tied events
 ttt <- sort(sample(x = unique(d$time), size = 10))
+
+########################
+#### Aalen-Johansen ####
+########################
+
+#### no ties
+fit.AE <- CSC(Hist(time, event) ~ 1, data = d)
+GS.AE <- prodlim(Hist(time, event) ~ 1, data = d)
+
+## product limit
+ePL.AE <- predict(fit.AE, newdata = d[1], times = GS.AE$time,
+                  product.limit = TRUE, cause = 1)
+range(ePL.AE$absRisk - GS.AE$cuminc[[1]]) ## same
+
+## exponential approximation
+predict(fit.AE, newdata = d[1], times = GS.AE$time,
+        product.limit = FALSE, cause = 1)
+
+#### with ties (use Breslow estimator instead of Efron to match prodlim)
+fit.AE.ties <- CSC(Hist(time.round, event) ~ 1, ties = "breslow",
+                   data = as.data.frame(d)[c("time.round","event")])
+GS.AE.ties <- prodlim(Hist(time.round, event) ~ 1,
+                   data = as.data.frame(d)[c("time.round","event")])
+
+## product limit
+ePL.AE.ties <- predict(fit.AE.ties, newdata = d[1], times = GS.AE.ties$time,
+                       product.limit = TRUE, cause = 1)
+range(ePL.AE.ties$absRisk - GS.AE.ties$cuminc[[1]]) ## same
+
+###################################
+#### Stratified Aalen-Johansen ####
+###################################
+
+#### no ties
+fit.SAE <- CSC(Hist(time, event) ~ strata(X1), data = d)
+GS.SAE <- prodlim(Hist(time, event) ~ X1, data = d)
+
+## product limit
+index.strata1 <- GS.SAE$first.strata[1]:(GS.SAE$first.strata[2]-1)
+ePL.SAE <- predict(fit.SAE, newdata = d[1],
+                   times = GS.SAE$time[index.strata1],
+                   product.limit = TRUE, cause = 1)
+range(ePL.SAE$absRisk - GS.SAE$cuminc[[1]][index.strata1]) ## same
+
+## exponential approximation
+predict(fit.SAE, newdata = d[1:10], times = 1:10, product.limit = FALSE)
+
+############################
+#### Cause-specific Cox ####
+############################
 
 ## estimate a CSC model based on the coxph function
 CSC.fit <- CSC(Hist(time,event)~ X3+X8, data=d, method = "breslow")

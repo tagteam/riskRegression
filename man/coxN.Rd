@@ -7,6 +7,7 @@
 \alias{coxN.phreg}
 \alias{coxN.CauseSpecificCox}
 \alias{coxN.glm}
+\alias{coxN.prodlim}
 \title{Extract the number of observations from a Cox model}
 \usage{
 coxN(object)
@@ -20,6 +21,8 @@ coxN(object)
 \method{coxN}{CauseSpecificCox}(object)
 
 \method{coxN}{glm}(object)
+
+\method{coxN}{prodlim}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

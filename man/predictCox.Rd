@@ -2,7 +2,7 @@
 % Please edit documentation in R/predictCox.R
 \name{predictCox}
 \alias{predictCox}
-\title{Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models}
+\title{Survival probabilities, hazards and cumulative hazards from Cox regression models}
 \usage{
 predictCox(
   object,
@@ -20,7 +20,8 @@ predictCox(
   confint = (se + band) > 0,
   diag = FALSE,
   average.iid = FALSE,
-  store.iid = "full"
+  product.limit = FALSE,
+  store = NULL
 )
 }
 \arguments{
@@ -79,12 +80,18 @@ otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{average.iid}{[logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
-\item{store.iid}{[character] Implementation used to estimate the influence function and the standard error.
-Can be \code{"full"} or \code{"minimal"}.}
+\item{product.limit}{[logical]. If \code{TRUE} the survival is computed using the product limit estimator.
+Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
+
+\item{store}{[vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} and/or \code{iid="full"}.}
+}
+\value{
+The iid decomposition is output in an attribute called \code{"iid"},
+using an array containing the value of the influence of each subject used to fit the object (dim 1), for each subject in newdata (dim 3), and each time (dim 2).
 }
 \description{
-Fast routine to get baseline hazards and subject specific hazards
-as well as survival probabilities from a \code{survival::coxph} or \code{rms::cph} object
+Routine to get baseline hazards and subject specific hazards
+as well as survival probabilities from a \code{survival::coxph} or \code{rms::cph} object.
 }
 \details{
 When the argument \code{newdata} is not specified, the function computes the baseline hazard estimate.
@@ -94,65 +101,99 @@ Otherwise the function computes survival probabilities with confidence intervals
 See (Ozenne et al., 2017) section "Confidence intervals and confidence bands for survival probabilities".
 The survival is computed using the exponential approximation (equation 3).
 
-A detailed explanation about the meaning of the argument \code{store.iid} can be found
+A detailed explanation about the meaning of the argument \code{store = c(iid="full")} can be found
 in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 
 The function is not compatible with time varying predictor variables.
 
 The centered argument enables us to reproduce the results obtained with the \code{basehaz}
 function from the survival package but should not be modified by the user.
-
-The iid decomposition is output using an array containing the value of the influence
-of each subject used to fit the object (dim 1),
-for each subject in newdata (dim 3),
-and each time (dim 2).
 }
 \examples{
 
 library(survival)
 library(data.table)
 
+#######################
 #### generate data ####
+#######################
+
 set.seed(10)
-d <- sampleData(40,outcome="survival") ## training dataset
-nd <- sampleData(4,outcome="survival") ## validation dataset
-d$time <- round(d$time,1) ## create tied events
-# table(duplicated(d$time))
+d <- sampleData(50,outcome="survival") ## training dataset
+nd <- sampleData(5,outcome="survival") ## validation dataset
 
-#### stratified Cox model ####
-fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
-             data=d, ties="breslow", x = TRUE, y = TRUE)
+## add ties
+d$time.round <- round(d$time,1)
+any(duplicated(d$time.round))
 
-## compute the baseline cumulative hazard
-fit.haz <- predictCox(fit)
-cbind(survival::basehaz(fit), fit.haz$cumhazard)
+## add categorical variables
+d$U <- sample(letters[1:3],replace=TRUE,size=NROW(d))
+d$V <- sample(letters[5:8],replace=TRUE,size=NROW(d))
+nd <- cbind(nd,d[sample(NROW(d),replace=TRUE,size=NROW(nd)),c("U","V")])
 
-## compute individual specific cumulative hazard and survival probabilities 
-fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, band = TRUE)
-fit.pred
+######################
+#### Kaplan Meier ####
+######################
 
-####  other examples ####
-# one strata variable
-fitS <- coxph(Surv(time,event)~strata(X1)+X2,
-              data=d, ties="breslow", x = TRUE, y = TRUE)
+#### no ties
+fit.KM <- coxph(Surv(time,event)~ 1, data=d, x = TRUE, y = TRUE)
+predictCox(fit.KM) ## exponential approximation
+ePL.KM <- predictCox(fit.KM, product.limit = TRUE) ## product-limit
+as.data.table(ePL.KM)
 
-predictCox(fitS)
-predictCox(fitS, newdata=nd, times = 1)
+range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM$survival) ## same
 
-# two strata variables
-set.seed(1)
-d$U=sample(letters[1:5],replace=TRUE,size=NROW(d))
-d$V=sample(letters[4:10],replace=TRUE,size=NROW(d))
-nd$U=sample(letters[1:5],replace=TRUE,size=NROW(nd))
-nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
-fit2S <- coxph(Surv(time,event)~X1+strata(U)+strata(V)+X2,
-              data=d, ties="breslow", x = TRUE, y = TRUE)
+#### with ties (exponential approximation, Efron estimator for the baseline hazard)
+fit.KM.ties <- coxph(Surv(time.round,event)~ 1, data=d, x = TRUE, y = TRUE)
+predictCox(fit.KM)
 
-cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard")$cumhazard)
-predictCox(fit2S)
-predictCox(fitS, newdata=nd, times = 3)
+## retrieving survfit results with ties
+fit.KM.ties <- coxph(Surv(time.round,event)~ 1, data=d,
+                     x = TRUE, y = TRUE, ties = "breslow")
+ePL.KM.ties <- predictCox(fit.KM, product.limit = TRUE)
+range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM.ties$survival) ## same
 
-# left truncation
+#################################
+#### Stratified Kaplan Meier ####
+#################################
+
+fit.SKM <- coxph(Surv(time,event)~strata(X2), data=d, x = TRUE, y = TRUE)
+ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE)
+ePL.SKM
+
+range(survfit(Surv(time,event)~X2, data = d)$surv - ePL.SKM$survival) ## same
+
+###################
+#### Cox model ####
+###################
+
+fit.Cox <- coxph(Surv(time,event)~X1 + X2 + X6, data=d, x = TRUE, y = TRUE)
+
+#### compute the baseline cumulative hazard
+Cox.haz0 <- predictCox(fit.Cox)
+Cox.haz0
+
+range(survival::basehaz(fit.Cox)$hazard-Cox.haz0$cumhazard) ## same
+
+#### compute individual specific cumulative hazard and survival probabilities
+## exponential approximation
+fit.predCox <- predictCox(fit.Cox, newdata=nd, times=c(3,8),
+                          se = TRUE, band = TRUE)
+fit.predCox
+
+## product-limit
+fitPL.predCox <- predictCox(fit.Cox, newdata=nd, times=c(3,8),
+                            product.limit = TRUE, se = TRUE)
+fitPL.predCox
+
+## Note: product limit vs. exponential does not affect uncertainty quantification
+range(fitPL.predCox$cumhazard.se - fit.predCox$cumhazard.se) ## same
+range(fitPL.predCox$survival.se - fit.predCox$survival.se) ## different
+## except through a multiplicative factor (multiply by survival in the delta method)
+fitPL.predCox$survival.se - fitPL.predCox$cumhazard.se * fitPL.predCox$survival
+
+
+#### left truncation
 test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
               stop=c(2,3,6,7,8,9,9,9,14,17), 
               event=c(1,1,1,1,1,1,1,0,0,0), 
@@ -161,6 +202,25 @@ m.cph <- coxph(Surv(start, stop, event) ~ 1, test2, x = TRUE)
 as.data.table(predictCox(m.cph))
 
 basehaz(m.cph)
+
+##############################
+#### Stratified Cox model ####
+##############################
+
+#### one strata variable
+fit.SCox <- coxph(Surv(time,event)~X1+strata(X2)+X6, data=d, x = TRUE, y = TRUE)
+predictCox(fit.SCox, newdata=nd, times = c(3,12))
+predictCox(fit.SCox, newdata=nd, times = c(3,12), product.limit = TRUE)
+## NA: timepoint is beyond the last observation in the strata and censoring
+tapply(d$time,d$X2,max)
+
+#### two strata variables
+fit.S2Cox <- coxph(Surv(time,event)~X1+strata(U)+strata(V)+X2,
+                   data=d, x = TRUE, y = TRUE)
+
+base.S2Cox <- predictCox(fit.S2Cox)
+range(survival::basehaz(fit.S2Cox)$hazard - base.S2Cox$cumhazard) ## same
+predictCox(fit.S2Cox, newdata=nd, times = 3)
 }
 \references{
 Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.

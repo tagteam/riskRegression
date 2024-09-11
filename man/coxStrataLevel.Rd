@@ -5,6 +5,7 @@
 \alias{coxStrataLevel.coxph}
 \alias{coxStrataLevel.cph}
 \alias{coxStrataLevel.phreg}
+\alias{coxStrataLevel.prodlim}
 \title{Returns the name of the strata in Cox model}
 \usage{
 coxStrataLevel(object)
@@ -14,6 +15,8 @@ coxStrataLevel(object)
 \method{coxStrataLevel}{cph}(object)
 
 \method{coxStrataLevel}{phreg}(object)
+
+\method{coxStrataLevel}{prodlim}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

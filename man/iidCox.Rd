@@ -5,6 +5,7 @@
 \alias{iidCox.coxph}
 \alias{iidCox.cph}
 \alias{iidCox.phreg}
+\alias{iidCox.prodlim}
 \alias{iidCox.CauseSpecificCox}
 \title{Extract iid decomposition from a Cox model}
 \usage{
@@ -42,6 +43,17 @@ iidCox(
 )
 
 \method{iidCox}{phreg}(
+  object,
+  newdata = NULL,
+  baseline.iid = TRUE,
+  tau.hazard = NULL,
+  tau.max = NULL,
+  store.iid = "full",
+  keep.times = TRUE,
+  return.object = TRUE
+)
+
+\method{iidCox}{prodlim}(
   object,
   newdata = NULL,
   baseline.iid = TRUE,

@@ -5,6 +5,7 @@
 \alias{coxModelFrame.coxph}
 \alias{coxModelFrame.cph}
 \alias{coxModelFrame.phreg}
+\alias{coxModelFrame.prodlim}
 \title{Extract the design matrix used to train a Cox model}
 \usage{
 coxModelFrame(object, center)
@@ -14,6 +15,8 @@ coxModelFrame(object, center)
 \method{coxModelFrame}{cph}(object, center = FALSE)
 
 \method{coxModelFrame}{phreg}(object, center = FALSE)
+
+\method{coxModelFrame}{prodlim}(object, center = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

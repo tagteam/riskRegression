@@ -5,6 +5,7 @@
 \alias{coxStrata.cph}
 \alias{coxStrata.coxph}
 \alias{coxStrata.phreg}
+\alias{coxStrata.prodlim}
 \title{Define the strata for a new dataset}
 \usage{
 coxStrata(object, data, sterms, strata.vars, strata.levels)
@@ -14,6 +15,8 @@ coxStrata(object, data, sterms, strata.vars, strata.levels)
 \method{coxStrata}{coxph}(object, data, sterms, strata.vars, strata.levels)
 
 \method{coxStrata}{phreg}(object, data, sterms, strata.vars, strata.levels)
+
+\method{coxStrata}{prodlim}(object, data, sterms, strata.vars, strata.levels)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
