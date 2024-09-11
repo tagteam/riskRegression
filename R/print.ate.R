@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: okt  7 2021 (10:18) 
+## last-updated: sep 10 2024 (15:40) 
 ##           By: Brice Ozenne
-##     Update #: 552
+##     Update #: 586
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,9 +72,9 @@ print.ate <- function(x, estimator = x$estimator, ...){
     }
     ## number at risk at the evaluation time
     if(!is.na(x$variable["time"])){
-        M.at.risk <- cbind("- Eval. time       "="number at risk",attr(x$eval.times,"n.at.risk"))
+        M.at.risk <- cbind("- at risk/time       "="number in treatment",attr(x$eval.times,"n.at.risk"))
         colnames(M.at.risk)[2] <- " :"
-        M.at.risk[,2] <- paste(as.character(M.at.risk[[2]]),"  ",sep="")
+        M.at.risk[,2] <- paste(as.character(M.at.risk[[2]]),sep="")
     }
     
     ## statistical inference
@@ -120,11 +120,11 @@ print.ate <- function(x, estimator = x$estimator, ...){
     cat(" - Event                : ",x$var["event"]," (",txt.eventvar,")\n",sep="")
     if(!is.na(x$var["time"])){
         cat(" - Time  [min;max]      : ",x$var["time"]," [",signif(attr(x$var,"range.time")[1],3),";",signif(attr(x$var,"range.time")[2], 3),"]\n",sep="")
-        print(M.at.risk, row.names = FALSE)        
+        print(M.at.risk, row.names = FALSE, class = FALSE)        
     }
     
     cat("\n Estimation procedure \n")
-    cat(" - Estimator",if(length(estimator.print)>1){"s"}else{" "}," : ",paste(estimator.print, collapse = " "),"\n",sep="")
+    cat(" - Estimator",if(length(estimator.print)>1){"s"}else{" "}," : ",paste(estimator.print, collapse = ", "),"\n",sep="")
     if(test.inference){
         cat(" - Uncertainty: ", txt.inference,sep="")
     }
@@ -160,7 +160,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
         }else{
             cat(" - Standardized risks   :    [min;max]   \n")
         }        
-        print(dt.res, row.names = FALSE)
+        print(dt.res, row.names = FALSE, class = FALSE)
 
         cat("\n")
         

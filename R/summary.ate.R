@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: okt 26 2020 (09:39) 
+## Last-Updated: sep 10 2024 (15:41) 
 ##           By: Brice Ozenne
-##     Update #: 267
+##     Update #: 269
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -185,7 +185,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
         if(short == 1){
             cat(" - Standardized risk between time zero and 'time'\n",sep="")
             cat("\n")        
-            print(dt.tempo, digits=digits, row.names = FALSE)
+            print(dt.tempo, digits=digits, row.names = FALSE, class = FALSE)
             cat("\n")
         }else if(short == 0){
             cat(" - Standardized risk between time zero and 'time', reported on the scale [0;1] (probability scale)\n",sep="")
@@ -195,7 +195,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                 cat("   (average risk when treating all subjects with one treatment)\n",sep="")
             }
             cat("\n")        
-            print(dt.tempo, digits=digits, row.names = FALSE)
+            print(dt.tempo, digits=digits, row.names = FALSE, class = FALSE)
             cat("\n")
         }
         
@@ -276,12 +276,12 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                         "                               vs. treating all subjects with the reference treatment (A))\n")
                 }
                 cat("\n")
-                print(dt.tempo,digits=digits,row.names = FALSE)
+                print(dt.tempo,digits=digits,row.names = FALSE, class = FALSE)
                 cat("\n")
             }else if(short==1){
                 cat(" - Difference in standardized risk (B-A) between time zero and 'time' \n")
                 cat("\n")
-                print(dt.tempo,digits=digits,row.names = FALSE)
+                print(dt.tempo,digits=digits,row.names = FALSE, class = FALSE)
                 cat("\n")
             }
         }else if("ratioRisk" %in% type){
@@ -295,12 +295,12 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                         "                          vs. treating all subjects with the reference treatment (A))\n")
                 }
                 cat("\n")
-                print(dt.tempo,digits=digits,row.names = FALSE)
+                print(dt.tempo,digits=digits,row.names = FALSE, class = FALSE)
                 cat("\n")
             }else if(short == 1){
                 cat(" - Ratio of standardized risks (B/A) between time zero and 'time' \n")
                 cat("\n")
-                print(dt.tempo,digits=digits,row.names = FALSE)
+                print(dt.tempo,digits=digits,row.names = FALSE, class = FALSE)
                 cat("\n")
             }
         }

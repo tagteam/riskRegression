@@ -5,6 +5,7 @@
 \alias{coxLP.cph}
 \alias{coxLP.coxph}
 \alias{coxLP.phreg}
+\alias{coxLP.prodlim}
 \title{Compute the linear predictor of a Cox model}
 \usage{
 coxLP(object, data, center)
@@ -14,6 +15,8 @@ coxLP(object, data, center)
 \method{coxLP}{coxph}(object, data, center)
 
 \method{coxLP}{phreg}(object, data, center)
+
+\method{coxLP}{prodlim}(object, data, center)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

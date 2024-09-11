@@ -118,7 +118,16 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{selectCox}(object, newdata, times, ...)
 
-\method{predictRisk}{prodlim}(object, newdata, times, cause, ...)
+\method{predictRisk}{prodlim}(
+  object,
+  newdata,
+  times,
+  cause,
+  diag = FALSE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
 
 \method{predictRisk}{survfit}(object, newdata, times, ...)
 

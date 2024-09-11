@@ -1,3 +1,9 @@
+Version: 2024.09.10 (Brice - 2024/09/10)
+- add argument product.limit in predictCox and remove remove predictCoxPL. Side effect: while the influence function for the hazard is unchanged it the influence function relative to the survival scaled by the product limit survival (instead of exponential approximation).
+- fix bug in how ties are handled in ate when using the double robust estimator.
+- argument fitter in wglm can now take value "prodlim" to use the kaplan-meier or Aalen-Johensen estimator for the censoring weights. 
+- argument store.iid in predictCox and predict.CauseSpecificCox has been renamed store and can now be used to reduce memory usage.
+
 Version: 2020.10.01 (Brice - 2020/10/01)
 - modification of how ate stores the results: $riskComparison has been split in $diffRisk and $ratioRisk. Gformula is now refered as GFORMULA. Estimates for various estimators are now stores in different lines instead of columns.
 - modification of the print function for ate to make it shorter.

@@ -5,6 +5,7 @@
 \alias{coxVarCov.cph}
 \alias{coxVarCov.coxph}
 \alias{coxVarCov.phreg}
+\alias{coxVarCov.prodlim}
 \title{Extract the variance covariance matrix of the beta from a Cox model}
 \usage{
 coxVarCov(object)
@@ -14,6 +15,8 @@ coxVarCov(object)
 \method{coxVarCov}{coxph}(object)
 
 \method{coxVarCov}{phreg}(object)
+
+\method{coxVarCov}{prodlim}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

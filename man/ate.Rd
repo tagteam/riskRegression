@@ -117,53 +117,59 @@ library(survival)
 library(rms)
 library(prodlim)
 library(data.table)
-set.seed(10)
 
+############################
 #### Survival settings  ####
 #### ATE with Cox model ####
+############################
 
-## generate data
+#### generate data ####
 n <- 100
+set.seed(10)
 dtS <- sampleData(n, outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
-## estimate the Cox model
+##### estimate the Cox model ####
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
-## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
+##### compute the ATE ####
+## at times 5, 6, 7, and 8 using X1 as the treatment variable
 ## standard error computed using the influence function
 ## confidence intervals / p-values based on asymptotic results
-ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8)
+ateFit1a <- ate(fit, treatment = "X1", times = 5:8, data = dtS)
 summary(ateFit1a)
 summary(ateFit1a, short = TRUE, type = "meanRisk")
 summary(ateFit1a, short = TRUE, type = "diffRisk")
 summary(ateFit1a, short = TRUE, type = "ratioRisk")
 
 \dontrun{
+#### ATE with confidence bands ####
 ## same as before with in addition the confidence bands / adjusted p-values
 ## (argument band = TRUE)
-ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-                band = TRUE)
+ateFit1b <- ate(fit, treatment = "X1", times = 5:8, data = dtS, band = TRUE)
 summary(ateFit1b)
 
 ## by default bands/adjuste p-values computed separately for each treatment modality
 summary(ateFit1b, band = 1,
-         se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
+        se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 ## adjustment over treatment and time using the band argument of confint
 summary(ateFit1b, band = 2,
        se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
+}
 
+\dontrun{
+#### ATE with non-parametric bootstrap ####
 ## confidence intervals / p-values computed using 1000 bootstrap samples
 ## (argument se = TRUE and B = 1000) 
-ateFit1c <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50, handler = "mclapply")
+ateFit1c <- ate(fit, treatment = "X1", times = 5:8, data = dtS,
+                se = TRUE, B = 50, handler = "mclapply")
 ## NOTE: for real applications 50 bootstrap samples is not enough 
 
 ## same but using 2 cpus for generating and analyzing the bootstrap samples
 ## (parallel computation, argument mc.cores = 2) 
-ateFit1d <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50, mc.cores = 2)
+ateFit1d <- ate(fit, treatment = "X1", times = 5:8, data = dtS, 
+                se = TRUE, B = 50, mc.cores = 2)
 
 ## manually defining the cluster to be used
 ## useful when specific packages need to be loaded in each cluster
@@ -172,25 +178,51 @@ fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
 cl <- parallel::makeCluster(2)
 parallel::clusterEvalQ(cl, library(rms))
 
-ateFit1e <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50,
-                handler = "foreach", cl = cl)
+ateFit1e <- ate(fit, treatment = "X1", times = 5:8, data = dtS, 
+                se = TRUE, B = 50, handler = "foreach", cl = cl)
+parallel::stopCluster(cl)
 }
 
+
+################################################
+#### Competing risks settings               ####
+#### ATE with cause specific Cox regression ####
+################################################
+
+#### generate data ####
+n <- 500
+set.seed(10)
+dt <- sampleData(n, outcome="competing.risks")
+dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
+
+#### estimate cause specific Cox model ####
+fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
+
+#### compute the ATE ####
+## at times 1, 5, 10
+## using X1 as the treatment variable
+ateFit2a <- ate(fitCR, treatment = "X1", times = c(1,5,10), data = dt, 
+                cause = 1, se = TRUE, band = TRUE)
+summary(ateFit2a)
+as.data.table(ateFit2a)
+
+#############################################
 #### Survival settings without censoring ####
 #### ATE with glm                        ####
+#############################################
 
-## generate data
+#### generate data ####
 n <- 100
 dtB <- sampleData(n, outcome="binary")
 dtB[, X2 := as.numeric(X2)]
 
-## estimate a logistic regression model
+##### estimate a logistic regression model ####
 fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 
-## compute the ATE using X1 as the treatment variable
+#### compute the ATE ####
+## using X1 as the treatment variable
 ## only point estimate (argument se = FALSE)
-ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
+ateFit1a <- ate(fit, treatment = "X1", data = dtB, se = FALSE)
 ateFit1a
 
 \dontrun{
@@ -210,33 +242,22 @@ average=TRUE)
 ateLava
 }
 
+############################
+#### Survival settings  ####
+#### ATE with glm       ####
+############################
+
 ## see wglm for handling right-censoring with glm
 
-#### Competing risks settings               ####
-#### ATE with cause specific Cox regression ####
-
-## generate data
-n <- 500
-set.seed(10)
-dt <- sampleData(n, outcome="competing.risks")
-dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
-
-## estimate cause specific Cox model
-fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
-
-## compute the ATE at times 1, 5, 10 using X1 as the treatment variable
-ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
-                cause = 1, se = TRUE, band = TRUE)
-summary(ateFit2a)
-as.data.table(ateFit2a)
-
+#################################
 #### Double robust estimator ####
+#################################
+
 \dontrun{
 ## generate data
 n <- 500
 set.seed(10)
 dt <- sampleData(n, outcome="competing.risks")
-dt$time <- round(dt$time,1)
 dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
 
 ## working models
@@ -250,52 +271,80 @@ ateRobust <- ate(event = m.event,
                  censor = m.censor,
                  data = dt, times = 5:10, 
                  cause = 1, band = TRUE)
+summary(ateRobust)
 
 ## compare various estimators
-ateRobust3 <- ate(event = m.event,
+system.time( ## about 1.5s
+ateRobust2 <- ate(event = m.event,
                  treatment = m.treatment,
                  censor = m.censor,
                  estimator = c("GFORMULA","IPTW","AIPTW"),
                  data = dt, times = c(5:10), 
                  cause = 1, se = TRUE)
-print(setkeyv(as.data.table(ateRobust3, type = "meanRisk"),"time"))
-print(setkeyv(as.data.table(ateRobust3, type = "diffRisk"),"time"))
+)
+as.data.table(ateRobust2, type = "meanRisk")
+as.data.table(ateRobust2, type = "diffRisk")
+
+## approximation to speed up calculations
+dt$time.round <- round(dt$time/0.5)*0.5 ## round to the nearest half
+dt$time.round[dt$time.round==0] <- 0.1 ## ensure strictly positive event times
+mRound.event <-  CSC(Hist(time.round,event)~ X1+X2+X3+X5+X8,data=dt)
+mRound.censor <-  coxph(Surv(time.round,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
+system.time( ## about 0.6s
+ateRobust3 <- ate(event = mRound.event,
+                 treatment = m.treatment,
+                 censor = mRound.censor,
+                 estimator = c("GFORMULA","IPTW","AIPTW"),
+                 data = dt, times = c(5:10), 
+                 cause = 1, se = TRUE)
+)
+ateRobust2$meanRisk$estimate - ateRobust3$meanRisk$estimate ## inaccuracy
 }
 
-#### time-dependent covariates ###
+###################################
+#### time-dependent covariates ####
+###################################
+
 \dontrun{
-library(survival)
-fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
-vet2 <- survSplit(Surv(time, status) ~., veteran,
-                       cut=c(60, 120), episode ="timegroup")
-fitTD <- coxph(Surv(tstart, time, status) ~ celltype +karno + age + trt,
-               data= vet2,x=1)
+#### example 1 (survival)
+## data management: split trajectories
+vet2 <- survSplit(Surv(time, status) ~., data = veteran,
+                  cut=c(60, 120), episode ="timegroup")
+
+## fit Cox model
+fitTD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
+               data= vet2, x = TRUE)
+
+## run ATE with bootstrap for uncertainty quantification
 set.seed(16)
-resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-          data = vet2, treatment = "celltype",
-        times=5,verbose=1,
-        landmark = c(0,30,60,90), cause = 1, B = 50, se = 1,
-        band = FALSE, mc.cores=1)
+resVet <- ate(fitTD, treatment = "celltype", times = 5, data = vet2,
+              formula=Hist(entry=tstart,time=time,event=status)~1,
+              landmark = c(0,30,60,90), B = 50)
 summary(resVet)
+
+## for reference
+fitRef <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
+               data= veteran, x = TRUE)
+ateRef <- ate(fitRef, treatment = "celltype", times = c(5,35), data = veteran)
+## exactly the same when landmark = 0
+confint(ateRef)$meanRisk[1] 
+confint(resVet)$meanRisk[1]
+## very different with landmark != 0
+## since one condition on being alive at the landmark time
+confint(ateRef)$meanRisk[2] 
+suppressWarnings(confint(resVet)$meanRisk[2])
 }
 
 \dontrun{
+#### example 2 (competing risks)
+## generate data 
 set.seed(137)
-d=sampleDataTD(127)
-library(survival)
+d <- sampleDataTD(127)
 d[,status:=1*(event==1)]
 d[,X3:=as.factor(X3)]
-## ignore competing risks
-cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8,
-                data=d, x = TRUE)
-resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
-        data = d, treatment = "X3", contrasts = NULL,
-        times=.5,verbose=1,
-        landmark = c(0,0.5,1), B = 20, se = 1,
-        band = FALSE, mc.cores=1)
-resTD1
-## account for competing risks
+## fit cause specific Cox model
 cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
+## run ATE
 set.seed(16)
 resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
         data = d, treatment = "X3", contrasts = NULL,

@@ -146,7 +146,8 @@ predictCoxWeights <- function(object,
                          emaxtimes = etimes.max,
                          predtimes = times.sorted,
                          cause = 1,
-                         Efron = (object.baseEstimator == "efron"))
+                         Efron = (object.baseEstimator == "efron"),
+                         reverse = FALSE)
   ## restaure strata levels
   Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   

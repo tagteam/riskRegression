@@ -97,6 +97,12 @@ iidCox.coxph <- function(object, newdata = NULL,
         object.LPdata <- NULL
     }
     nStrata <- length(levels(object.strata))
+
+    if(!is.null(object$reverse) && object$reverse){
+        reverse <- TRUE
+    }else{
+        reverse <- FALSE
+    }
     
     ## ** Extract new observations
     if(!is.null(newdata)){
@@ -107,7 +113,11 @@ iidCox.coxph <- function(object, newdata = NULL,
     
                                         # if(infoVar$status %in% names(newdata)){ # call Cox model with with event==1
         tempo <- with(newdata, eval(coxFormula(object)[[2]]))
-        new.status <- tempo[,2]
+        if(!is.null(object$reverse) && object$reverse){ ## only for reverse product-limit (prodlim object)
+            new.status <- 1-tempo[,2]
+        }else{
+            new.status <- tempo[,2]
+        }
         new.time <- tempo[,1]
                                         # }else{ # Cox model from CSC 
                                         #    new.status <- newdata[[infoVar$status]]
@@ -123,15 +133,14 @@ iidCox.coxph <- function(object, newdata = NULL,
         new.LPdata <- model.matrix(object, data = newdata)
     
     }else{
-    
-      new.status <-  object.modelFrame[["status"]]
-      new.time <-  object.modelFrame[["stop"]]
-      new.strata <-  object.strata
-      new.eXb <- object.eXb
-      new.LPdata <- object.LPdata
+        new.status <-  object.modelFrame[["status"]]
+        new.time <-  object.modelFrame[["stop"]]
+        new.strata <-  object.strata
+        new.eXb <- object.eXb
+        new.LPdata <- object.LPdata
     
     }
-    
+
     ## ** tests 
     store.iid <- match.arg(store.iid, c("minimal","full"))
 
@@ -197,10 +206,14 @@ iidCox.coxph <- function(object, newdata = NULL,
     new.order <- NULL
   
     for(iStrata in 1:nStrata){
-
         ## reorder object data
         object.index_strata[[iStrata]] <- which(object.strata == object.levelStrata[iStrata])
-        object.order_strata[[iStrata]] <- order(object.modelFrame[object.index_strata[[iStrata]], .SD$stop])
+        if(reverse){
+            object.order_strata[[iStrata]] <- order(object.modelFrame[object.index_strata[[iStrata]], .SD$stop],
+                                                    object.modelFrame[object.index_strata[[iStrata]], .SD$status])
+        }else{
+            object.order_strata[[iStrata]] <- order(object.modelFrame[object.index_strata[[iStrata]], .SD$stop])
+        }
 
         indexTempo <- object.index_strata[[iStrata]][object.order_strata[[iStrata]]]
         object.eXb_strata[[iStrata]] <- object.eXb[indexTempo]
@@ -215,8 +228,13 @@ iidCox.coxph <- function(object, newdata = NULL,
         ## reorder new data
         if(!is.null(newdata)){
             new.index_strata[[iStrata]] <- which(new.strata == object.levelStrata[iStrata])
-            new.order_strata[[iStrata]] <- order(new.time[new.index_strata[[iStrata]]])
-      
+            if(reverse){
+                new.order_strata[[iStrata]] <- order(new.time[new.index_strata[[iStrata]]],
+                                                     new.status[new.index_strata[[iStrata]]])
+            }else{
+                new.order_strata[[iStrata]] <- order(new.time[new.index_strata[[iStrata]]])
+            }
+
             new.eXb_strata[[iStrata]] <- new.eXb[new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
             if(nVar.lp>0){
                 new.LPdata_strata[[iStrata]] <- new.LPdata[new.index_strata[[iStrata]][new.order_strata[[iStrata]]],,drop = FALSE]
@@ -240,12 +258,20 @@ iidCox.coxph <- function(object, newdata = NULL,
                                       eventtime = object.time_strata[[iStrata]],
                                       eXb = object.eXb_strata[[iStrata]],
                                       X = object.LPdata_strata[[iStrata]],
-                                      p = nVar.lp, add0 = TRUE)
+                                      p = nVar.lp, add0 = TRUE, reverse = reverse)
+        
+        if(reverse){
+            ## when ties, the censored observations correspond to the previous timepoint
+            new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1 - reverse * (1-new.status) * (new.time %in% Ecpp[[iStrata]]$Utime1)
+        }else{
+            new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1
+        }
+        ## print(head(cbind(time = new.time, status = new.status, jump = new.indexJump[[iStrata]])))
+        ## print(new.indexJump[[iStrata]])
 
-        new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1
-        # if event/censoring is before the first event in the training dataset 
-        # then sindex return 0 thus indexJump is -1
-        # the following 3 lines convert -1 to 0
+        ## if event/censoring is before the first event in the training dataset 
+        ## then sindex return 0 thus indexJump is -1
+        ## the following 3 lines convert -1 to 0
         if(any(new.indexJump[[iStrata]]<0)){
             new.indexJump[[iStrata]][new.indexJump[[iStrata]]<0] <- 0
         }
@@ -360,7 +386,10 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{
                 Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
             }
-    
+            new.time[285]
+            new.status[285]
+            new.indexJump[[iStrata]][285]
+            new.time[new.status==0] == timeStrata[new.indexJump[[iStrata]][new.status==0]+2]
             ## IF
             IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
                                           IFbeta = out$IFbeta,
@@ -370,8 +399,8 @@ iidCox.coxph <- function(object, newdata = NULL,
                                           time1 = timeStrata, lastTime1 = etimes.max[iStrata],
                                           lambda0 = lambda0Strata,
                                           p = nVar.lp, strata = iStrata,
-                                          minimalExport = (store.iid=="minimal")
-                                          )
+                                          minimalExport = (store.iid=="minimal"),
+                                          reverse = reverse)
             ## output
             if(length(tau.hazard_strata)==0){
                 tau.hazard_strata <- 0
@@ -429,6 +458,11 @@ iidCox.cph <- iidCox.coxph
 #' @export
 iidCox.phreg <- iidCox.coxph
 
+## * iidCox.prodlim
+#' @rdname iidCox
+#' @export
+iidCox.prodlim <- iidCox.coxph 
+
 ## * iidCox.CauseSpecificCox
 #' @rdname iidCox
 #' @export
@@ -458,18 +492,26 @@ iidCox.CauseSpecificCox <- function(object, newdata = NULL,
 
 
 ## * is.iidCox
+##' @title Check Computation of the Influence Function in a Cox Model
+##' @description Check whether the influence function of the Cox model or cause specific Cox models has been stored in the object.
+##' @param object fitted Cox regression model object either obtained with \code{coxph} (survival package), \code{cph} (rms package), \code{CSC} (riskRegression package).
+##' @export
 `is.iidCox` <- function(object) UseMethod("is.iidCox")
 
+##' @export
 is.iidCox.default <- function(object){
     return(NA)
 }
 
+##' @export
 is.iidCox.coxph <- function(object){
     return(!is.null(object$iid))
 }
 is.iidCox.cph <- is.iidCox.coxph
 is.iidCox.phreg <- is.iidCox.coxph
+is.iidCox.prodlim <- is.iidCox.coxph
 
+##' @export
 is.iidCox.CauseSpecificCox <- function(object){
     out <- all(unlist(lapply(object$models, function(iM){!is.null(iM$iid)})))
     return(out)

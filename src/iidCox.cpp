@@ -10,7 +10,8 @@ List calcE_cpp(const NumericVector& eventtime,
                const NumericVector& status,
                const NumericVector& eXb,
                const arma::mat& X,
-               int p, bool add0){
+               int p, bool add0, bool reverse){
+  // reverse refer to the case where censoring happens before the event otherwise censoring is treated as happening after event
   
   int nObs = eventtime.size();
   
@@ -35,7 +36,7 @@ List calcE_cpp(const NumericVector& eventtime,
   }
   double S0=0.0;
   NumericVector S1(p,0.0);
-  
+
   // loop over observations (must be sorted by time)
   for(int iObs=nObs-1;iObs>=0;iObs--){
     
@@ -44,16 +45,26 @@ List calcE_cpp(const NumericVector& eventtime,
       S1[iX] += X(iObs,iX) * eXb[iObs];
     }
     
-    // either the next eventtime is below the time horizon or it is the last event and the eventtime equals the time horizon
-    while(iTime >= 0  && ((iObs > 0 && eventtime[iObs-1]<t[iTime]) || (iObs==0 && eventtime[iObs]==t[iTime])) ){
-      resS0[iTime] = S0;
-      resS1.row(iTime) = S1;
-      if(S0>0){
-        resE.row(iTime) = S1/S0;
-      }// else already initialized at 0
-      iTime--;
+    if(reverse){ // transition from event to censoring or change of time among non-censored or first observation and it is an event
+      while(iTime >= 0  && ((iObs > 0 && status[iObs-1] == 0 && status[iObs] == 1 && eventtime[iObs]==t[iTime]) || ((iObs > 0 && status[iObs-1] == 1 && status[iObs] == 1 && eventtime[iObs-1]<t[iTime])) || (iObs==0 && status[iObs] == 1 && eventtime[iObs]==t[iTime]))){
+	resS0[iTime] = S0;
+	resS1.row(iTime) = S1;
+	if(S0>0){
+	  resE.row(iTime) = S1/S0;
+	}// else already initialized at 0
+	iTime--;
+      }
+    }else{ // the next eventtime is below the time horizon OR first observation and eventtime equals the time horizon
+      while(iTime >= 0  && ((iObs > 0 && eventtime[iObs-1]<t[iTime]) || (iObs==0 && eventtime[iObs]==t[iTime])) ){
+	resS0[iTime] = S0;
+	resS1.row(iTime) = S1;
+	if(S0>0){
+	  resE.row(iTime) = S1/S0;
+	}// else already initialized at 0
+	iTime--;
+      }
     }
-    
+      
     if(iTime < 0){ break; }
     
   }
@@ -137,7 +148,8 @@ arma::mat IFbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
 List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
                    const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
                    const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0,
-                   int p, int strata, bool minimalExport){
+                   int p, int strata, bool minimalExport, bool reverse){
+  // reverse refer to the case where censoring happens before the event otherwise censoring is treated as happening after event
   
   int nObs = newT.size();
   int nTau = tau.size();
@@ -156,39 +168,39 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   // if iTau0 = 5 this means that the first five prediction times are before the first event, i.e IF = 0
   int iTau0 = 0;
   while(iTau0 < nTau && time1[0]>tau[iTau0]){
-	iTau0++;
+    iTau0++;
   }
 
   // ** Compute delta_iS0
   NumericVector delta_iS0(nObs,0.0);
   for(int iObs=0; iObs<nObs ; iObs++){
-	if(strata == newStrata[iObs] && newStatus[iObs] > 0){
-	  delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
-	}
+    if(strata == newStrata[iObs] && newStatus[iObs] > 0){
+      delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
+    }
   } 
 
   // Exclude case with no Tau
   if(nTau==0 || iTau0 >= nTau){
-	if(minimalExport){
-	  NumericVector indeXb = clone(neweXb);
-	  indeXb[newStrata != strata] = 0;
+    if(minimalExport){
+      NumericVector indeXb = clone(neweXb);
+      indeXb[newStrata != strata] = 0;
 
-	  return(List::create(Named("Elambda0") = Elambda0,
-						  Named("cumElambda0") = cumElambda0,
-						  Named("eXb") = indeXb,
-						  Named("lambda0_iS0") = lambda0_iS0,
-						  Named("cumLambda0_iS0") = cumLambda0_iS0,
-						  Named("delta_iS0") = delta_iS0,
-						  Named("time1") = time1
-						  ));
-	}else{
-	  IFlambda0.resize(nObs, std::max(nTau,1));
-	  IFLambda0.resize(nObs, std::max(nTau,1));
-	  IFlambda0.fill(0.0);
-	  IFLambda0.fill(0.0);
-	  return(List::create(Named("hazard") = IFlambda0,
-						  Named("cumhazard") = IFLambda0));
-	}
+      return(List::create(Named("Elambda0") = Elambda0,
+			  Named("cumElambda0") = cumElambda0,
+			  Named("eXb") = indeXb,
+			  Named("lambda0_iS0") = lambda0_iS0,
+			  Named("cumLambda0_iS0") = cumLambda0_iS0,
+			  Named("delta_iS0") = delta_iS0,
+			  Named("time1") = time1
+			  ));
+    }else{
+      IFlambda0.resize(nObs, std::max(nTau,1));
+      IFLambda0.resize(nObs, std::max(nTau,1));
+      IFlambda0.fill(0.0);
+      IFLambda0.fill(0.0);
+      return(List::create(Named("hazard") = IFlambda0,
+			  Named("cumhazard") = IFLambda0));
+    }
   }
 
   // Compute  Elambda0 and cumLamba0_iS0
@@ -208,12 +220,12 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
     }
     
     // update (cum)Lambda0_iS0
-	lambda0_iS0[iTime1] = lambda0[iTime1]/S01[iTime1];
-	if(iTime1 == 0){
-	  cumLambda0_iS0[0] = lambda0_iS0[0];
-	}else{
-	  cumLambda0_iS0[iTime1] = cumLambda0_iS0[iTime1-1] + lambda0_iS0[iTime1];  
-	}
+    lambda0_iS0[iTime1] = lambda0[iTime1]/S01[iTime1];
+    if(iTime1 == 0){
+      cumLambda0_iS0[0] = lambda0_iS0[0];
+    }else{
+      cumLambda0_iS0[iTime1] = cumLambda0_iS0[iTime1-1] + lambda0_iS0[iTime1];  
+    }
     
     
     // store in Elambda0 when time is tau if
@@ -231,14 +243,14 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   }
   
   if(minimalExport){
-	NumericVector indeXb = clone(neweXb);
-	indeXb[newStrata != strata] = 0;
+    NumericVector indeXb = clone(neweXb);
+    indeXb[newStrata != strata] = 0;
 	
     return(List::create(Named("delta_iS0") = delta_iS0,
                         Named("Elambda0") = Elambda0,
                         Named("cumElambda0") = cumElambda0,
-						Named("eXb") = indeXb,
-						Named("lambda0_iS0") = lambda0_iS0,
+			Named("eXb") = indeXb,
+			Named("lambda0_iS0") = lambda0_iS0,
                         Named("cumLambda0_iS0") = cumLambda0_iS0,
                         Named("time1") = time1));
   }
@@ -251,9 +263,9 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
 
   if(iTau0>0){
     for(int iiTau=0 ; iiTau<iTau0; iiTau++){ // before the first event    
-	  IFlambda0.col(iiTau).zeros();
-	  IFLambda0.col(iiTau).zeros();    
-	}
+      IFlambda0.col(iiTau).zeros();
+      IFLambda0.col(iiTau).zeros();    
+    }
   }
   
   int index_newT_time1; // position of the minimum between t and t_train in cumLamba0_iS0
@@ -285,12 +297,26 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
       
       if(strata == newStrata[iObs]){
         // second term
-		if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
-		  IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
-		}
-		if(index_newT_time1>=0){ // must be after the first event (otherwise contribution of 0)
-		IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
-		}
+	if(reverse && (newStatus[iObs]==0)){
+	  // censoring happens before event when reverse so only add lambda if censoring happens strictly after the jump
+	  if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] < newT[iObs]){
+	    IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
+	  }
+	  if(index_newT_time1>=1 && (time1[index_newT_time1] == newT[iObs])){
+	    // censoring was recorded at the same time as an event but because of reverse is known to have occured before the event
+	    IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1-1)];
+	  }else if(index_newT_time1>=0 && (time1[index_newT_time1] != newT[iObs])){
+	    // censoring was recorded on separate time than the event do 'as usual' i.e. as if no reverse
+	    IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
+	  }
+	}else{
+	  if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
+	    IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
+	  }
+	  if(index_newT_time1>=0){ // must be after the first event (otherwise contribution of 0)
+	    IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
+	  }
+	}
 		
         // third term
         if(newT[iObs]<=tau[iiTau]){

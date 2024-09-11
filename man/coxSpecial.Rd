@@ -5,6 +5,7 @@
 \alias{coxSpecial.coxph}
 \alias{coxSpecial.cph}
 \alias{coxSpecial.phreg}
+\alias{coxSpecial.prodlim}
 \title{Special characters in Cox model}
 \usage{
 coxSpecial(object)
@@ -14,6 +15,8 @@ coxSpecial(object)
 \method{coxSpecial}{cph}(object)
 
 \method{coxSpecial}{phreg}(object)
+
+\method{coxSpecial}{prodlim}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

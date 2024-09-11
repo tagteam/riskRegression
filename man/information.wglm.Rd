@@ -16,5 +16,5 @@
 \item{...}{Not used.}
 }
 \description{
-Compute the information (i.e. opposit of the expectation of the second derivative of the log-likelihood) for IPCW logistic regressions.
+Compute the information (i.e. opposite of the expectation of the second derivative of the log-likelihood) for IPCW logistic regressions.
 }

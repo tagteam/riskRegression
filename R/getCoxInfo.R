@@ -46,7 +46,7 @@ coxVariableName <- function(object, model.frame){
     n.xterms <- length(attr(xterms,"term.labels"))
 
     ## ** linear predictor
-    if(n.xterms>n.specials){
+    if(n.xterms>n.specials && !inherits(object,"prodlim")){
         out$lpvars <- names(coef(object)) ##attr(xterms.lp, "term.labels") not ok for categorical variables with coxph
         if(n.specials>0){
             out$lp.sterms <- stats::drop.terms(xterms,unlist(ls.specials))
@@ -63,10 +63,14 @@ coxVariableName <- function(object, model.frame){
 
     ## ** strata variables
     out$strataspecials <- special.object$strata
-    out$is.strata <- length(ls.specials[[special.object$strata]])>0
+    if(inherits(object,"prodlim")){
+        out$is.strata <- n.xterms>0
+    }else{
+        out$is.strata <- length(ls.specials[[special.object$strata]])>0
+    }
 
     if(out$is.strata){
-        if(length(ls.specials[[special.object$strata]])!=n.xterms){
+        if(!inherits(object,"prodlim") && length(ls.specials[[special.object$strata]])!=n.xterms){
             out$strata.sterms <- stats::drop.terms(xterms,setdiff(1:n.xterms,ls.specials[[special.object$strata]]))
         }else{
             out$strata.sterms <- xterms
@@ -127,6 +131,19 @@ coxBaseEstimator.coxph <- function(object){
 coxBaseEstimator.phreg <- function(object){
   return("breslow")
 }
+
+## ** coxBaseEstimator.prodlim
+#' @rdname coxBaseEstimator
+#' @method coxBaseEstimator prodlim
+#' @export
+coxBaseEstimator.prodlim <- function(object){
+    if("method.ties" %in% names(object)){
+        return(object$method.ties)
+    }else{
+        return("breslow")
+    }
+}
+
 # }}}
 
                                         # {{{ coxCenter
@@ -169,6 +186,7 @@ coxCenter.coxph <- function(object){
 coxCenter.phreg <- function(object){
     return(apply(object$X,2,mean))
 }
+
                                         # }}}
 
                                         # {{{ coxModelFrame
@@ -310,6 +328,55 @@ coxModelFrame.phreg <- function(object, center = FALSE){
 }
 # }}}
 
+## ** coxModelFrame.prodlim
+#' @rdname coxModelFrame
+#' @method coxModelFrame prodlim
+#' @export
+coxModelFrame.prodlim <- function(object, center = FALSE){
+    ## argument center not used
+    default.start <- 0
+    originalDataOrder <- object$originalDataOrder
+
+    ## ** add y
+    dt <- object$model.response[originalDataOrder,,drop=FALSE]
+    if(!is.data.table(dt)){
+        if(inherits(dt,"Surv")){
+            dt <- as.matrix(dt)
+        }
+        dt <- as.data.table(dt)
+    }
+    if("entry" %in% names(dt) == FALSE){
+        dt[, c("entry") := default.start]
+    }
+    if(object$reverse){
+        dt[,c("status") := 1-.SD$status]
+    }
+    ## normalize names
+    data.table::setnames(dt, old = c("entry","time"), new = c("start","stop"))
+    data.table::setcolorder(x = dt, neworder = c("start","stop","status"))
+    ## ** add x
+    if(length(object$continuous.predictors)>0){
+        stop("Method coxModelFrame for prodlim object only implemented for discrete predictor and not for continuous predictors. \n")
+    }
+
+    strata.var <- object$discrete.predictors
+    if(length(strata.var)==0){
+        dt[,c("strata") := factor(1)]
+    }else{
+        if("strata" %in% strata.var){
+            stop("The variables in the linear predictor should not be named \"strata\" \n")
+        }
+        dt.X <- as.data.table(object$model.matrix[originalDataOrder,,drop=FALSE])
+        dt[,c("strata") := interaction(dt.X, sep = ", ")]
+
+        if(any(sort(object$size.strata) - sort(table(dt$strata)) != 0)){
+            warning("Something went wrong when identifying the strata. \n")
+        }
+
+    }   
+    return(dt)
+}
+
                                         # {{{ coxFormula
 ## * coxFormula
 #' @title Extract the formula from a Cox model
@@ -364,6 +431,14 @@ coxFormula.phreg <- function(object){
 #' @method coxFormula glm
 #' @export
 coxFormula.glm <- function(object){
+  return(stats::formula(object))
+}
+
+## ** coxFormula.prodlim
+#' @rdname coxFormula
+#' @method coxFormula prodlim
+#' @export
+coxFormula.prodlim <- function(object){
   return(stats::formula(object))
 }
 
@@ -527,6 +602,23 @@ coxLP.phreg <- function(object, data, center){
 
 # }}}
 
+## ** coxLP.prodlim
+#' @rdname coxLP
+#' @method coxLP prodlim
+#' @export
+coxLP.prodlim <- function(object, data, center){
+
+    if(is.null(data)){
+        Xb <- rep(0, coxN(object))
+    }else{
+        Xb <- rep(0, NROW(data))
+    }
+    return(Xb)
+}
+
+# }}}
+
+                                        # {{{ coxN
                                         # {{{ coxN
 ## * coxN
 #' @title Extract the number of observations from a Cox model
@@ -563,6 +655,13 @@ coxN.coxph <- function(object){
 
 ## ** coxN.phreg
 #' @rdname coxN
+#' @method coxN default
+#' @export
+coxN.default <- function(object){
+  return(stats::nobs(object))
+}
+
+#' @rdname coxN
 #' @method coxN phreg
 #' @export
 coxN.phreg <- function(object){
@@ -584,6 +683,15 @@ coxN.CauseSpecificCox <- function(object){
 coxN.glm <- function(object){
   return(stats::nobs(object))
 }
+
+## ** coxN.prodlim
+#' @rdname coxN
+#' @method coxN prodlim
+#' @export
+coxN.prodlim <- function(object){
+  return(NROW(object$model.response))
+}
+
 
 # }}}
 
@@ -629,6 +737,14 @@ coxSpecial.cph <- function(object){
 coxSpecial.phreg <- function(object){
     return(list(strata = "strata",
                 cluster = "cluster"))
+}
+# }}}
+## ** coxSpecial.phreg
+#' @rdname coxSpecial
+#' @method coxSpecial prodlim
+#' @export
+coxSpecial.prodlim <- function(object){
+    return(NULL)
 }
 # }}}
 
@@ -681,6 +797,19 @@ coxStrataLevel.phreg <- function(object){
         return( NULL )
     }
 }
+
+## ** coxStrataLevel.prodlim
+#' @rdname coxStrataLevel
+#' @method coxStrataLevel prodlim
+#' @export
+coxStrataLevel.prodlim <- function(object){
+    if(!is.null(object$xlevels)){
+       return( levels(interaction(expand.grid(object$xlevels[names(object$X)]),sep = ", ")) )
+    }else{
+        return( NULL )
+    }
+}
+
                                         # }}}
 
                                         # {{{ coxStrata
@@ -789,6 +918,35 @@ coxStrata.phreg <- function(object, data, sterms, strata.vars, strata.levels){
 }
 # }}}
 
+## ** coxStrata.prodlim
+#' @rdname coxStrata
+#' @method coxStrata prodlim
+#' @export
+coxStrata.prodlim <- function(object, data, sterms, strata.vars, strata.levels){
+
+  if(length(strata.vars)==0){ ## no strata variables
+    
+    n <- if(is.null(data)) coxN(object) else NROW(data)
+    strata <- as.factor(rep("1", n))
+    
+  }else{  ## strata variables
+
+      if(is.null(data)){ ## training dataset
+          dt.X <- as.data.table(object$model.matrix[object$originalDataOrder,,drop=FALSE])
+          strata <- interaction(dt.X, sep = ", ")
+      }else { ## new dataset
+          strata <- interaction(as.data.table(data)[,.SD,.SDcols = attr(sterms,"term.labels")], sep = ", ")
+          if (any(levels(strata) %in% strata.levels == FALSE)){
+              stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
+          }
+          strata <- factor(strata, levels = strata.levels)
+      }
+    
+  }
+  return(strata)
+}
+# }}}
+
                                         # {{{ coxVarCov
 ## * coxVarCov
 #' @title Extract the variance covariance matrix of the beta from a Cox model
@@ -855,6 +1013,15 @@ coxVarCov.phreg <- function(object){
 }
 # }}}
 
+
+## ** coxVarCov.prodlim
+#' @rdname coxVarCov
+#' @method coxVarCov prodlim
+#' @export
+coxVarCov.prodlim <- function(object){
+  return(NULL)
+}
+# }}}
 
 #### Auxiliary function #### 
 

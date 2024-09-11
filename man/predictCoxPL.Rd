@@ -2,98 +2,18 @@
 % Please edit documentation in R/predictCoxPL.R
 \name{predictCoxPL}
 \alias{predictCoxPL}
-\title{Computation of survival probabilities from Cox regression models using the product limit estimator.}
+\title{Deprecated Function for Product Limit Estimation of Survival Probabilities .}
 \usage{
-predictCoxPL(
-  object,
-  times,
-  newdata = NULL,
-  type = c("cumhazard", "survival"),
-  keep.strata = TRUE,
-  keep.infoVar = FALSE,
-  ...
-)
+predictCoxPL(object, ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
-\item{times}{[numeric vector] Time points at which to return
-the estimated hazard/cumulative hazard/survival.}
-
-\item{newdata}{[data.frame or data.table]  Contain the values of the predictor variables
-defining subject specific predictions.
-Should have the same structure as the data set used to fit the \code{object}.}
-
-\item{type}{[character vector] the type of predicted value. Choices are \itemize{
-\item \code{"hazard"} the baseline hazard function when
-argument \code{newdata} is not used and the hazard function
-when argument \code{newdata} is used.  \item \code{"cumhazard"}
-the cumulative baseline hazard function when argument
-\code{newdata} is not used and the cumulative hazard function
-when argument \code{newdata} is used.  \item \code{"survival"}
-the survival baseline hazard function when argument
-\code{newdata} is not used and the cumulative hazard function
-when argument \code{newdata} is used.  } Several choices can be
-combined in a vector of strings that match (no matter the case)
-strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
-
-\item{keep.strata}{[logical] If \code{TRUE} add the (newdata) strata
-to the output. Only if there any.}
-
-\item{keep.infoVar}{[logical] For internal use.}
-
 \item{...}{additional arguments to be passed to \code{\link{predictCox}}.}
 }
 \description{
-Same as predictCox except that the survival is estimated using the product limit estimator.
-}
-\details{
-Note: the iid and standard errors are computed using the exponential approximation.
-}
-\examples{
-library(survival)
-
-#### generate data ####
-set.seed(10)
-d <- sampleData(40,outcome="survival")
-nd <- sampleData(4,outcome="survival")
-d$time <- round(d$time,1)
-
-#### Cox model ####
-fit <- coxph(Surv(time,event)~ X1 + X2 + X6,
-             data=d, ties="breslow", x = TRUE, y = TRUE)
-
-## exponential approximation
-predictCox(fit, newdata = d, times = 1:5)
-
-## product limit
-predictCoxPL(fit, newdata = d, times = 1:5)
-
-#### stratified Cox model ####
-fitS <- coxph(Surv(time,event)~ X1 + strata(X2) + X6,
-             data=d, ties="breslow", x = TRUE, y = TRUE)
-
-## exponential approximation
-predictCox(fitS, newdata = d, times = 1:5)
-
-## product limit
-predictCoxPL(fitS, newdata = d, times = 1:5)
-
-#### fully stratified Cox model ####
-fitS <- coxph(Surv(time,event)~ 1,
-             data=d, ties="breslow", x = TRUE, y = TRUE)
-
-## product limit
-GS <- survfit(Surv(time,event)~1, data = d)
-range(predictCoxPL(fitS)$survival - GS$surv)
-
-fitS <- coxph(Surv(time,event)~ strata(X2),
-             data=d, ties="breslow", x = TRUE, y = TRUE)
-
-## product limit
-GS <- survfit(Surv(time,event)~X2, data = d)
-range(predictCoxPL(fitS)$survival - GS$surv)
-
+Depreciated function for Product Limit Estimation of Survival Probabilities from a Cox model.
+Use the \code{\link{predictCox}} function instead with argument \code{product.limit=TRUE}.
 }
