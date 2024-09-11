@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: sep 11 2024 (15:55) 
+## Last-Updated: sep 11 2024 (16:24) 
 ##           By: Brice Ozenne
-##     Update #: 682
+##     Update #: 686
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -386,12 +386,13 @@ print.wglm <- function(x, times = NULL, short = FALSE, ...){
     }
     ff.outcome <- stats::delete.response(stats::terms(formula(x$formula)))
     if(!short){
-        x.coef <- coef(x)
+        x.coef <- coef(x, simplify = FALSE)
         M.print <- cbind(n.censor = x$n.censor,
                          n.event = sapply(x$fit, function(iM){sum(iM$y)}),
                          "IPCW(max)" = sapply(x$name.IPCW, function(iName){max(x$data[[iName]])}),
                          x.coef)
-        colnames(M.print)[-(1:3)] <- names(x.coef)
+
+        colnames(M.print)[-(1:3)] <- colnames(x.coef)
         rownames(M.print) <- paste0("   ",x$times)    
     }
 

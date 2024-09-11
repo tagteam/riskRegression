@@ -15,7 +15,8 @@ baseHaz_cpp(
   nPatients,
   nStrata,
   cause,
-  Efron
+  Efron,
+  reverse
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ baseHaz_cpp(
 \item{cause}{the status value corresponding to event.}
 
 \item{Efron}{whether Efron or Breslow estimator should be used in presence of ties.}
+
+\item{reverse}{whether censoring occurs before events in presence of ties.}
 }
 \description{
 C++ function to estimate the baseline hazard from a Cox Model

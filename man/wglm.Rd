@@ -11,7 +11,9 @@ wglm(
   formula.censor = ~1,
   cause = NA,
   fitter = NULL,
-  product.limit = NULL
+  ties = NULL,
+  product.limit = NULL,
+  store = NULL
 )
 }
 \arguments{
@@ -27,7 +29,12 @@ wglm(
 
 \item{fitter}{[character] routine to fit the Cox regression models.}
 
+\item{ties}{[character] method used to handle ties when using a Cox model (\code{"breslow"} or \code{"efron"}).
+Ignored if fitter equals to \code{"prodlim"}.}
+
 \item{product.limit}{[logical] if \code{TRUE} the survival is computed using the product limit estimator.}
+
+\item{store}{[vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} and/or \code{iid="full"}.}
 }
 \value{
 an object of class \code{"wglm"}.
@@ -73,8 +80,10 @@ eC2.wglm
 
 #### Competing risks ####
 ## here Kaplan-Meier as censoring model
-eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~strata(X1),
+eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~X1,
                  times = tau, data = d)
 eCR.wglm
-
+summary(eCR.wglm)
+eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~X1,
+                 times = tau, data = d)
 }
