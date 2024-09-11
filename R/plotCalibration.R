@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Nov 22 2023 (15:21) 
+## last-updated: Jun  5 2024 (07:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 388
+##     Update #: 402
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,24 +27,24 @@
 ##' @param times Time point specifying the prediction horizon.
 ##' @param method The method for estimating the calibration curve(s):
 ##' \itemize{
-##' \item{\code{"quantile"}}{The observed proportion at predicted risk value 'p'
+##' \item \code{"quantile"}: The observed proportion at predicted risk value 'p'
 ##' is obtained in groups
 ##' defined by quantiles of the predicted event probabilities of all subjects.
-##' The number of groups is controlled by argument \code{q}.}
-##' \item{\code{"nne"}}: {The observed proportion at predicted risk value 'p' is obtained based
+##' The number of groups is controlled by argument \code{q}.
+##' \item \code{"nne"}: The observed proportion at predicted risk value 'p' is obtained based
 ##' on the subjects whose predicted risk is inside a nearest
 ##' neighborhood around the value 'p'. The larger the
-##' bandwidth the more subjects are included in the current neighborhood. 
-##' }}
+##' bandwidth the more subjects are included in the current neighborhood. }
+##' 
 ##' @param cens.method For right censored data only. How observed proportions are calculated. Either \code{"jackknife"} or \code{"local"}:
 ##' \itemize{
-##' \item{\code{"jackknife"}}{Compute a running mean of the jackknife pseudovalues across neighborhoods/groups of the predicted risks.
+##' \item \code{"jackknife"}: Compute a running mean of the jackknife pseudovalues across neighborhoods/groups of the predicted risks.
 ##' Here we rely on the
-##' assumption that censoring is independent of the event time and the covariates, see References. }
-##' \item{\code{"local"}}{Compute the Kaplan-Meier estimator in absence of competing risks and the Aalen-Johansen estimator in presence of competing risks
+##' assumption that censoring is independent of the event time and the covariates, see References. 
+##' \item \code{"local"}: Compute the Kaplan-Meier estimator in absence of competing risks and the Aalen-Johansen estimator in presence of competing risks
 ##' locally like a running mean in neighborhoods of the predicted risks. The widths of the neighborhoods
-##' are defined according to method.
-##' }}
+##' are defined according to method. }
+##' 
 ##' @param round If \code{TRUE} predicted probabilities are rounded to
 ##'     two digits before smoothing. This may have a considerable
 ##'     effect on computing efficiency in large data sets.
@@ -134,8 +134,8 @@ plotCalibration <- function(x,
                             models,
                             times,
                             method="nne",
-                            cens.method,
-                            round=TRUE,
+                            cens.method = "local",
+                            round=2,
                             bandwidth=NULL,
                             q=10,
                             bars=FALSE,
@@ -143,7 +143,6 @@ plotCalibration <- function(x,
                             names="quantiles",
                             pseudo=FALSE,
                             rug,
-                            ## boxplot=FALSE,
                             show.frequencies=FALSE,
                             plot=TRUE,
                             add=FALSE,
@@ -165,13 +164,9 @@ plotCalibration <- function(x,
                             na.action=na.fail,
                             cex=1,
                             ...){
-    if (x$response.type!="binary" && missing(cens.method)){
-        cens.method <- "local"
-        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensitive to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
-    }
     
     # {{{ plot frame
-    model=risk=event=status=NULL
+    model=risk=riskRegression_event=riskRegression_status=NULL
     if (missing(ylab)){
         if (bars==TRUE){
             ylab=""
@@ -202,7 +197,7 @@ plotCalibration <- function(x,
     pframe <- x$Calibration$plotframe
     if (is.null(pframe))
         stop("Object has no information for calibration plot.\nYou should call the function \"riskRegression::Score\" with plots=\"calibration\".")
-    Rvar <- grep("^(ReSpOnSe|pseudovalue)$",names(pframe),value=TRUE)
+    Rvar <- grep("^(riskRegression_event|pseudovalue)$",names(pframe),value=TRUE)
     if (!missing(models)){
         fitted.models <- pframe[,unique(model)]
         if (all(models%in%fitted.models)){
@@ -400,8 +395,8 @@ plotCalibration <- function(x,
                                             Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                    }else{
                        if(x$response.type=="survival"){
-                           censcode <- pframe[status==0,status[1]]
-                           qfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~pcut,data=pframe)
+                           censcode <- pframe[riskRegression_status==0,riskRegression_status[1]]
+                           qfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_status,cens.code=censcode)~pcut,data=pframe)
                            plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                                 Obs=predict(qfit,
                                                             newdata=data.frame(pcut=levels(pcut)),
@@ -409,8 +404,8 @@ plotCalibration <- function(x,
                                                             mode="matrix",
                                                             times=tp,type="cuminc"))
                        }else{
-                           censcode <- pframe[status==0,event[1]]
-                           qfit <- prodlim::prodlim(prodlim::Hist(time,event,cens.code=censcode)~pcut,data=pframe)
+                           censcode <- pframe[riskRegression_status==0,riskRegression_event[1]]
+                           qfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_event,cens.code=censcode)~pcut,data=pframe)
                            n.cause <- match(x$cause,x$states)
                            plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                                 Obs=predict(qfit,
@@ -428,11 +423,11 @@ plotCalibration <- function(x,
                    ## to avoid memory explosion ...
                    ## a difference in the 3 digit should
                    ## not play a role for the single subject.
-                   if (round==TRUE){
+                   if (as.numeric(round)>0){
                        if (!is.null(bandwidth) && bandwidth[1]>=1){
                            ## message("No need to round predicted probabilities to calculate calibration in the large")
                        } else{
-                           p <- round(p,2)
+                           p <- round(p,round)
                        }
                    }
                    p <- na.omit(p)
@@ -460,11 +455,11 @@ plotCalibration <- function(x,
                                ## plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                ## Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                            }else{
-                               ## local Kaplan-Meier/Aalen-Johansen 
+                               ## local Kaplan-Meier/Aalen-Johansen
                                if (cens.method=="local"){
                                    if(x$response.type=="survival"){
-                                       censcode <- pframe[status==0,status[1]]
-                                       pfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       censcode <- pframe[riskRegression_status==0,riskRegression_status[1]]
+                                       pfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_status,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
                                        plotFrame=data.frame(Pred=sort(unique(p)),
                                                             Obs=predict(pfit,
                                                                         newdata=data.frame(p=sort(unique(p))),
@@ -472,9 +467,9 @@ plotCalibration <- function(x,
                                                                         mode="matrix",
                                                                         times=tp,type="cuminc"))
                                    }else{
-                                       censcode <- pframe[status==0,event[1]]
+                                       censcode <- pframe[riskRegression_status==0,riskRegression_event[1]]
                                        ## pframe[,Event:=factor(event,levels=1:(length(x$states)+1),labels=c(x$states,censcode))]
-                                       pfit <- prodlim::prodlim(prodlim::Hist(time,event,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       pfit <- prodlim::prodlim(prodlim::Hist(riskRegression_time,riskRegression_event,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
                                        n.cause <- match(x$cause,x$states)
                                        plotFrame=data.frame(Pred=sort(unique(p)),
                                                             Obs=predict(pfit,

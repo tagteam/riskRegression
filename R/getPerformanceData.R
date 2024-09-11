@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Apr 27 2023 (15:10) 
+## Last-Updated: Jun  7 2024 (08:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 38
+##     Update #: 77
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,9 +19,7 @@ getPerformanceData <- function(testdata,
                                traindata=NULL,
                                trainseed=NULL,
                                response.type,
-                               response.dim,
                                neworder,
-                               debug,
                                times,
                                cause,
                                levs,
@@ -31,20 +29,18 @@ getPerformanceData <- function(testdata,
                                cens.type,
                                object,
                                object.classes,
-                               NT){
-    ID=model = risk = NULL
-    # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-    Brier=IPA=IBS=NULL
+                               NT,
+                               verbose){
+    riskRegression_ID=model = risk = Brier = IPA = IBS = NULL
+    # inherit everything else from parent frame: object, nullobject, NT, times, cause.
     looping <- length(traindata)>0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
-    response <- testdata[,1:response.dim,with=FALSE]
-    response[,ID:=testdata[["ID"]]]
-    setkey(response,ID)
-    X <- testdata[,-c(1:response.dim),with=FALSE]
-    ## restore sanity
-    setnames(X,sub("^protectedName.","",names(X)))
-    if (debug) message("\nExtracted test set and prepared output object")
+    rr_vars <- grep("^riskRegression_",names(testdata))
+    testresponse <- testdata[,rr_vars,with=FALSE]
+    data.table::setkey(testresponse,riskRegression_ID)
+    X <- testdata[,-rr_vars,with=FALSE]
+    if (verbose>2) message("\nExtracted test set and prepared output object")
     # }}}
     # {{{ collect pred as long format data.table
     args <- switch(response.type,"binary"={list(newdata=X)},
@@ -55,11 +51,8 @@ getPerformanceData <- function(testdata,
     ## where status has 0,1,2 but now event history response has status=0,1
     ## the original response is still there
     if(!is.null(traindata)){
-        trainX <- traindata[,-c(1:response.dim),with=FALSE]
-        ## restore sanity
-        setnames(trainX,sub("^protectedName.","",names(trainX)))
-        ## trainX <- copy(traindata)
-        trainX[,ID:=NULL]
+        rr_vars <- grep("^riskRegression_",names(testdata))
+        trainX <- traindata[,-rr_vars,with=FALSE]
     }
     pred <- data.table::rbindlist(lapply(levs, function(f){
         ## add object specific arguments to predictRisk methods
@@ -68,30 +61,26 @@ getPerformanceData <- function(testdata,
         }
         ## predictions given as numeric values
         if (f[1]!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
-            ## sort predictions by ID
+            ## sort predictions by riskRegression_ID
             if (!is.null(dim(object[[f]]))) {## input matrix
                 if (response.type=="binary"){
                     p <- do.call("predictRisk", c(list(object=c(object[[f]])),args))[neworder]
                 }else{
-                    ## if(!is.null(include.times)){ ## remove columns at times beyond max time
-                    ## p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[neworder,])
-                    ## } else{
                     p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[neworder,])
-                    ## }
                 }
             }
             else{ ## either binary or only one time point
                 p <- do.call("predictRisk", c(list(object=object[[f]]),args))[neworder]
             }
         }else{
-            # predictions given as model which needs training in crossvalidation loops
+            # prediction models are trained here in crossvalidation loops
             if (looping){
                 set.seed(trainseed)
                 if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
                 model.f$call$data <- trainX
                 trained.model <- try(eval(model.f$call),silent=TRUE)
                 if (inherits(x=trained.model,what="try-error")){
-                    message(paste0("Failed to train the following model:"))
+                    if (verbose>1)message(paste0("Failed to train the following model:"))
                     try(eval(model.f$call),silent=FALSE)
                     stop()
                 }
@@ -107,66 +96,74 @@ getPerformanceData <- function(testdata,
             }
         }
         if (response.type%in%c("survival","competing.risks")){
-            out <- data.table(ID=testdata[["ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
-            setkey(out,model,times,ID)
+            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
+            byvars <- c("model","times")
+            data.table::setkey(out,model,times,"riskRegression_ID")
             out
         } else {
-            out <- data.table(ID=testdata[["ID"]],model=f,risk=p)
-            setkey(out,model,ID)
+            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p)
+            byvars <- c("model")
+            setkey(out,model,riskRegression_ID)
             out
         }
     }))
     if (any(is.na(pred$risk))) {
-        ## browser(skipCalls = 1)
-        message("Table of missing values in predicted risks:")
-        pred[,model:=factor(model,levels=levs,labels)]
-        if (response.type[1] == "binary"){
-            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model)])
+        if (verbose>1){message("Table of missing values in predicted risks:")
+            pred[,model:=factor(model,levels=levs,labels)]
+            if (response.type[1] == "binary"){
+                cat("\n")
+                print(pred[is.na(risk),data.table::data.table("Missing values" = .N),by = list(model)])
+                stop("Missing values in predicted risk detected.")
+            } else{
+                cat("\n")
+                print(pred[is.na(risk),data.table::data.table("Missing values" = .N),by = list(model,times)])
+            }
             stop("Missing values in predicted risk detected.")
-        } else
-            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model,times)])
-        stop("Missing values in predicted risk detected.")
+        }
     }
-    if (debug) message("\nTrained the model(s) and extracted the predictions")
+    if (verbose>2) message("\nTrained the model(s) and extracted the predictions")
     # }}}
     # {{{ merge with Weights (IPCW inner loop)
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             Weights <- testweights
             ## add subject specific weights
-            set(response,j="WTi",value=Weights$IPCW.subject.times)
+            set(testresponse,j="WTi",value=Weights$IPCW.subject.times)
         } else {
             if (cens.type=="uncensored"){
                 Weights <- list(IPCW.times=rep(1,NT),IPCW.subject.times=matrix(1,ncol=NT,nrow=N))
                 Weights$method <- "marginal"
-                set(response,j="WTi",value=1)
+                set(testresponse,j="WTi",value=1)
             } else{
                 stop("Cannot handle this type of censoring.")
             }
         }
         ## add time point specific weights
         if (Weights$method=="marginal"){
-            Wt <- data.table(times=times,Wt=Weights$IPCW.times)
-            ## OBS: many digits in times may cause merge problems
-            pred <- merge(pred,Wt,by=c("times"))
-        }else{
-            Wt <- data.table(times=rep(times,rep(N,NT)),
-                             Wt=c(Weights$IPCW.times),
-                             ID=testdata$ID)
-            pred <- merge(pred,Wt,by=c("ID","times"))
+            Wt <- data.table(times = times,Wt=c(Weights$IPCW.times))
+            pred <- Wt[pred,,on="times"]
+            data.table::setkey(pred,model,times,riskRegression_ID)
+        }else{ # here as many weights as there are subjects at each element of times
+            Wt <- rbindlist(lapply(1:length(times),function(s){
+                data.table(riskRegression_ID = testresponse$riskRegression_ID,
+                           times=rep(times[[s]],nrow(Weights$IPCW.times)),
+                           Wt=Weights$IPCW.times[,s])
+            }))
+            pred <- Wt[pred,,on=c("riskRegression_ID","times")]
         }
-        if (debug) message("merged the weights with input for performance metrics")
+        data.table::setkey(pred,model,times,riskRegression_ID)
+        if (verbose>2) message("merged the weights with input for performance metrics")
     } else {
         ## if (response.type=="binary")
         Weights <- NULL
     }
-    if (debug) message("added weights to predictions")
+    if (verbose>2) message("added weights to predictions")
     # }}}
     # {{{ merge with response
-    DT=merge(response,pred,by="ID")
+    DT=merge(testresponse,pred,by="riskRegression_ID")
+    data.table::setkey(DT,riskRegression_ID)
     DT
 }
-
 
 #----------------------------------------------------------------------
 ### getPerformanceData.R ends here

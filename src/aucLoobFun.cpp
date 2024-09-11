@@ -15,13 +15,13 @@ List aucLoobFun(IntegerVector IDCase, IntegerVector IDControl, NumericMatrix ris
       int B = splitMat.ncol();
       int ibij = 0;
       double aucij = 0;
-      for (int u = 0; u<B;u++){
-        if (splitMat(idCase,u) && splitMat(idControl,u)){
+      for (int b = 0; b<B;b++){
+        if (splitMat(idCase,b) && splitMat(idControl,b)){
           ibij+=1;
-          if (riskMat(idCase,u) > riskMat(idControl,u)){
+          if (riskMat(idCase,b) > riskMat(idControl,b)){
             aucij += 1.0;
           }
-          else if (riskMat(idCase,u) == riskMat(idControl,u)){
+          else if (riskMat(idCase,b) == riskMat(idControl,b)){
             aucij+=0.5;
           }
         }

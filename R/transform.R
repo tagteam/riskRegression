@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: sep 10 2024 (11:33) 
+## Last-Updated: Jun 13 2024 (19:54) 
 ##           By: Brice Ozenne
-##     Update #: 537
+##     Update #: 538
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -651,7 +651,7 @@ transformCIBP <- function(estimate, se, iid, null,
 }
 
 ## * as.data.table.transformCIBP
-##' @export
+#' @export
 as.data.table.transformCIBP <- function(x, keep.rownames = FALSE, ...){
 
     ## add extra argument (should be of the correct size)

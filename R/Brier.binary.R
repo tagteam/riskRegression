@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:03) 
 ## Version: 
-## Last-Updated: Nov 22 2023 (15:19) 
+## Last-Updated: Jun  5 2024 (14:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 9
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,6 @@ Brier.binary <- function(DT,
                          cens.model="none",
                          keep.vcov=FALSE,
                          keep.iid=FALSE,
-                         multi.split.test,
                          alpha,
                          N,
                          NT,
@@ -29,10 +28,10 @@ Brier.binary <- function(DT,
                          dolist,
                          keep.residuals=FALSE,
                          ...){
-    residuals=Brier=risk=model=ReSpOnSe=lower=upper=se=ID=IF.Brier=NULL
-    DT[,residuals:=(ReSpOnSe-risk)^2]
+    residuals=Brier=risk=model=riskRegression_event=lower=upper=se=riskRegression_ID=IF.Brier=NULL
+    DT[,residuals:=(riskRegression_event-risk)^2]
     if (se.fit==1L){
-        data.table::setkey(DT,model,ID)
+        data.table::setkey(DT,model,riskRegression_ID)
         score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=list(model)]
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
@@ -52,9 +51,9 @@ Brier.binary <- function(DT,
     if (length(dolist)>0){
         ## merge with Brier score
         data.table::setkey(DT,model)
-        data.table::setkey(score,model)
-        DT <- DT[score]
-        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
+        DT <- DT[score,,on = c("model")]
+        data.table::setkey(DT,model)
+        if (se.fit[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,
                                                              IF=residuals,
                                                              model=model),
@@ -62,7 +61,6 @@ Brier.binary <- function(DT,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  multi.split.test=multi.split.test,
                                                   se.fit=se.fit)]
         }else{
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),
@@ -70,7 +68,6 @@ Brier.binary <- function(DT,
                                                   N=N,
                                                   alpha=alpha,
                                                   dolist=dolist,
-                                                  multi.split.test=FALSE,
                                                   se.fit=FALSE)]
         }
         setnames(contrasts.Brier,"delta","delta.Brier")
@@ -83,10 +80,10 @@ Brier.binary <- function(DT,
     }
     if (keep.iid[[1]] && se.fit[[1]] == TRUE) {
         output <- c(output,
-                    list(iid.decomp = DT[,data.table::data.table(ID,model,IF.Brier)]))
+                    list(iid.decomp = DT[,data.table::data.table(riskRegression_ID,model,IF.Brier)]))
     }
     if (keep.residuals[[1]] == TRUE) {
-        output <- c(output,list(residuals=DT[,data.table::data.table(ID,ReSpOnSe,model,risk,residuals)]))
+        output <- c(output,list(residuals=DT[,data.table::data.table(riskRegression_ID,riskRegression_event,model,risk,residuals)]))
     }
     output
 }
