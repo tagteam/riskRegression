@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  9 2024 (14:04) 
 ## Version: 
-## Last-Updated: sep 10 2024 (13:41) 
+## Last-Updated: sep 11 2024 (18:10) 
 ##           By: Brice Ozenne
-##     Update #: 50
+##     Update #: 55
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,16 +39,26 @@ compressData <- function(object, newdata, times, diag, average.iid,
         if(test.allCategorical || (!is.null(level) && level == "minimal")){
             ## *** covariates
             keep.col <- !duplicated(do.call("c",lapply(ls.infoVar, "[[","lpvars.original")))
-            newdata.X <- do.call(cbind,lapply(object$model, FUN = stats::model.matrix, data = newdata))[,keep.col,drop=FALSE]
-            if((!is.null(level) && level == "minimal")){
+            if(length(keep.col)>0){
+                newdata.X <- do.call(cbind,lapply(object$model, FUN = function(iO){stats::model.matrix(iO, data = newdata)}))[,keep.col,drop=FALSE]
+            }else{
+                newdata.X <- NULL
+            }
+            if(is.null(newdata.X) || (!is.null(level) && level == "minimal")){
                 n.cov <- 1
             }else{
                 n.cov <- 2^NCOL(newdata.X)
             }
+            
             ## *** strata variables
             allStrata.var <- unique(unlist(lapply(ls.infoVar,"[[","stratavars.original")))
             if(length(setdiff(allStrata.var,names(newdata.X)))>0){
-                newdata.X <- cbind(newdata.X,as.data.frame(newdata)[setdiff(allStrata.var,names(newdata.X))])
+                newdata.strata <- as.data.frame(newdata)[setdiff(allStrata.var,names(newdata.X))]
+                if(is.null(newdata.X)){
+                    newdata.X <- newdata.strata
+                }else{
+                    newdata.X <- cbind(newdata.X,newdata.strata)
+                }
             }
             if((!is.null(level) && level == "minimal")){
                 nStrata <- 1
@@ -75,7 +85,12 @@ compressData <- function(object, newdata, times, diag, average.iid,
             }
             ## *** strata variables
             if(length(setdiff(infoVar$stratavars.original,names(newdata.X)))>0){
-                newdata.X <- cbind(newdata.X,as.data.frame(newdata)[setdiff(infoVar$stratavars.original,names(newdata.X))])
+                newdata.strata <- as.data.frame(newdata)[setdiff(infoVar$stratavars.original,names(newdata.X))]
+                if(NCOL(newdata.X)==0){
+                    newdata.X <- newdata.strata
+                }else{
+                    newdata.X <- cbind(newdata.X,newdata.strata)
+                }
             }
             
         }else{

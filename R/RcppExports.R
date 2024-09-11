@@ -19,11 +19,12 @@ aucLoobFun <- function(IDCase, IDControl, riskMat, splitMat, weights) {
 #' @param nStrata number of strata 
 #' @param cause the status value corresponding to event.
 #' @param Efron whether Efron or Breslow estimator should be used in presence of ties.
+#' @param reverse whether censoring occurs before events in presence of ties.
 #' 
 #' @details WARNING stoptimes status eXb and strata must be sorted by strata, stoptimes, and status
 #' @export
-baseHaz_cpp <- function(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron) {
-    .Call(`_riskRegression_baseHaz_cpp`, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
+baseHaz_cpp <- function(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron, reverse) {
+    .Call(`_riskRegression_baseHaz_cpp`, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron, reverse)
 }
 
 calcSeMinimalCSC_cpp <- function(seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, isJump_time1, jump2jump, firstTime1theCause, lastSampleTime, newdata_index, factor, grid_strata, nTau, nNewObs, nSample, nStrata, nCause, p, theCause, diag, survtype, exportSE, exportIF, exportIFmean, debug) {
@@ -84,16 +85,16 @@ getInfluenceFunctionBrierKMCensoringTerm <- function(tau, time, residuals, statu
     .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoringTerm`, tau, time, residuals, status)
 }
 
-calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
-    .Call(`_riskRegression_calcE_cpp`, eventtime, status, eXb, X, p, add0)
+calcE_cpp <- function(eventtime, status, eXb, X, p, add0, reverse) {
+    .Call(`_riskRegression_calcE_cpp`, eventtime, status, eXb, X, p, add0, reverse)
 }
 
 IFbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p) {
     .Call(`_riskRegression_IFbeta_cpp`, newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
-IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport) {
-    .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport)
+IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport, reverse) {
+    .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport, reverse)
 }
 
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {

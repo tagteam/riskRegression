@@ -4,6 +4,7 @@
 \alias{coxN}
 \alias{coxN.cph}
 \alias{coxN.coxph}
+\alias{coxN.default}
 \alias{coxN.phreg}
 \alias{coxN.CauseSpecificCox}
 \alias{coxN.glm}
@@ -15,6 +16,8 @@ coxN(object)
 \method{coxN}{cph}(object)
 
 \method{coxN}{coxph}(object)
+
+\method{coxN}{default}(object)
 
 \method{coxN}{phreg}(object)
 
