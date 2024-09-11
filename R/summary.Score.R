@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec 26 2019 (08:58) 
 ## Version: 
-## Last-Updated: Jan 31 2023 (13:10) 
+## Last-Updated: Jul  2 2024 (11:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 83
+##     Update #: 91
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -114,7 +114,8 @@ summary.Score <- function(object,
             }
             if (length(tab.deltaBrier)>0) {
                 setkey(tab.deltaBrier,Model,Reference)
-                if (length(tab.deltaAUC)>0) {setkey(tab.deltaAUC,Model,Reference)
+                if (length(tab.deltaAUC)>0) {
+                    setkey(tab.deltaAUC,Model,Reference)
                     tab.delta <- tab.deltaAUC[tab.deltaBrier]
                     if (any(is.na(tmp <- tab.delta[[3]]))){
                         tmp[is.na(tmp)] <- ""
@@ -131,9 +132,12 @@ summary.Score <- function(object,
                     tab.delta <- tab.deltaBrier
                 }
             }else{
-                setkey(tab.deltaAUC,Model,Reference)
+                if (length(tab.deltaAUC)>0){
+                    setkey(tab.deltaAUC,Model,Reference)
+                }
                 tab.delta <- tab.deltaAUC
             }
+            if (length(tab.delta)>0)
             out <- c(out,list(contrasts=tab.delta))
         }
         # }}}
@@ -219,10 +223,13 @@ summary.Score <- function(object,
                     tab.delta <- tab.deltaBrier
                 }
             }else{
-                setkey(tab.deltaAUC,Model,Reference)
+                if (length(tab.deltaAUC)>0){
+                    setkey(tab.deltaAUC,Model,Reference)
+                }
                 tab.delta <- tab.deltaAUC
             }
-            out <- c(out,list(contrasts=tab.delta))
+            if (length(tab.delta)>0)
+                out <- c(out,list(contrasts=tab.delta))
         }
     }
     # }}}

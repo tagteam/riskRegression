@@ -27,8 +27,8 @@
 #' \itemize{
 #' \item \code{store.iid="full"} exports the influence function for the coefficients and the baseline hazard at each event time.
 #' \item \code{store.iid="minimal"} exports the influence function for the coefficients. For the
-#' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
-#' }
+#' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory. }
+#'
 #' More details can be found in appendix B of Ozenne et al. (2017).
 #'
 #' @references
@@ -38,16 +38,15 @@
 #' 
 #' @return For Cox models, it returns the object with an additional iid slot (i.e. \code{object$iid}).
 #' It is a list containing:
-#'  \itemize{
-#'  \item{IFbeta}{Influence function for the regression coefficient.}
-#'  \item{IFhazard}{Time differential of the influence function of the hazard.}
-#'  \item{IFcumhazard}{Influence function of the cumulative hazard.}
-#'  \item{calcIFhazard}{Elements used to compute the influence function at a given time.}
-#'  \item{time}{Times at which the influence function has been evaluated.}
-#'  \item{etime1.min}{Time of first event (i.e. jump) in each strata.}
-#'  \item{etime.max}{Last observation time (i.e. jump or censoring) in each strata.}
-#'  \item{indexObs}{Index of the observation in the original dataset.}
-#' }
+#' \itemize{
+#'  \item IFbeta: Influence function for the regression coefficient.
+#'  \item IFhazard: Time differential of the influence function of the hazard.
+#'  \item IFcumhazard: Influence function of the cumulative hazard.
+#'  \item calcIFhazard: Elements used to compute the influence function at a given time.
+#'  \item time: Times at which the influence function has been evaluated.
+#'  \item etime1.min: Time of first event (i.e. jump) in each strata.
+#'  \item etime.max: Last observation time (i.e. jump or censoring) in each strata.
+#'  \item indexObs: Index of the observation in the original dataset.}
 #' 
 #' For Cause-Specific Cox models,
 #' it returns the object with an additional iid slot for each model (e.g. \code{object$models[[1]]iid}).
@@ -507,10 +506,12 @@ is.iidCox.default <- function(object){
 is.iidCox.coxph <- function(object){
     return(!is.null(object$iid))
 }
+##' @export
 is.iidCox.cph <- is.iidCox.coxph
+##' @export
 is.iidCox.phreg <- is.iidCox.coxph
+##' @export
 is.iidCox.prodlim <- is.iidCox.coxph
-
 ##' @export
 is.iidCox.CauseSpecificCox <- function(object){
     out <- all(unlist(lapply(object$models, function(iM){!is.null(iM$iid)})))

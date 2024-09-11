@@ -249,17 +249,6 @@ nd <- sampleData(80,outcome="binary")
 fit <- lrm(Y~X1+X8,data=d)
 predictRisk(fit,newdata=nd)
 
-# GLMnet example
-fit <- GLMnet(Y~X1+X8,data=d) ## Uses CV as default
-predictRisk(fit,newdata=nd)
-
-\dontrun{
-library(SuperLearner)
-set.seed(1)
-sl = SuperLearner(Y = d$Y, X = d[,-1], family = binomial(),
-      SL.library = c("SL.mean", "SL.glmnet", "SL.randomForest"))
-}
-
 ## survival outcome
 # generate survival data
 library(prodlim)
@@ -283,88 +272,35 @@ ndat <- data.frame(X1=c(0.25,0.25,-0.05,0.05),X2=c(0,1,0,1))
 predictRisk(cphmodel,newdata=ndat,times=ttt)
 predictRisk(coxphmodel,newdata=ndat,times=ttt)
 
-# stratified Cox regression model
-sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,x=TRUE,y=TRUE)
-predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
-
 ## simulate learning and validation data
 set.seed(10)
-learndat <- sampleData(100,outcome="survival")
-valdat <- sampleData(100,outcome="survival")
+learndat <- sampleData(80,outcome="survival")
+valdat <- sampleData(10,outcome="survival")
 ## use the learning data to fit a Cox model
 library(survival)
-fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
+fitCox <- coxph(Surv(time,event)~X6+X2,data=learndat,x=TRUE,y=TRUE)
 ## suppose we want to predict the survival probabilities for all subjects
 ## in the validation data at the following time points:
-## 0, 12, 24, 36, 48, 60
-psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
+## 0, 1, 2, 3, 4
+psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,4,1))
 ## This is a matrix with event probabilities (1-survival)
 ## one column for each of the 5 time points
 ## one row for each validation set individual
 
-# Use GLMnet to predict survvival probabilities
-fitGLMnet <- GLMnet(Surv(time,event)~X1+X8,data=learndat) ## Use CV as standard.
-psurv <- predictRisk(fitGLMnet,newdata=valdat,times=seq(0,60,12))
-
-# Use hal9001 as an example
-\dontrun{
-fitHAL <- Hal9001(Surv(time,event)~X1+X8,data=learndat) ## Use CV as standard.
-psurv <- predictRisk(fitHAL,newdata=valdat,times=seq(0,60,12))
-}
-
-if (require("randomForestSRC",quietly=TRUE)){
-# Do the same for a randomSurvivalForest model
-library(randomForestSRC)
-rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
-prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
-plot(psurv,prsfsurv)
-}
-## Cox with ridge option
-f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
-f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
-\dontrun{
-plot(predictRisk(f1,newdata=valdat,times=10),
-     riskRegression:::predictRisk.coxph(f2,newdata=valdat,times=10),
-     xlim=c(0,1),
-     ylim=c(0,1),
-     xlab="Unpenalized predicted survival chance at 10",
-     ylab="Ridge predicted survival chance at 10")
-}
-
-# aalen model
-library(timereg)
-data(sTRACE)
-out <- aalen(Surv(time, status==9) ~ sex + diabetes + chf + vf,
-             data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
-print(methods(predictRisk))
-predictRisk(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
-# cox.aalen model
-library(timereg)
-data(sTRACE)
-out <- cox.aalen(Surv(time,status==9) ~ prop(age) + prop(sex) +
-                 prop(diabetes) + chf + vf,
-                 data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
-predictRisk(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
 ## competing risks
-
 library(survival)
 library(riskRegression)
 library(prodlim)
-train <- prodlim::SimCompRisk(100)
-test <- prodlim::SimCompRisk(10)
-cox.fit  <- CSC(Hist(time,cause)~X1+X2,data=train)
+set.seed(8)
+train <- sampleData(80)
+test <- sampleData(10)
+cox.fit  <- CSC(Hist(time,event)~X1+X6,data=train,cause=1)
 predictRisk(cox.fit,newdata=test,times=seq(1:10),cause=1)
 
 ## with strata
-cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),data=train)
+cox.fit2  <- CSC(list(Hist(time,event)~strata(X1)+X6,
+                      Hist(time,cause)~X1+X6),data=train)
 predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
-
-
-library(timereg)
-data(bmt)
-add <- comp.risk(Event(time, cause) ~ platelet + age + tcell, data=bmt, cause=1)
-ndata <- data.frame(platelet=c(1, 0, 0), age=c(0, 1, 0), tcell=c(0, 0, 1))
-predictRisk(object=add, newdata=ndata, times=c(1, 2, 3))
 
 }
 \author{

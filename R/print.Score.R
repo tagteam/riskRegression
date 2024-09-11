@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Feb  6 2023 (15:49) 
+## last-updated: Jun 14 2024 (07:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 68
+##     Update #: 71
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -50,8 +50,8 @@ print.Score <- function(x,digits,...){
             " each of size ",
             x$split.method$M,
             ".\n",
-            ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,"\nThe 'confidence intervals' are bootstrap quantiles"),""),
-            ifelse(x$call$multi.split.test,"\nThe 'p-values' are median p-values across the splits",""),
+            ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,
+                                        "\nThe 'confidence intervals' are bootstrap quantiles"),""),
             "\n",
             sep="")
     },"LeaveOneOutBoot"={
@@ -64,7 +64,8 @@ print.Score <- function(x,digits,...){
             " each of size ",
             x$split.method$M,
             ".\n",
-            "The 'confidence intervals' and 'p-values' are obtained with the delta method after bootstrap.\n",
+            ifelse(x$call$se.fit,paste0("The level of significance is set at ",x$alpha,
+                                        "The 'confidence intervals' and 'p-values' are obtained with the delta method after bootstrap.\n"),""),
             sep="")
     })
     if (x$split.method$internal.name == "crossval"){
@@ -136,9 +137,9 @@ print.scorerisks <- function(x,B,digits=3,response.type,...){
         data.table::setkeyv(x$score,c("times","risk"))
     print(x$score,digits=digits)
     if ("times"%in%names(x$score))
-        print(data.table::dcast(x$score,times+ID~model,value.var="risk"))
+        print(data.table::dcast(x$score,times+riskRegression_ID~model,value.var="risk"))
     else
-        print(data.table::dcast(x$score,ID~model,value.var="risk"))
+        print(data.table::dcast(x$score,riskRegression_ID~model,value.var="risk"))
 }
 
 

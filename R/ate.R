@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 11 2024 (14:05) 
+## last-updated: sep 11 2024 (18:32) 
 ##           By: Brice Ozenne
-##     Update #: 2358
+##     Update #: 2360
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -88,7 +88,6 @@
 #'
 #' 
 #' @seealso
-#' \code{\link{as.data.table}} to extract the estimates in a \code{data.table} object.
 #' \code{\link{autoplot.ate}} for a graphical representation the standardized risks.
 #' \code{\link{confint.ate}} to compute (pointwise/simultaneous) confidence intervals and (unadjusted/adjusted) p-values, possibly using a transformation.
 #' \code{\link{summary.ate}} for a table containing the standardized risks over time and treatment/strata.
