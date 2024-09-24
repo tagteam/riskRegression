@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: sep 11 2024 (16:24) 
+## Last-Updated: sep 24 2024 (13:44) 
 ##           By: Brice Ozenne
-##     Update #: 686
+##     Update #: 697
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -386,7 +386,7 @@ print.wglm <- function(x, times = NULL, short = FALSE, ...){
     }
     ff.outcome <- stats::delete.response(stats::terms(formula(x$formula)))
     if(!short){
-        x.coef <- coef(x, simplify = FALSE)
+        x.coef <- coef(x, simplifies = FALSE)
         M.print <- cbind(n.censor = x$n.censor,
                          n.event = sapply(x$fit, function(iM){sum(iM$y)}),
                          "IPCW(max)" = sapply(x$name.IPCW, function(iName){max(x$data[[iName]])}),
