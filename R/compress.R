@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  9 2024 (14:04) 
 ## Version: 
-## Last-Updated: sep 11 2024 (18:10) 
+## Last-Updated: okt  4 2024 (17:10) 
 ##           By: Brice Ozenne
-##     Update #: 55
+##     Update #: 58
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -123,10 +123,12 @@ compressData <- function(object, newdata, times, diag, average.iid,
         attr(newdata.index,"vectorwise") <- rep(1, NROW(newdata))
 
     }else{ ## Cox or Cause specific Cox
-
         ## associate each observation to a unique combination of predictors
         if(NCOL(newdata.X)==1){
-            newdata.index <- tapply(1:NROW(newdata), INDEX = droplevels(newdata.X[,1]), FUN = identity, simplify = FALSE)
+            if(is.factor(newdata.X[,1])){ ## might be a factor in presence of strata
+                newdata.X[,1] <- droplevels(newdata.X[,1])
+            }
+            newdata.index <- tapply(1:NROW(newdata), INDEX = newdata.X[,1], FUN = identity, simplify = FALSE)
         }else if(all(newdata.X %in% 0:1) && NCOL(newdata.X)<=10){
             newdata.index <- tapply(1:NROW(newdata), INDEX = rowSums(newdata.X * matrix(10^(1:NCOL(newdata.X)), nrow = NROW(newdata.X), ncol = NCOL(newdata.X), byrow = TRUE)), FUN = identity, simplify = FALSE)
         }else{
