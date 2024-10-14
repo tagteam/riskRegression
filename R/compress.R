@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  9 2024 (14:04) 
 ## Version: 
-## Last-Updated: okt  4 2024 (17:10) 
+## Last-Updated: Oct 14 2024 (13:02) 
 ##           By: Brice Ozenne
-##     Update #: 58
+##     Update #: 122
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,14 +22,14 @@
 compressData <- function(object, newdata, times, diag, average.iid,
                          oorder.times, times.sorted, nStrata, infoVar, level){
 
-
     ## ** extract information
     if(is.null(newdata) || (!is.null(level) && level == "full")){
         return(NULL)
     }else if(inherits(object,"prodlim")){
         n.cov <- 1 ## unique covariate profile (as there is no covariate so all predictions are equals up to the strata)
-        if((!is.null(level) && level == "minimal")){
-            nStrata <- 1
+        nStrata <- length(object$first.strata)
+        if(!is.null(object$bandwidth)){
+           stop("Cannot handle continuous covariates with prodlim objects. \n")
         }
         test.allCategorical <- TRUE
     }else if(inherits(object,"CauseSpecificCox")){
@@ -44,25 +44,26 @@ compressData <- function(object, newdata, times, diag, average.iid,
             }else{
                 newdata.X <- NULL
             }
-            if(is.null(newdata.X) || (!is.null(level) && level == "minimal")){
+            if(is.null(newdata.X)){
                 n.cov <- 1
             }else{
                 n.cov <- 2^NCOL(newdata.X)
             }
             
             ## *** strata variables
-            allStrata.var <- unique(unlist(lapply(ls.infoVar,"[[","stratavars.original")))
-            if(length(setdiff(allStrata.var,names(newdata.X)))>0){
-                newdata.strata <- as.data.frame(newdata)[setdiff(allStrata.var,names(newdata.X))]
+            allStrata.var <- setdiff(unique(unlist(lapply(ls.infoVar,"[[","stratavars.original"))),names(newdata.X))
+            if(length(allStrata.var)>0){
+                if(any(allStrata.var %in% names(newdata) == FALSE)){
+                    stop("Incorrect argument \'newdata\': missing column(s) \"",paste(setdiff(allStrata.var,names(newdata)), collapse = "\", \""),"\". \n")
+                }
+                newdata.strata <- as.data.frame(newdata)[allStrata.var]
                 if(is.null(newdata.X)){
                     newdata.X <- newdata.strata
                 }else{
                     newdata.X <- cbind(newdata.X,newdata.strata)
                 }
             }
-            if((!is.null(level) && level == "minimal")){
-                nStrata <- 1
-            }else if(sum(!duplicated(lapply(ls.infoVar,"[[","stratavars.original")))==1){
+            if(sum(!duplicated(lapply(ls.infoVar,"[[","stratavars.original")))==1){
                 nStrata <- length(ls.infoVar[[1]][["strata.levels"]])
             }else{ ## conservative approximation
                 nStrata <- prod(lengths(lapply(ls.infoVar,"[[","strata.levels")))
@@ -77,29 +78,33 @@ compressData <- function(object, newdata, times, diag, average.iid,
         if(test.allCategorical || (!is.null(level) && level == "minimal")){
             ## *** covariates
             newdata.X <- model.matrix(object, data = newdata)
-            if((!is.null(level) && level == "minimal")){
-                n.cov <- 1
-                nStrata <- 1
-            }else{
-                n.cov <- 2^NCOL(newdata.X)
-            }
+            n.cov <- 2^NCOL(newdata.X)
+            
             ## *** strata variables
-            if(length(setdiff(infoVar$stratavars.original,names(newdata.X)))>0){
-                newdata.strata <- as.data.frame(newdata)[setdiff(infoVar$stratavars.original,names(newdata.X))]
+            allStrata.var <- setdiff(infoVar$stratavars.original,names(newdata.X))
+            if(length(allStrata.var)>0){
+                if(any(allStrata.var %in% names(newdata) == FALSE)){
+                    stop("Incorrect argument \'newdata\': missing column(s) \"",paste(setdiff(allStrata.var,names(newdata)), collapse = "\", \""),"\". \n")
+                }
+                newdata.strata <- as.data.frame(newdata)[allStrata.var]
                 if(NCOL(newdata.X)==0){
                     newdata.X <- newdata.strata
                 }else{
                     newdata.X <- cbind(newdata.X,newdata.strata)
                 }
+                nStrata <- length(infoVar$strata.levels)
+            }else{
+                nStrata <- 1
             }
             
         }else{
             n.cov <- Inf
+            nStrata <- Inf
         }
     }
 
     ## ** find unique patient profiles
-    if((!test.allCategorical && is.null(level)) || NROW(newdata) <= nStrata*n.cov){
+    if(is.null(level) && (!test.allCategorical || NROW(newdata) <= nStrata*n.cov)){
         return(NULL)
     }else if(inherits(object,"prodlim")){ ## Kaplan Meier
         newdata.save <- newdata
@@ -223,7 +228,9 @@ decompressData <- function(object, newdata, type, diag, times, se, iid, average.
                 object[[paste(iType,"iid",sep=".")]] <- array(unlist(iLS.iid), dim = c(NROW(object[[paste(iType,"iid",sep=".")]]),1,length(iLS.iid)))
             }
             if(average.iid){
-                if(attr(average.iid,"rm.list")){
+                if(!is.list(object[[paste(iType,"average","iid",sep=".")]])){
+                    object[[paste(iType,"average","iid",sep=".")]] <- cbind(rowSums(object[[paste(iType,"average","iid",sep=".")]]))
+                }else if(attr(average.iid,"rm.list")){
                     object[[paste(iType,"average","iid",sep=".")]] <- cbind(rowSums(object[[paste(iType,"average","iid",sep=".")]][[1]]))
                 }else{
                     object[[paste(iType,"average","iid",sep=".")]] <- lapply(object[[paste(iType,"average","iid",sep=".")]], function(iM){cbind(rowSums(iM))})
@@ -240,9 +247,10 @@ decompressData <- function(object, newdata, type, diag, times, se, iid, average.
             if(iid){
                 object[[paste(iType,"iid",sep=".")]] <- object[[paste(iType,"iid",sep=".")]][,,attr(newdata.index,"vectorwise"),drop=FALSE]                    
             }
-            if(average.iid && attr(average.iid,"rm.list")){
+            if(average.iid && attr(average.iid,"rm.list") && is.list(object[[paste(iType,"average","iid",sep=".")]])){
                 object[[paste(iType,"average","iid",sep=".")]] <- object[[paste(iType,"average","iid",sep=".")]][[1]]
             }
+
             if(needOrder || length(times) != length(times.sorted)){
                 col.reorder <- match(times,times.sorted) ## restaure original times and original time ordering (has been reduce to ascending unique times)
                 object[[iType]] <- object[[iType]][,col.reorder,drop=FALSE]
