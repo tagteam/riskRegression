@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (08:39) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (07:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 4
+## Last-Updated: Oct 14 2024 (10:33) 
+##           By: Brice Ozenne
+##     Update #: 5
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -71,6 +71,7 @@ test_that("[predictCox] Dependence on data", {
         Melanoma2 <- 7
         
         test <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
+
         expect_equal(ignore_attr=TRUE,GS,test)
     }
 })

@@ -385,21 +385,23 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{
                 Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
             }
-            new.time[285]
-            new.status[285]
-            new.indexJump[[iStrata]][285]
-            new.time[new.status==0] == timeStrata[new.indexJump[[iStrata]][new.status==0]+2]
+            
             ## IF
-            IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
-                                          IFbeta = out$IFbeta,
-                                          newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
-                                          S01 = Ecpp[[iStrata]]$S0,
-                                          E1 = Etempo,
-                                          time1 = timeStrata, lastTime1 = etimes.max[iStrata],
-                                          lambda0 = lambda0Strata,
-                                          p = nVar.lp, strata = iStrata,
-                                          minimalExport = (store.iid=="minimal"),
-                                          reverse = reverse)
+            if(length(timeStrata)==0){
+                IFlambda_res <- list(hazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)),
+                                     cumhazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)))                
+            }else{
+                IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
+                                              IFbeta = out$IFbeta,
+                                              newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
+                                              S01 = Ecpp[[iStrata]]$S0,
+                                              E1 = Etempo,
+                                              time1 = timeStrata, lastTime1 = etimes.max[iStrata],
+                                              lambda0 = lambda0Strata,
+                                              p = nVar.lp, strata = iStrata,
+                                              minimalExport = (store.iid=="minimal"),
+                                              reverse = reverse)
+            }
             ## output
             if(length(tau.hazard_strata)==0){
                 tau.hazard_strata <- 0

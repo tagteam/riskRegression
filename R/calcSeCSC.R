@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: mar 10 2023 (14:27) 
+## last-updated: Oct 14 2024 (12:59) 
 ##           By: Brice Ozenne
-##     Update #: 1099
+##     Update #: 1110
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -182,6 +182,28 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   diag = diag)
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(2,3,1))
+            }
+            if("average.iid" %in% export && !is.null(attr(export,"factor"))){
+                ## calcSeCif2_cpp average ignoring the weights defined in attr(export,"factor")
+                factor <- attr(export, "factor")
+                if(diag){
+                    ## Not necessary due to error message
+                    ## Attribute "factor" of argument 'average.iid' not available when 'iid' is TRUE 
+                }else{
+                    ## May occur when compressing data as it bypass the error message
+                    n.newobs <- dim(out$iid)[3]
+                    out$average.iid <- lapply(1:length(factor), function(iF){ ## iObs <- 1
+                        Reduce("+",lapply(1:n.newobs, function(iObs){
+                            if(nTimes==1){
+                                return(cbind(out$iid[,,iObs]*factor[[1]][iObs,]))
+                            }else{
+                                return(rowMultiply_cpp(out$iid[,,iObs], factor[[1]][iObs,]))
+                            }
+                        }))/n.newobs})
+                    if(length(factor)==1){
+                        out$average.iid <- out$average.iid[[1]]
+                    }
+                }
             }
 
         }else if("average.iid" %in% export){

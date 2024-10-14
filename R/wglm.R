@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: sep 24 2024 (13:44) 
+## Last-Updated: Oct 14 2024 (10:27) 
 ##           By: Brice Ozenne
-##     Update #: 697
+##     Update #: 699
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -155,9 +155,9 @@ wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
     ## *** fitter
     if(is.null(fitter)){
         regvar.censor <- all.vars(formula.censor)
-        if(length(regvar.censor)>0 && grepl("strata",regvar.censor)){
+        if(length(regvar.censor)>0 && any(grepl("strata",regvar.censor))){
             fitter <- "coxph"
-        }else if(length(regvar.censor)>0 && grepl("strat",regvar.censor)){
+        }else if(length(regvar.censor)>0 && any(grepl("strat",regvar.censor))){
             fitter <- "cph"
         }else if(length(regvar.censor)==0 || all(sapply(regvar.censor, function(iVar){is.factor(data[[iVar]]) || is.character(data[[iVar]]) || is.logical(data[[iVar]])}))){
             fitter <- "prodlim"

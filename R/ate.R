@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 11 2024 (18:32) 
+## last-updated: Oct 14 2024 (09:36) 
 ##           By: Brice Ozenne
-##     Update #: 2360
+##     Update #: 2368
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -836,7 +836,7 @@ ate_initArgs <- function(object.event,
     if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){
         censoringMF <- coxModelFrame(model.censor)
         test.censor <- censoringMF$status == 1
-        n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+        n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
 
         info.censor <- SurvResponseVar(coxFormula(model.censor))
         censorVar.status <- info.censor$status
@@ -845,16 +845,15 @@ ate_initArgs <- function(object.event,
     }else{ ## G-formula or IPTW (no censoring)
         censorVar.status <- NA
         censorVar.time <- NA
-        
-        
+                
         if(inherits(model.event,"CauseSpecificCox")){
             test.censor <- model.event$response[,"status"] == 0        
-            n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] <= t))})
+            n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] < t))})
             level.censoring <- attr(model.event$response,"cens.code")
         }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){ 
             censoringMF <- coxModelFrame(model.event)
             test.censor <- censoringMF$status == 0
-            n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+            n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
             level.censoring <- 0
         }else if(inherits(model.event,"wglm")){
             n.censor <- object.event$n.censor
