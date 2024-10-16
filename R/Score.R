@@ -884,13 +884,15 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         }
     } else{
         if (verbose>0) if (!missing(times) && (!is.null(times)) && (times[1]!=FALSE))
-                                  warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
+                           warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
         times <- NULL
         maxtime <- NULL
         NT <- 1
     }
     # }}}
     # {{{ Dealing with censored data outside the loop
+    Weights <- NULL
+    jack <- NULL
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             getIC <- se.fit[[1]] && !conservative[[1]] && cens.model != "KaplanMeier"
@@ -910,7 +912,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             if (cens.type=="uncensored"){
                 cens.method <- "none"
                 cens.model <- "none"
-                Weights <- NULL
             }
             else{
                 stop("Cannot handle this type of censoring.")
@@ -935,14 +936,11 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                    pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
                 if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
             }
-        }else{
-            jack <- NULL
         }
     } else{
         jack <- NULL ## [BRICE: add jack <- NULL to avoid error in example 'Error in Score.list(list(`LR(X1+X2+X7+X9)` = lr1, `LR(X3+X5+X6)` = lr2),  :   object 'jack' not found']
         Weights <- NULL
     }
-
     # }}}
     # {{{ Nosplit performance: external data (hopefully not apparent)
     missing.predictions <- "Don't know yet"
@@ -1473,7 +1471,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             if (keep.residuals[[1]]==FALSE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf$Brier$Residuals <- NULL
             }
+<<<<<<< HEAD
             ## browser() [BRICE: comment browser]
+=======
+>>>>>>> d4d6e60 (jack and glmnet)
             if (cens.type=="rightCensored")
                 crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("riskRegression_ID","times"))
         }

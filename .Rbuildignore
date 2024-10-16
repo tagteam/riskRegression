@@ -1,5 +1,6 @@
 examples/
 simulation/
+internal_tests/
 prepareData/
 ^.*\.o$
 ^.*\.so$
