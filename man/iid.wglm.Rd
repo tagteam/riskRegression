@@ -4,14 +4,14 @@
 \alias{iid.wglm}
 \title{IID for IPCW Logistic Regressions}
 \usage{
-\method{iid}{wglm}(x, times = NULL, simplifies = TRUE, ...)
+\method{iid}{wglm}(x, times = NULL, simplify = TRUE, ...)
 }
 \arguments{
 \item{x}{a wglm object.}
 
 \item{times}{[numeric vector] time points at which the iid should be output.}
 
-\item{simplifies}{[logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.}
+\item{simplify}{[logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.}
 
 \item{...}{Not used.}
 }

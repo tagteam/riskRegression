@@ -661,8 +661,7 @@ myW.T0 <- (d0$X1=="0")/(1-predict(e.T, type = "response"))
 myW.T1 <- (d0$X1=="1")/predict(e.T, type = "response")
 
 test_that("[ate] IPCW LR - no censoring", {
-    e0.wglm <- wglm(regressor.event = ~ X1+X2+X6, formula.censor = Surv(time,event==0) ~ 1,
-                    times = tau, data = d0)
+    e0.wglm <- wglm(Surv(time,event) ~ X1+X2+X6, times = tau, data = d0)
     e0.glm <- glm(Y ~ X1+X2+X6, family = binomial, data = d0)
     
     ## NOTE difference between wglm and glm is that lava:::information.glm uses numerical derivatives
@@ -719,8 +718,8 @@ myW.T1 <- (d$A2=="1")/predict(e.T, type = "response")
 myW.T0 <- (d$A2=="0")/(1-predict(e.T, type = "response"))
 ## range(1/d$PS2 - myW.T)
 ## range((iW.IPTW[,2]-iW.IPTW[,1]) - myW.T)
-e.C <- coxph(Surv(time,status==0)~1,data=d, x = TRUE)
-myW.C <- (1-(d$time < 5)*(d$status==0))/predictCoxPL(e.C, newdata = d, times = pmin(d$time,5), diag = TRUE)$survival
+e.C <- coxph(Surv(time,status==0)~1,data=d, x = TRUE, ties = "breslow") ## match Kaplan-Meier
+myW.C <- (1-(d$time < 5)*(d$status==0))/predictCox(e.C, newdata = d, times = pmin(d$time,5-1e-5), diag = TRUE, product.limit = TRUE)$survival
 ## range(iW.IPCW - myW.C)
 ## range(d[["IPCW"]] - myW.C)
 
@@ -749,23 +748,18 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     ## censoring:
     ## IPCW model
     suppressWarnings(eW.glm <- glm(Y1~X2+A2,family="binomial",data=d, weights = myW.C))
-    e.wglm <- wglm(regressor.event = ~ X2+A2,
-                   formula.censor = Surv(time,status==0) ~ 1,
-                   times = 5, data = d, product.limit = TRUE)
-    
+    e.wglm <- wglm(Surv(time,status) ~ X2+A2, times = 5, data = d, product.limit = TRUE)
+
+
     ## e.mets <- logitIPCW(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, cens.model=~1)
     ## expect_equal(ignore_attr=TRUE,as.double(coef(e.mets)), as.double(coef(e.wglm)), tol = 1e-3)
 
     ## G-formula on IPCW glm
-    eATE.wglm <- ate(e.wglm, data = d, treatment = "A2", times = 5, band = FALSE, verbose = FALSE)
+    eATE.wglm <- ate(e.wglm, data = d, treatment = "A2", times = 5, band = FALSE, product.limit = TRUE, verbose = FALSE)
 
     expect_equal(ignore_attr=TRUE,mean(predictRisk(eW.glm, newdata = d0)), 0.1886021, tol = 1e-5) 
     expect_equal(ignore_attr=TRUE,mean(predictRisk(eW.glm, newdata = d1)), 0.4925792, tol = 1e-5)
-    ## minor difference due to coxph using Newton Raphson instead of explicit formulae
-    
-    expect_equal(ignore_attr=TRUE,eATE.wglm$meanRisk$estimate,
-                 c(0.1886021,0.4925792), tol = 1e-3)
-    ## minor difference due to difference weights computations
+    expect_equal(ignore_attr=TRUE,as.double(coef(eATE.wglm)), c(0.1886021,0.4925792), tol = 1e-3)
 
     ## eATE.mets <- logitIPCWATE(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, treat.model = A2~1, cens.model=~1)
     ## expect_equal(ignore_attr=TRUE,as.double(coef(eATE.mets)), as.double(coef(e.wglm)), tol = 1e-3)
@@ -995,8 +989,8 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
     ## augmentation term
     jumpC <- sort(e.C$y[e.C$y[,"status"]==1,"time"])
     indexJump <- prodlim::sindex(jump.time = jumpC, eval.times = pmin(tau,dtS$time))
-    pred.Risk_tau <- predict(e.S, newdata = dtS, times = tau, iid = TRUE, cause = 1, product.limit = FALSE)
-    pred.Risk_jump <- predict(e.S, newdata = dtS, times = jumpC, iid = TRUE, cause = 1, product.limit = FALSE)
+    pred.Risk_tau <- suppressWarnings(predict(e.S, newdata = dtS, times = tau, iid = TRUE, cause = 1, product.limit = FALSE))
+    pred.Risk_jump <- suppressWarnings(predict(e.S, newdata = dtS, times = jumpC, iid = TRUE, cause = 1, product.limit = FALSE))
     pred.Surv_jump <- predictCox(e.S$models[["OverallSurvival"]], newdata = dtS, times = jumpC-1e-6, type = "survival", iid = TRUE)
     pred.G_jump <- predictCox(e.C, newdata = dtS, times = jumpC-1e-10, type = "survival", iid = TRUE)
     pred.dN_jump <- do.call(cbind,lapply(jumpC, function(iJ){(iJ == dtS$time)*(dtS$event==0)}))
@@ -1044,7 +1038,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
         iDT[, X1test := iT==as.character(X1)]
 
         iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
-        iPred.risk_tau <- predict(e.S, newdata = iDT, times = tau, iid = TRUE, cause = 1, product.limit = FALSE)
+        iPred.risk_tau <- suppressWarnings(predict(e.S, newdata = iDT, times = tau, iid = TRUE, cause = 1, product.limit = FALSE))
 
         iDT[, pi := as.double(iPred.logit)]
         iDT[, r := as.double(iPred.risk_tau$absRisk)]

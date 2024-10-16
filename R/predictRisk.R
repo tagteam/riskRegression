@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: sep 11 2024 (18:31) 
+## last-updated: Oct 16 2024 (10:12) 
 ##           By: Brice Ozenne
-##     Update #: 558
+##     Update #: 566
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -197,6 +197,8 @@ predictRisk.numeric <- function(object,newdata,times,cause,...){
 ##' @method predictRisk glm
 predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,...){
 
+    dots <- list(...)
+
     if (object$family$family=="binomial"){
 
         n.obs <- NROW(newdata)
@@ -229,8 +231,8 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
             ## iid.beta <- lava::iid(object)
             wobject <- list(times = "1", fit = list("1"=object))
             class(wobject) <- "wglm"
-            object.score <- lava::score(wobject, times = "1", simplifies = FALSE, indiv = TRUE)
-            object.info <- lava::information(wobject, times = "1", simplifies = FALSE)
+            object.score <- lava::score(wobject, times = "1", simplify = FALSE, indiv = TRUE)
+            object.info <- lava::information(wobject, times = "1", simplify = FALSE)
             iid.beta <- object.score[["1"]] %*% solve(object.info[["1"]])
 
             ff.rhs <- stats::delete.response(stats::terms(stats::formula(object)))
@@ -263,7 +265,12 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
 
         ## ** set correct level
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
-        level <- list(...)$level
+        level <- dots$level
+        type <- dots$type ## hidden argument for ate
+        if(identical(type,"survival")){
+            stop("Unkown argument \'type\' for predictRisk.glm: use argument \'level\' instead. \n")
+        }
+
         if(!is.null(level)){
             matching.Ylevel <- table(object$data[[all.vars(formula(object))[1]]],
                                      object$y)

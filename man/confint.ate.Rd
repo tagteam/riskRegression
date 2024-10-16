@@ -2,7 +2,7 @@
 % Please edit documentation in R/confint.ate.R
 \name{confint.ate}
 \alias{confint.ate}
-\title{Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)}
+\title{Confidence Intervals and Confidence Bands for the average treatment effect.}
 \usage{
 \method{confint}{ate}(
   object,
@@ -71,10 +71,17 @@ must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.}
 \item{bootci.method}{[character] Method for constructing bootstrap confidence intervals.
 Either "perc" (the default), "norm", "basic", "stud", or "bca".}
 
-\item{...}{not used.}
+\item{...}{Not used. For compatibility with the generic method.}
+}
+\value{
+A list with elements\itemize{
+\item \code{meanRisk}: estimated average risk (i.e. had everybody received the same treatment).
+\item \code{diffRisk}: difference in estimated average risk
+\item \code{ratioRisk}: ratio between estimated average risk
+}
 }
 \description{
-Confidence intervals and confidence Bands for the predicted absolute risk (cumulative incidence function).
+Confidence intervals and confidence Bands for the average treatment effect.
 }
 \details{
 Argument \code{ci}, \code{band}, \code{p.value}, \code{method.band}, \code{alternative}, \code{meanRisk.transform}, \code{diffRisk.transform}, \code{ratioRisk.transform} are only active when the \code{ate} object contains the influence function.

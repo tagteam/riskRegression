@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 14 2024 (09:36) 
+## last-updated: Oct 16 2024 (12:48) 
 ##           By: Brice Ozenne
-##     Update #: 2368
+##     Update #: 2453
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -88,9 +88,11 @@
 #'
 #' 
 #' @seealso
-#' \code{\link{autoplot.ate}} for a graphical representation the standardized risks.
-#' \code{\link{confint.ate}} to compute (pointwise/simultaneous) confidence intervals and (unadjusted/adjusted) p-values, possibly using a transformation.
-#' \code{\link{summary.ate}} for a table containing the standardized risks over time and treatment/strata.
+#' \code{\link{autoplot.ate}} for a graphical representation the standardized risks. \cr
+#' \code{\link{coef.ate}} to output estimates for the the average risk, or difference in average risks, or ratio between average risks. \cr
+#' \code{\link{confint.ate}} to output a list containing all estimates (average & difference & ratio) with their confidence intervals and p-values. \cr
+#' \code{\link{model.tables.ate}} to output a data.frame containing one type of estimates (average or difference or ratio) with its confidence intervals and p-values.   \cr
+#' \code{\link{summary.ate}} for displaying in the console a summary of the results.
 
 ## * ate (examples)
 #' @examples 
@@ -768,10 +770,10 @@ ate_initArgs <- function(object.event,
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
     ## data.index
     if(is.null(data.index)){data.index <- 1:NROW(mydata)}
-    
+
     ## ** fit a regression model when the user specifies a formula
     ## Event
-    if(missing(object.event)){
+    if(missing(object.event) || is.null(object.event)){
         formula.event <- NULL
         model.event <- NULL
     }else if(inherits(object.event,"formula")){ ## formula
@@ -779,26 +781,31 @@ ate_initArgs <- function(object.event,
         if(any(grepl("Hist(",object.event, fixed = TRUE))){
             model.event <- do.call(CSC, args = list(formula = object.event, data = mydata))
         }else if(any(grepl("Surv(",object.event, fixed = TRUE))){
-            model.event <- do.call(rms::cph, args = list(formula = object.event, data = mydata, x = TRUE, y = TRUE))
+            model.event <- do.call(survival::coxph, args = list(formula = object.event, data = mydata, x = TRUE, y = TRUE))
         }else{
             model.event <- do.call(stats::glm, args = list(formula = object.event, data = mydata, family = stats::binomial(link = "logit")))
         }
     }else if(is.list(object.event) && all(sapply(object.event, function(iE){inherits(iE,"formula")}))){   ## list of formula
         formula.event <- object.event
         model.event <- CSC(object.event, data = mydata)
-    }else if(inherits(object.event,"glm") || inherits(object.event,"multinom") ||inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+    }else if(inherits(object.event,"glm") || inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
         formula.event <- stats::formula(object.event)
         model.event <- object.event
-    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
+    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")  || inherits(object.event,"prodlim")){ ## Cox
         formula.event <- coxFormula(object.event)
         model.event <- object.event
-    }else{ ## character (time,event) i.e. no model
+    }else if(is.character(object.event)){ ## character (time,event) i.e. no model
         formula.event <- NULL
         model.event <- NULL
+    }else{
+        message("Unknown event model. \n",
+                "Recognized event models: stats::glm, riskRegression::wglm, survival::coxph, rms::cph, mets::phreg, prodlim::prodlim, riskRegression::wglm. \n")
+        formula.event <- stats::formula(object.event)
+        model.event <- object.event
     }
 
     ## Treatment
-    if(missing(object.treatment)){
+    if(missing(object.treatment) || is.null(object.treatment)){
         formula.treatment <- NULL
         model.treatment <- NULL
     }else if(inherits(object.treatment,"formula")){
@@ -807,24 +814,39 @@ ate_initArgs <- function(object.event,
     }else if(inherits(object.treatment,"glm") || inherits(object.treatment,"nnet")){
         formula.treatment <- stats::formula(object.treatment)
         model.treatment <- object.treatment
-    }else{
+    }else if(is.character(object.treatment)){
         formula.treatment <- NULL
         model.treatment <- NULL
+    }else{
+        message("Unknown treatment model: \"",paste(class(object.treatment), collapse="\", \""),"\". \n",
+                "Recognized treatment models: stats::glm, nnet::multinom. \n")
+        formula.treatment <- stats::formula(object.treatment)
+        model.treatment <- object.treatment
     }
 
     ## Censoring
-    if(missing(object.censor)){
-        formula.censor <- NULL
-        model.censor <- NULL
+    if(missing(object.censor) || is.null(object.censor)){
+        if(inherits(object.event,"wglm") && any(object.event$n.censor>0)){
+            formula.censor <- coxFormula(object.event$model.censor)
+            model.censor <- object.event$model.censor
+        }else{
+            formula.censor <- NULL
+            model.censor <- NULL
+        }
     }else if(inherits(object.censor,"formula")){
         formula.censor <- object.censor
-        model.censor <- do.call(rms::cph, args = list(formula = object.censor, data = mydata, x = TRUE, y = TRUE))
-    }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
+        model.censor <- do.call(survival::coxph, args = list(formula = object.censor, data = mydata, x = TRUE, y = TRUE))
+    }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg") || inherits(object.censor,"prodlim")){
         formula.censor <- coxFormula(object.censor)
         model.censor <- object.censor
-    }else{
+    }else if(is.character(object.censor)){
         formula.censor <- NULL
         model.censor <- NULL
+    }else{
+        message("Unknown censoring model. \n",
+                "Recognized censoring models: survival::coxph, rms::cph, mets::phreg, prodlim::prodlim. \n")
+        formula.censor <- stats::formula(object.censor)
+        model.censor <- object.censor
     }
 
     ## ** times
@@ -833,7 +855,7 @@ ate_initArgs <- function(object.event,
     }
     
     ## ** identify event, treatment and censoring variables
-    if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){
+    if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg") || inherits(model.censor,"prodlim")){
         censoringMF <- coxModelFrame(model.censor)
         test.censor <- censoringMF$status == 1
         n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
@@ -841,7 +863,15 @@ ate_initArgs <- function(object.event,
         info.censor <- SurvResponseVar(coxFormula(model.censor))
         censorVar.status <- info.censor$status
         censorVar.time <- info.censor$time
-        level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[,2]==1])
+        if(inherits(model.censor,"prodlim")){
+            if(model.censor$reverse){
+                level.censoring <- unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==0])
+            }else{
+                level.censoring <- unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==1])
+            }            
+        }else{
+            level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[,2]==1])
+        }
     }else{ ## G-formula or IPTW (no censoring)
         censorVar.status <- NA
         censorVar.time <- NA
@@ -1295,7 +1325,7 @@ ate_checkArgs <- function(call,
     ## ** object.censor
     if(attr(estimator,"IPCW")){
         ## require censoring model
-        if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
+        if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg") && !inherits(object.censor,"prodlim")){
             stop("Argument \'object.censor\' must be a Cox model \n")
         }
         
@@ -1311,9 +1341,10 @@ ate_checkArgs <- function(call,
             stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
                  "maybe you have forgotten to set the event type == 0 in the censoring model \n")
         }
-        
         if(!identical(censorVar.status,eventVar.status)){
-            if(sum(diag(table(mydata[[censorVar.status]] == level.censoring, mydata[[eventVar.status]] %in% level.states == FALSE)))!=NROW(mydata)){
+            if(length(censorVar.status)==1 && length(eventVar.status) == 1 && censorVar.status == eventVar.status){
+                ## ok only difference is in attributes
+            }else if(sum(diag(table(mydata[[censorVar.status]] == level.censoring, mydata[[eventVar.status]] %in% level.states == FALSE)))!=NROW(mydata)){
                 stop("The status variables in object.event and object.censor are inconsistent \n")
             }
         }
@@ -1496,31 +1527,9 @@ ate_checkArgs <- function(call,
 }
 
 
-## * helpers
-## ** coef.ate
-##' @export
-coef.ate <- function(object, ...){
-    name.coef <- interaction(object$meanRisk[["treatment"]],object$meanRisk[["time"]])
-    value.coef <- object$meanRisk[[paste0("meanRisk.",object$estimator[1])]]
-    return(setNames(value.coef, name.coef))
-}
 
-## ** vcov.ate
-##' @export
-vcov.ate <- function(object, ...){
-    if(is.null(object$iid)){
-        stop("Missing iid decomposition in object \n",
-             "Consider setting the argument \'iid\' to TRUE when calling the ate function \n")
-    }
-    name.coef <- interaction(object$meanRisk[["treatment"]],object$meanRisk[["time"]])
-    iid <- NULL
-    for(iT in names(object$iid[[object$estimator[1]]])){ ## iT <- "T0"
-        tempo <- object$iid[[object$estimator[1]]][[iT]]
-        colnames(tempo) <- interaction(iT,object$time)
-        iid <- cbind(iid,tempo)
-    }
-    return(crossprod(iid[,names(coef(object)),drop=FALSE]))
-}
+
+
 
 ## ** nobs.multinom
 ##' @export

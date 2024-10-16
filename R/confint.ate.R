@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Feb 10 2023 (09:19) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1006
+## Last-Updated: Oct 16 2024 (12:42) 
+##           By: Brice Ozenne
+##     Update #: 1012
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,8 +16,8 @@
 ### Code:
 
 ## * confint.ate (documentation)
-##' @title Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)
-##' @description Confidence intervals and confidence Bands for the predicted absolute risk (cumulative incidence function).
+##' @title Confidence Intervals and Confidence Bands for the average treatment effect.
+##' @description Confidence intervals and confidence Bands for the average treatment effect.
 ##' @name confint.ate
 ##' 
 ##' @param object A \code{ate} object, i.e. output of the \code{ate} function.
@@ -48,7 +48,7 @@
 ##' must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.
 ##' @param bootci.method [character] Method for constructing bootstrap confidence intervals.
 ##' Either "perc" (the default), "norm", "basic", "stud", or "bca".
-##' @param ... not used.
+##' @param ... Not used. For compatibility with the generic method.
 ##'
 ##' @details
 ##' Argument \code{ci}, \code{band}, \code{p.value}, \code{method.band}, \code{alternative}, \code{meanRisk.transform}, \code{diffRisk.transform}, \code{ratioRisk.transform} are only active when the \code{ate} object contains the influence function.
@@ -61,6 +61,12 @@
 ##' using the \code{boot.ci} function of the \code{boot} package.
 ##' p-value are obtained using test inversion method
 ##' (finding the smallest confidence level such that the interval contain the null hypothesis).
+##'
+##' @return A list with elements\itemize{
+##' \item \code{meanRisk}: estimated average risk (i.e. had everybody received the same treatment).
+##' \item \code{diffRisk}: difference in estimated average risk
+##' \item \code{ratioRisk}: ratio between estimated average risk
+##' }
 ##' 
 ##' @author Brice Ozenne
 
@@ -585,7 +591,7 @@ confintIID.ate <- function(object, estimator, out, seed){
         ## reshape data
         estimate.rR <- matrix(NA, nrow = n.allContrasts, ncol = n.times)
         iid.rR <- array(NA, dim = c(n.obs, n.times, n.allContrasts))
-    
+
         for(iC in 1:n.allContrasts){ ## iC <- 1
             estimate.rR[iC,] <- object$ratioRisk[list(iEstimator,allContrasts[1,iC],allContrasts[2,iC]), .SD$estimate, on = c("estimator","A","B")]
 

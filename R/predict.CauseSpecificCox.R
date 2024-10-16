@@ -442,9 +442,15 @@ predict.CauseSpecificCox <- function(object,
                                  exportSurv = (se || band || iid || average.iid))
 
     }else if(type == "survival" && object$surv.type=="hazard"){
-        attr(times,"etimes.max") <- attr(eventTimes,"etimes.max")
+        
+        if(!is.null(outCompress)){
+            times2 <- times.sorted
+        }else{
+            times2 <- times
+        }
+        attr(times2,"etimes.max") <- attr(eventTimes,"etimes.max")
 
-        out <- .predictSurv_CSC(object, times = times, newdata = newdata, ls.hazard = ls.hazard, eXb = M.eXb,
+        out <- .predictSurv_CSC(object, times = times2, newdata = newdata, ls.hazard = ls.hazard, eXb = M.eXb,
                                 etimes = eventTimes, etimeMax = vec.etimes.max, strata = M.strata.num,
                                 keep.times = keep.times, keep.strata = keep.strata, keep.newdata = keep.newdata,
                                 se = se, band = band, iid = iid, 
@@ -600,7 +606,7 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** retrieve original patient profile from unique patient profiles
     if(!is.null(outCompress)){
-        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, iid = iid, average.iid = average.iid,
+        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, confint = confint, band = band, iid = iid, average.iid = average.iid,
                               newdata.index = outCompress$newdata.index, times.sorted = outCompress$times.sorted, needOrder = needOrder)
         newdata <- outCompress$newdata.save
     }

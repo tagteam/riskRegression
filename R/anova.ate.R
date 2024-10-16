@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 19 2020 (09:18) 
 ## Version: 
-## Last-Updated: okt  6 2020 (16:05) 
+## Last-Updated: Oct 16 2024 (11:52) 
 ##           By: Brice Ozenne
-##     Update #: 71
+##     Update #: 72
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,7 +98,7 @@
 ##' iData[, c(treatVar) := .SD[[treatVar]][iIndex]]
 ##'
 ##' iFit <- update(fit, data = iData)
-##' iAteSim <- ate(iFit, data = iData, treatment = treatVar,
+##' iAteSim <- ate(iFit, data = iData, treatment = unname(treatVar),
 ##'                times = seqTime, verbose = FALSE)
 ##' iStatistic <- iAteSim$diffRisk[,estimate/se]
 ##' stats.perm[[iSim]] <- cbind(iAteSim$diffRisk[,.(max = max(iStatistic),
