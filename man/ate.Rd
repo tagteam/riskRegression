@@ -361,9 +361,11 @@ Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas
    (3):751--763, 2020.
 }
 \seealso{
-\code{\link{autoplot.ate}} for a graphical representation the standardized risks.
-\code{\link{confint.ate}} to compute (pointwise/simultaneous) confidence intervals and (unadjusted/adjusted) p-values, possibly using a transformation.
-\code{\link{summary.ate}} for a table containing the standardized risks over time and treatment/strata.
+\code{\link{autoplot.ate}} for a graphical representation the standardized risks. \cr
+\code{\link{coef.ate}} to output estimates for the the average risk, or difference in average risks, or ratio between average risks. \cr
+\code{\link{confint.ate}} to output a list containing all estimates (average & difference & ratio) with their confidence intervals and p-values. \cr
+\code{\link{model.tables.ate}} to output a data.frame containing one type of estimates (average or difference or ratio) with its confidence intervals and p-values.   \cr
+\code{\link{summary.ate}} for displaying in the console a summary of the results.
 }
 \author{
 Brice Ozenne \email{broz@sund.ku.dk}

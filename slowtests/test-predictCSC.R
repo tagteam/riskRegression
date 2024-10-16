@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct 14 2024 (11:01) 
+## last-updated: Oct 15 2024 (10:57) 
 ##           By: Brice Ozenne
-##     Update #: 343
+##     Update #: 349
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1019,9 +1019,10 @@ e.cox <- coxph(Surv(time, event>0)~ strata(X1) + strata(X2), data = d, x = TRUE,
 test_that("predictSurv (type=survival)", {
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
                     product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE,
-                    store.iid = "minimal", keep.newdata = FALSE)
+                    store = c(iid = "minimal"), keep.newdata = FALSE)
     GS <- predictCox(e.cox, newdata = d.pred, times = seqTime, type = "survival",
                      iid = TRUE, se = TRUE, average.iid = TRUE)
+    
     expect_equal(ignore_attr=TRUE,GS$survival, test$survival)
     expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
@@ -1029,26 +1030,20 @@ test_that("predictSurv (type=survival)", {
 
     testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
                       product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE,
-                      store.iid = "minimal")
-    GSPL <- predictCoxPL(e.cox, newdata = d.pred, times = seqTime,
-                     iid = TRUE, se = TRUE, average.iid = TRUE)
+                      store = c(iid = "minimal"))
+    GSPL <- predictCox(e.cox, newdata = d.pred, times = seqTime,
+                       iid = TRUE, se = TRUE, average.iid = TRUE, product.limit = TRUE)
 
-    ratioSurv <- test$survival/testPL$survival
-    testPL$survival.iid2 <- testPL$survival.iid
-    for(iObs in 1:NROW(d)){
-        testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
-    }
     expect_equal(ignore_attr=TRUE,GSPL$survival,testPL$survival)
-    expect_equal(ignore_attr=TRUE,GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
-    expect_equal(ignore_attr=TRUE,GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
-    expect_equal(ignore_attr=TRUE,apply(testPL$survival.iid,1:2,mean),
-                 testPL$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.se, testPL$survival.se)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.iid,testPL$survival.iid)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.average.iid,testPL$survival.average.iid)
 })
 
 test_that("predictSurv (type=survival,diag)", {
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
                     diag = TRUE, product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE,
-                    store.iid = "minimal")
+                    store = c(iid = "minimal"))
 
     GS <- predictCox(e.cox, newdata = d.pred, times = d.pred$time,
                      diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
@@ -1060,20 +1055,14 @@ test_that("predictSurv (type=survival,diag)", {
 
     testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
                       diag = TRUE, product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE,
-                      store.iid = "minimal")
-    GSPL <- predictCoxPL(e.cox, newdata = d.pred, times = d.pred$time,
-                         diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+                      store = c(iid = "minimal"))
+    GSPL <- predictCox(e.cox, newdata = d.pred, times = d.pred$time,
+                       diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE, product.limit = TRUE)
 
-    ratioSurv <- test$survival/testPL$survival
-    testPL$survival.iid2 <- testPL$survival.iid
-    for(iObs in 1:NROW(d)){
-        testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
-    }
     expect_equal(ignore_attr=TRUE,GSPL$survival,testPL$survival)
-    expect_equal(ignore_attr=TRUE,GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
-    expect_equal(ignore_attr=TRUE,GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
-    expect_equal(ignore_attr=TRUE,apply(testPL$survival.iid,1:2,mean),
-                 testPL$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.se, testPL$survival.se)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.iid,testPL$survival.iid)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.average.iid,testPL$survival.average.iid)
 })
 
 
@@ -1093,10 +1082,10 @@ test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
-    test <- predict(e.CSC, type = "survival", times = jumpTime,
-                    newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
-    GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]],times = jumpTime,
-                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    test <- suppressWarnings(predict(e.CSC, type = "survival", times = jumpTime,
+                                     newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE))
+    GS <- suppressWarnings(predictCox(e.CSC$models[["OverallSurvival"]],times = jumpTime,
+                                      newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE, product.limit = TRUE))
     expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
     expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
@@ -1118,10 +1107,10 @@ test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
-    test <- predict(e.CSC, type = "survival", times = jumpTime,
-                    newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
-    GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
-                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    test <- suppressWarnings(predict(e.CSC, type = "survival", times = jumpTime,
+                                     newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE))
+    GS <- suppressWarnings(predictCox(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
+                                      newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE, product.limit = TRUE))
     expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
     expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
@@ -1141,10 +1130,10 @@ test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
-    test <- predict(e.CSC, type = "survival", times = jumpTime,
-                    newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
-    GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
-                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    test <- suppressWarnings(predict(e.CSC, type = "survival", times = jumpTime,
+                                     newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE))
+    GS <- suppressWarnings(predictCox(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
+                                      newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE, product.limit = TRUE))
     expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
     expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
     expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
@@ -1160,18 +1149,18 @@ test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistenc
 
     GS <- predict(e.CSC, type = "survival", times = tau,
                   newdata = d, product.limit = FALSE, iid = TRUE, average.iid = TRUE,
-                  store.iid = "minimal")
+                  store = c(iid = "minimal"))
 
     test <- predict(e.CSC, type = "survival", times = tau,
                     newdata = d, product.limit = FALSE, iid = FALSE, average.iid = TRUE,
-                    store.iid = "minimal")
+                    store = c(iid = "minimal"))
 
     factor <- TRUE
     attr(factor,"factor") <- list(matrix(5, nrow = NROW(d), ncol = 1),
                                   matrix(1:NROW(d), nrow = NROW(d), ncol = 1))
     test2 <- predict(e.CSC, type = "survival", times = tau, se = FALSE,
                      newdata = d, product.limit = FALSE, iid = FALSE, average.iid = factor,
-                     store.iid = "minimal")
+                     store = c(iid = "minimal"))
 
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid[,1],test$survival.average.iid[,1])
@@ -1528,8 +1517,8 @@ test_that("After last event - fully stratified model",{
     expect_true(all(is.na(test2[strata == "X1=0 X2=0" & times == 10000,absRisk.se])))
 })
 
-## ** Argument store.iid
-cat("[predictCSC] Argument \'store.iid\' \n")
+## ** Argument store
+cat("[predictCSC] Argument \'store\' for iid \n")
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
 setkey(d,time)
@@ -1543,16 +1532,16 @@ newdata <- d
 test_that("[predictCSC]: iid minimal - no strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE)
+                    store = c(iid = "minimal"), se = TRUE, iid = TRUE, average.iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "full", se = TRUE, iid = TRUE)
+                    store = c(iid = "full"), se = TRUE, iid = TRUE)
 
     expect_equal(ignore_attr=TRUE,res1$absRisk.se,res2$absRisk.se)
     expect_equal(ignore_attr=TRUE,res1$absRisk.iid,res2$absRisk.iid)
     expect_equal(ignore_attr=TRUE,res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 
-    m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
+    m2.CSC <- iidCox(m.CSC, store = c(iid = "minimal"))
     res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
                     se = TRUE, iid = TRUE, average.iid = TRUE)
@@ -1567,16 +1556,16 @@ m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
 test_that("[predictCSC]: iid minimal - strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE)
+                    store = c(iid = "minimal"), se = TRUE, iid = TRUE, average.iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "full", se = TRUE, iid = TRUE)
+                    store = c(iid = "full"), se = TRUE, iid = TRUE)
 
     expect_equal(ignore_attr=TRUE,res1$absRisk.se,res2$absRisk.se)
     expect_equal(ignore_attr=TRUE,res1$absRisk.iid,res2$absRisk.iid)
     expect_equal(ignore_attr=TRUE,res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 
-    m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
+    m2.CSC <- iidCox(m.CSC, store = c(iid = "minimal"))
     res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
                     se = TRUE, iid = TRUE, average.iid = TRUE)

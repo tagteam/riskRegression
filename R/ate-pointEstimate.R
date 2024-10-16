@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: Oct 14 2024 (09:49) 
+## Last-Updated: Oct 16 2024 (12:31) 
 ##           By: Brice Ozenne
-##     Update #: 1015
+##     Update #: 1028
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -140,7 +140,7 @@ ATE_TI <- function(object.event,
 
     ## *** censoring model
     if(attr(estimator,"IPCW")){
-        iPred <- lapply(1:n.times, function(iT){
+        iPred <- lapply(1:n.times, function(iT){ ## iT <- 1
             1-predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iT]+1],
                           diag = TRUE, product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
         })

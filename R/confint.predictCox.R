@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt 29 2021 (14:12) 
+## Last-Updated: Oct 15 2024 (11:48) 
 ##           By: Brice Ozenne
-##     Update #: 329
+##     Update #: 345
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -186,6 +186,13 @@ confint.predictCox <- function(object,
             iSe <- object[[paste0(iType,".se")]]
             iIID <- object[[paste0(iType,".iid")]]
         }
+
+        ## reshape to multiple adjust across subject instead of timepoint when using diag
+        if(object$diag && object$band){
+            iEstimate <- t(iEstimate)
+            iSe <- t(iSe)
+            iIID <- aperm(iIID, c(1,3,2))
+        }
         outCIBP <- transformCIBP(estimate = iEstimate,
                                  se = iSe,
                                  iid = iIID,
@@ -201,6 +208,13 @@ confint.predictCox <- function(object,
                                  method.band = "maxT-simulation",
                                  alternative = "two.sided",
                                  p.value = FALSE)
+        ## restaure original shape
+        if(object$diag && object$band){
+            outCIBP$lower <- t(outCIBP$lower)
+            outCIBP$upper <- t(outCIBP$upper)
+            outCIBP$lowerBand <- t(outCIBP$lowerBand)
+            outCIBP$upperBand <- t(outCIBP$upperBand)
+        }
         names(outCIBP) <- paste0(iType,".", names(outCIBP))
         object[names(outCIBP)] <- outCIBP
         
@@ -214,23 +228,6 @@ confint.predictCox <- function(object,
                 object$lp.lowerBand <- matrix(object$lp.lowerBand, ncol = 1)
                 object$lp.upperBand <- matrix(object$lp.upperBand, ncol = 1)
             }
-        }
-        
-        ## ** compute variance-covariance matrix
-        if(!is.null(object[[paste0(iType,".iid")]])){
-            n.obs <- NROW(object[[iType]])
-            n.times <- NCOL(object[[iType]])
-            object$vcov[[iType]] <- lapply(1:n.obs, function(iObs){
-                if(n.times==1){
-                    if(iType=="lp"){
-                        return(sum(iIID[,iObs,]^2))
-                    }else{
-                        return(sum(iIID[,,iObs]^2))
-                    }
-                }else{
-                    return(crossprod(iIID[,,iObs]))
-                }
-            })
         }
     }
 

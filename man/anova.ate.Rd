@@ -109,7 +109,7 @@ iIndex <- sample.int(NROW(iData), replace = FALSE)
 iData[, c(treatVar) := .SD[[treatVar]][iIndex]]
 
 iFit <- update(fit, data = iData)
-iAteSim <- ate(iFit, data = iData, treatment = treatVar,
+iAteSim <- ate(iFit, data = iData, treatment = unname(treatVar),
                times = seqTime, verbose = FALSE)
 iStatistic <- iAteSim$diffRisk[,estimate/se]
 stats.perm[[iSim]] <- cbind(iAteSim$diffRisk[,.(max = max(iStatistic),

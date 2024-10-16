@@ -176,7 +176,7 @@ predictRisk(object, newdata, ...)
   object,
   newdata,
   times = NULL,
-  product.limit = FALSE,
+  product.limit = NULL,
   diag = FALSE,
   iid = FALSE,
   average.iid = FALSE,

@@ -244,7 +244,9 @@ predictCox <- function(object,
     }else{
         if (nTimes==0){
             times.sorted <- numeric(0)
-        } else{
+            order.times <- integer(0)
+            oorder.times <- integer(0)
+        }else{
             times.sorted <- times
             order.times <- 1:nTimes
             oorder.times <- 1:nTimes
@@ -946,7 +948,7 @@ predictCox <- function(object,
 
     ## ** retrieve original patient profile from unique patient profiles
     if(!is.null(outCompress)){
-        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, iid = iid, average.iid = average.iid,
+        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, confint = confint, band = band, iid = iid, average.iid = average.iid,
                               newdata.index = outCompress$newdata.index, times.sorted = times.sorted, needOrder = needOrder)
         newdata <- outCompress$newdata.save
     }

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt  1 2020 (09:48) 
+## Last-Updated: Oct 15 2024 (11:51) 
 ##           By: Brice Ozenne
-##     Update #: 168
+##     Update #: 173
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -106,9 +106,19 @@ confint.predictCSC <- function(object,
     }
     
     ## ** compute se, CI/CB
-    outCIBP <- transformCIBP(estimate = object$absRisk,
-                             se = object$absRisk.se,
-                             iid = object$absRisk.iid,
+    if(object$diag && object$band){ ## reshape to multiple adjust across subject instead of timepoint when using diag
+        iEstimate <- t(object$absRisk)
+        iSe <- t(object$absRisk.se)
+        iIID <- aperm(object$absRisk.iid, c(1,3,2))
+    }else{ 
+        iEstimate <- object$absRisk
+        iSe <- object$absRisk.se
+        iIID <- object$absRisk.iid
+    }
+
+    outCIBP <- transformCIBP(estimate = iEstimate,
+                             se = iSe,
+                             iid = iIID,
                              null = NA,
                              conf.level = level,
                              n.sim = n.sim,
@@ -130,21 +140,15 @@ confint.predictCSC <- function(object,
                              alternative = "two.sided",
                              p.value = FALSE)
     
+    ## restaure original shape
+    if(object$diag && object$band){
+        outCIBP$lower <- t(outCIBP$lower)
+        outCIBP$upper <- t(outCIBP$upper)
+        outCIBP$lowerBand <- t(outCIBP$lowerBand)
+        outCIBP$upperBand <- t(outCIBP$upperBand)
+    }        
     names(outCIBP) <- paste0("absRisk.", names(outCIBP))
     object[names(outCIBP)] <- outCIBP
-
-    ## compute variance-covariance matrix
-    if(!is.null(object[["absRisk.iid"]])){
-        n.obs <- NROW(object[["absRisk"]])
-        n.times <- NCOL(object[["absRisk"]])
-        object$vcov <- lapply(1:n.obs, function(iObs){
-            if(n.times==1){
-                return(sum(object[["absRisk.iid"]][,,iObs]^2))
-            }else{
-                return(crossprod(object[["absRisk.iid"]][,,iObs]))
-            }
-        })
-    }
     
     ## export
     object$conf.level <- level

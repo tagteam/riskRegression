@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: Oct 14 2024 (10:27) 
+## Last-Updated: Oct 16 2024 (12:54) 
 ##           By: Brice Ozenne
-##     Update #: 699
+##     Update #: 722
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -149,7 +149,7 @@ wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
         stop("Argument \'formula.censor' should be a formula. \n")
     }
     if(length(formula.censor)!=2){
-        stop("Argument \'formula.censor\' should not have a length hand side. \n")
+        stop("Argument \'formula.censor\' should not have a left hand side. \n")
     }
 
     ## *** fitter
@@ -283,8 +283,15 @@ formula.wglm <- function(x, ...){
 }
 
 ## * coef.wglm
+#' @title Estimates from IPCW Logistic Regressions
+#' @description Display the estimated regression parameters from logistic regressions.
+#'
+#' @param x a wglm object.
+#' @param times [numeric vector] time points at which the estimates should be output. 
+#' @param simplify [logical] should the ouput be converted to a vector when only one timepoint is requested. Otherwise will always return a matrix.
+#' @param ... Not used.
 #' @export
-coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
+coef.wglm <- function(object, times = NULL, simplify = TRUE, ...){
     if(is.null(times)){
         times <- object$times
     }else{
@@ -297,10 +304,29 @@ coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
     n.times <- length(times)
 
     M.coef <- do.call(rbind,setNames(lapply(object$fit, coef),object$time))
-    if(simplifies && length(times)==1){
+    if(simplify && length(times)==1){
         out <- stats::setNames(M.coef[object$times %in% times,], colnames(M.coef))
     }else{
         out <- M.coef[object$times %in% times,,drop=FALSE]
+    }
+    return(out)
+}
+
+## * vcov.wglm
+#' @title Variance-covariance for IPCW Logistic Regressions
+#' @description Compute the variance-covariance matrix of the estimated model parameters of IPCW logistic regressions.
+#'
+#' @param x a wglm object.
+#' @param times [numeric vector] time points at which the variance-covariance matrix should be output. 
+#' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param ... Not used.
+#' @export
+vcov.wglm <- function(object, times = NULL, simplify = TRUE, ...){
+    ls.iid <- iid(object, times = times, simplify = simplify)
+    if(is.list(ls.iid)){
+        out <- lapply(ls.iid, crossprod)
+    }else{
+        out <- crossprod(ls.iid)
     }
     return(out)
 }
@@ -321,7 +347,7 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
     }
     n.times <- length(times)
     if(se == "robust"){
-        object.iid <- lava::iid(object, simplifies = FALSE, times = times)
+        object.iid <- lava::iid(object, simplify = FALSE, times = times)
     }else if(se == "robust-wknown"){
         object.iid <- lapply(object$fit[match(times, object$times)],lava::iid)
     }
@@ -386,7 +412,7 @@ print.wglm <- function(x, times = NULL, short = FALSE, ...){
     }
     ff.outcome <- stats::delete.response(stats::terms(formula(x$formula)))
     if(!short){
-        x.coef <- coef(x, simplifies = FALSE)
+        x.coef <- coef(x, simplify = FALSE)
         M.print <- cbind(n.censor = x$n.censor,
                          n.event = sapply(x$fit, function(iM){sum(iM$y)}),
                          "IPCW(max)" = sapply(x$name.IPCW, function(iName){max(x$data[[iName]])}),
@@ -419,10 +445,10 @@ print.wglm <- function(x, times = NULL, short = FALSE, ...){
 #' @param x a wglm object.
 #' @param indiv [logical] should the individual score be output? Otherwise the total score (i.e. summed over all individuals will be output).
 #' @param times [numeric vector] time points at which the score should be output. 
-#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' @export
-score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
+score.wglm <- function(x, indiv = FALSE, times = NULL, simplify = TRUE, ...){
     if(inherits(x,"glm") && !inherits(x,"wglm")){
         x <- list(fit = list("1" = x),
                   times = "1")
@@ -452,7 +478,7 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
         if(indiv==FALSE){out[[iTime]] <- colSums(out[[iTime]])}
     }
 
-    if(n.times == 1 && simplifies){
+    if(n.times == 1 && simplify){
         return(out[[1]])
     }else{
         return(out)
@@ -465,10 +491,10 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
 #'
 #' @param x a wglm object.
 #' @param times [numeric vector] time points at which the score should be output. 
-#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' @export
-information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
+information.wglm <- function(x, times = NULL, simplify = TRUE, ...){
     if(inherits(x,"glm") && !inherits(x,"wglm")){
         x <- list(fit = list("1" = x),
                   times = "1")
@@ -496,7 +522,7 @@ information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         rownames(out[[iTime]]) <- colnames(out[[iTime]])
     }
 
-    if(n.times == 1 && simplifies){
+    if(n.times == 1 && simplify){
         return(out[[1]])
     }else{
         return(out)
@@ -510,10 +536,10 @@ information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 #'
 #' @param x a wglm object.
 #' @param times [numeric vector] time points at which the iid should be output. 
-#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' @export
-iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
+iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
     if(inherits(x,"glm") && !inherits(x,"wglm")){
         x <- list(fit = list("1" = x),
                   times = "1",
@@ -530,8 +556,8 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         }
     }
     n.times <- length(times)
-    ls.score <- lava::score(x, times = times, simplifies = FALSE, indiv = TRUE)
-    ls.info <- lava::information(x, times = times, simplifies = FALSE)
+    ls.score <- lava::score(x, times = times, simplify = FALSE, indiv = TRUE)
+    ls.info <- lava::information(x, times = times, simplify = FALSE)
 
     out <- setNames(vector(mode = "list", length = n.times), times)
     for(iTime in 1:n.times){
@@ -591,7 +617,7 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     }
     
     ## ** export
-    if(n.times == 1 && simplifies){
+    if(n.times == 1 && simplify){
         return(out[[1]])
     }else{
         return(out)
@@ -603,10 +629,10 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 #' @method predictRisk wglm
 #' @export
 predictRisk.wglm <- function(object, newdata, times = NULL, 
-                             product.limit = FALSE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
+                             product.limit = NULL, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
 
     dots <- list(...)
-    if(is.null(dots$e)){ ## hidden se argument
+    if(is.null(dots$se)){ ## hidden se argument
         se <- "robust"
     }else{
         se <- match.arg(se, c("robust","robust-wknown"))
@@ -621,6 +647,10 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
                  "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
             
         }
+    }
+
+    if(is.null(product.limit)){
+        product.limit <- object$product.limit
     }
     n.times <- length(times)
     n.sample <- sum(coxN(object))
@@ -658,6 +688,10 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
 
     ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
     level <- list(...)$level
+    type <- dots$type ## hidden argument for ate
+    if(identical(type,"survival")){
+        stop("Unkown argument \'type\' for predictRisk.wglm: use argument \'level\' instead. \n")
+    }
 
     ## ** prepare output
     out <- matrix(NA, nrow = n.newdata, ncol = n.times)
@@ -673,7 +707,7 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
 
     if(iid || average.iid){
         if(se=="robust"){
-            object.iid <- lava::iid(object, simplifies = FALSE, times = times)
+            object.iid <- lava::iid(object, simplify = FALSE, times = times)
         }else if(se == "robust-wknown"){
             object.iid <- lapply(object$fit[match(times, object$times)],lava::iid)
         }
@@ -741,5 +775,32 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
 
 }
 
+## * weights.wglm
+#' @title Extract IPCW Weights
+#' @description Extract IPCW weights of IPCW logistic regressions.
+#'
+#' @param x a wglm object.
+#' @param times [numeric vector] time points at which the weights should be output. 
+#' @param simplify [logical] should the ouput be converted to a vector when only one timepoint is requested. Otherwise will always return a matrix.
+#' @param ... Not used.
+#' @export
+#'
+weights.wglm <- function(object, times = NULL, simplify = TRUE, ...){
+
+    out <- object$data[object$name.IPCW]
+    if(!is.null(times)){
+        if(any(times %in% object$time == FALSE)){
+            stop("Unknown timepoint ",paste(setdiff(times,object$time), collapse = ", ")," in argument \'times\'. \n",
+                 "Valid timepoints: ",paste(object$time, collapse = ", "),". \n")
+        }
+        out <- out[match(times,object$time)]
+    }
+
+    if(simplify && NCOL(out)==1){
+        return(out[[1]])
+    }else{
+        return(out)
+    }
+}
 ######################################################################
 ### wglm.R ends here

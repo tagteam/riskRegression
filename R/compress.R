@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  9 2024 (14:04) 
 ## Version: 
-## Last-Updated: Oct 14 2024 (13:02) 
+## Last-Updated: Oct 15 2024 (11:46) 
 ##           By: Brice Ozenne
-##     Update #: 122
+##     Update #: 151
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -211,15 +211,25 @@ compressData <- function(object, newdata, times, diag, average.iid,
 ##' @description Expand the prediction and iid to the original data based on the results for the unique covariate sets.
 ##' Used by predictCox and predict.CauseSpecificCox
 ##' @noRd
-decompressData <- function(object, newdata, type, diag, times, se, iid, average.iid,
+decompressData <- function(object, newdata, type, diag, times, se, confint, band, iid, average.iid,
                            newdata.index, times.sorted, needOrder){
 
     ## ** recover original profiles
     if(diag){
-        for(iType in type){ ## iType <- "cumhazard"                
-            object[[iType]] <- cbind(object[[iType]][attr(newdata.index,"vectorwise") + (match(times, times.sorted)-1) * NROW(newdata)])
+        for(iType in type){ ## iType <- "cumhazard"
+            iNewIndex <- attr(newdata.index,"vectorwise") + (match(times, times.sorted)-1) * NROW(newdata)
+            object[[iType]] <- cbind(object[[iType]][iNewIndex])
             if(se){
-                object[[paste(iType,"se",sep=".")]] <- cbind(object[[paste(iType,"se",sep=".")]][attr(newdata.index,"vectorwise") + (match(times, times.sorted)-1) * NROW(newdata)])
+                object[[paste(iType,"se",sep=".")]] <- cbind(object[[paste(iType,"se",sep=".")]][iNewIndex])
+            }
+            if(confint){
+                object[[paste(iType,"lower",sep=".")]] <- cbind(object[[paste(iType,"lower",sep=".")]][iNewIndex])
+                object[[paste(iType,"upper",sep=".")]] <- cbind(object[[paste(iType,"upper",sep=".")]][iNewIndex])
+            }
+            if(band){ ## adjustment is performed on the compressed dataset, i.e., is incorrect. It is re-done below
+                object[[paste(iType,"quantileBand",sep=".")]] <- NULL
+                object[[paste(iType,"lowerBand",sep=".")]] <- NULL
+                object[[paste(iType,"upperBand",sep=".")]] <- NULL
             }
             if(iid){
                 iLS.iid <- mapply(slice = attr(newdata.index,"vectorwise"), column = match(times, times.sorted), function(slice,column){
@@ -238,11 +248,24 @@ decompressData <- function(object, newdata, type, diag, times, se, iid, average.
             }
         }
         object$diag <- TRUE
+        if(band){
+            object <- stats::confint(object)
+        }
+            
     }else{        
         for(iType in type){ ## iType <- "cumhazard"
             object[[iType]] <- object[[iType]][attr(newdata.index,"vectorwise"),,drop=FALSE]
             if(se){
                 object[[paste(iType,"se",sep=".")]] <- object[[paste(iType,"se",sep=".")]][attr(newdata.index,"vectorwise"),,drop=FALSE]
+            }
+            if(confint){
+                object[[paste(iType,"lower",sep=".")]] <- object[[paste(iType,"lower",sep=".")]][attr(newdata.index,"vectorwise"),,drop=FALSE]
+                object[[paste(iType,"upper",sep=".")]] <- object[[paste(iType,"upper",sep=".")]][attr(newdata.index,"vectorwise"),,drop=FALSE]
+            }
+            if(band){
+                object[[paste(iType,"quantileBand",sep=".")]] <- object[[paste(iType,"quantileBand",sep=".")]][attr(newdata.index,"vectorwise")]
+                object[[paste(iType,"lowerBand",sep=".")]] <- object[[paste(iType,"lowerBand",sep=".")]][attr(newdata.index,"vectorwise"),,drop=FALSE]
+                object[[paste(iType,"upperBand",sep=".")]] <- object[[paste(iType,"upperBand",sep=".")]][attr(newdata.index,"vectorwise"),,drop=FALSE]
             }
             if(iid){
                 object[[paste(iType,"iid",sep=".")]] <- object[[paste(iType,"iid",sep=".")]][,,attr(newdata.index,"vectorwise"),drop=FALSE]                    
@@ -254,7 +277,19 @@ decompressData <- function(object, newdata, type, diag, times, se, iid, average.
             if(needOrder || length(times) != length(times.sorted)){
                 col.reorder <- match(times,times.sorted) ## restaure original times and original time ordering (has been reduce to ascending unique times)
                 object[[iType]] <- object[[iType]][,col.reorder,drop=FALSE]
+                if(se){
+                    object[[paste(iType,"se",sep=".")]] <- object[[paste(iType,"se",sep=".")]][,col.reorder,drop=FALSE]
+                }
+                if(confint){
+                    object[[paste(iType,"lower",sep=".")]] <- object[[paste(iType,"lower",sep=".")]][,col.reorder,drop=FALSE]
+                    object[[paste(iType,"upper",sep=".")]] <- object[[paste(iType,"upper",sep=".")]][,col.reorder,drop=FALSE]
+                }
+                if(band){
+                    object[[paste(iType,"lowerBand",sep=".")]] <- object[[paste(iType,"lowerBand",sep=".")]][,col.reorder,drop=FALSE]
+                    object[[paste(iType,"upperBand",sep=".")]] <- object[[paste(iType,"upperBand",sep=".")]][,col.reorder,drop=FALSE]
+                }
                 if(iid){
+                    ## does not decompress vcov
                     object[[paste(iType,"iid",sep=".")]] <- object[[paste(iType,"iid",sep=".")]][,col.reorder,,drop=FALSE]                    
                 }
                 if(average.iid){

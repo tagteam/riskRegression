@@ -388,8 +388,19 @@ iidCox.coxph <- function(object, newdata = NULL,
             
             ## IF
             if(length(timeStrata)==0){
-                IFlambda_res <- list(hazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)),
-                                     cumhazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)))                
+                ## no event in the strata
+                if(store.iid=="full"){
+                    IFlambda_res <- list(hazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)),
+                                         cumhazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)))
+                }else if(store.iid=="minimal"){
+                    IFlambda_res <- list(delta_iS0 = rep(0, nObs),
+                                         Elambda0 = matrix(0, nrow = nVar.lp, ncol = length(tau.hazard_strata)),
+                                         cumElambda0 = matrix(0, nrow = nVar.lp, ncol = length(tau.hazard_strata)),
+                                         eXb = rep(0, nObs),
+                                         lambda0_iS0 = rep(0, length(timeStrata)),
+                                         cumLambda0_iS0 = rep(0, length(timeStrata)),
+                                         time1 = timeStrata)
+                }
             }else{
                 IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
                                               IFbeta = out$IFbeta,

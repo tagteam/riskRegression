@@ -4,7 +4,7 @@
 \alias{score.wglm}
 \title{Score for IPCW Logistic Regressions}
 \usage{
-\method{score}{wglm}(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...)
+\method{score}{wglm}(x, indiv = FALSE, times = NULL, simplify = TRUE, ...)
 }
 \arguments{
 \item{x}{a wglm object.}
@@ -13,7 +13,7 @@
 
 \item{times}{[numeric vector] time points at which the score should be output.}
 
-\item{simplifies}{[logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.}
+\item{simplify}{[logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.}
 
 \item{...}{Not used.}
 }
