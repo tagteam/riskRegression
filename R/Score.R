@@ -939,6 +939,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             jack <- NULL
         }
     } else{
+        jack <- NULL ## [BRICE: add jack <- NULL to avoid error in example 'Error in Score.list(list(`LR(X1+X2+X7+X9)` = lr1, `LR(X3+X5+X6)` = lr2),  :   object 'jack' not found']
         Weights <- NULL
     }
 
@@ -1472,7 +1473,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             if (keep.residuals[[1]]==FALSE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf$Brier$Residuals <- NULL
             }
-            browser()
+            ## browser() [BRICE: comment browser]
             if (cens.type=="rightCensored")
                 crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("riskRegression_ID","times"))
         }

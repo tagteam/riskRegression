@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun  5 2024 (07:20) 
-##           By: Thomas Alexander Gerds
-##     Update #: 402
+## last-updated: Oct 17 2024 (10:07) 
+##           By: Brice Ozenne
+##     Update #: 410
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -165,7 +165,7 @@ plotCalibration <- function(x,
                             cex=1,
                             ...){
     
-    # {{{ plot frame
+                                        # {{{ plot frame
     model=risk=riskRegression_event=riskRegression_status=NULL
     if (missing(ylab)){
         if (bars==TRUE){
@@ -197,7 +197,10 @@ plotCalibration <- function(x,
     pframe <- x$Calibration$plotframe
     if (is.null(pframe))
         stop("Object has no information for calibration plot.\nYou should call the function \"riskRegression::Score\" with plots=\"calibration\".")
-    Rvar <- grep("^(riskRegression_event|pseudovalue)$",names(pframe),value=TRUE)
+    Rvar <- grep("^(riskRegression_event|pseudovalue)$",names(pframe),value=TRUE) 
+    if(length(Rvar)==0){ ## [Brice: try to fix error in example Error in '.subset2(x, i, exact = exact) : attempt to select less than one element in get1index' as Rvar was numeric(0)]
+        Rvar <- grep("^(riskRegression_status)$",names(pframe),value=TRUE)  ## [Brice:]
+    } ## [Brice:]
     if (!missing(models)){
         fitted.models <- pframe[,unique(model)]
         if (all(models%in%fitted.models)){
@@ -233,8 +236,8 @@ plotCalibration <- function(x,
         method="quantile"
         if (!(NF==1)) stop(paste0("Barplots work only for one risk prediction model at a time. Provided are ",NF, "models."))
     }
-    # }}}
-    # {{{ lines 
+                                        # }}}
+                                        # {{{ lines 
     if (missing(lwd)) lwd <- rep(3,NF)
     if (missing(col)) {
         if (bars)
@@ -260,8 +263,8 @@ plotCalibration <- function(x,
     if (length(lty) < NF) lty <- rep(lty,length.out=NF)
     if (length(col) < NF) col <- rep(col,length.out=NF)
     if (length(pch) < NF) pch <- rep(pch,length.out=NF)
-    # }}}
-    # {{{ SmartControl
+                                        # }}}
+                                        # {{{ SmartControl
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
