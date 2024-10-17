@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Oct 16 2024 (12:42) 
+## Last-Updated: Oct 17 2024 (12:22) 
 ##           By: Brice Ozenne
-##     Update #: 1012
+##     Update #: 1020
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -413,16 +413,25 @@ confintBoot.ate <- function(object, estimator, out, seed){
             out$ratioRisk[iEstimator, c("p.value") :=  boot.p[indexRatio], on = "estimator"]
         }
     }
+    
     ## ** export
+    col.meanRisk <- c("estimator","time","treatment","estimate","estimate.boot","se","lower","upper")
+    col.diffRisk <- c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper")
+    col.ratioRisk <- c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper")
+        
     if(attr(object$estimator,"TD")){
-        setcolorder(out$meanRisk, neworder = c("estimator","time","landmark","treatment","estimate","estimate.boot","se","lower","upper"))
-        setcolorder(out$diffRisk, neworder = c("estimator","time","landmark","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
-        setcolorder(out$ratioRisk, neworder = c("estimator","time","landmark","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
-    }else{
-        setcolorder(out$meanRisk, neworder = c("estimator","time","treatment","estimate","estimate.boot","se","lower","upper"))
-        setcolorder(out$diffRisk, neworder = c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
-        setcolorder(out$ratioRisk, neworder = c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
+        col.meanRisk <- c(col.meanRisk[1:2], "landmark", col.meanRisk[-(1:2)])
+        col.diffRisk <- c(col.diffRisk[1:2], "landmark", col.diffRisk[-(1:2)])
+        col.ratioRisk <- c(col.ratioRisk[1:2], "landmark", col.ratioRisk[-(1:2)])
     }
+    if(p.value){
+        col.diffRisk <- c(col.diffRisk, "p.value")
+        col.ratioRisk <- c(col.ratioRisk, "p.value")
+    }
+    setcolorder(out$meanRisk, neworder = col.meanRisk)
+    setcolorder(out$diffRisk, neworder = col.diffRisk)
+    setcolorder(out$ratioRisk, neworder = col.ratioRisk)
+
     data.table::setattr(out$meanRisk, name = "vcov", value = vcov.meanRisk)
     data.table::setattr(out$diffRisk, name = "vcov", value = vcov.diffRisk)
     data.table::setattr(out$ratioRisk, name = "vcov", value = vcov.ratioRisk)

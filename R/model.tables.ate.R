@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Oct 16 2024 (11:48) 
 ## Version: 
-## Last-Updated: Oct 17 2024 (09:15) 
+## Last-Updated: Oct 17 2024 (12:16) 
 ##           By: Brice Ozenne
-##     Update #: 11
+##     Update #: 18
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,11 +67,6 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
         type <- match.arg(type, c("meanRisk","diffRisk","ratioRisk"))
     }
 
-    dots <- list(...)
-    if(length(dots)>0){
-        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
-    }
-
     if(x$inference$se == FALSE){
         stop("Cannot evaluate the uncertainty about the estimates when the standard error has not been stored. \n",
              "Set argument \'se\' to TRUE when calling the ate function \n")
@@ -102,10 +97,15 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
     if(is.factor(object.reduce$ratioRisk$B)){
         object.reduce$ratioRisk$B <- droplevels(object.reduce$ratioRisk$B)
     }
-
-    object.reduce$iid <- list(lapply(object.reduce$iid[[estimator]][contrasts], function(iIID){iIID[,x$eval.times %in% times, drop = FALSE]}))
-    names(object.reduce$iid) <- estimator
+    if(x$inference$iid){
+        object.reduce$iid <- list(lapply(object.reduce$iid[[estimator]][contrasts], function(iIID){iIID[,x$eval.times %in% times, drop = FALSE]}))
+        names(object.reduce$iid) <- estimator
+    }else if(x$inference$bootstrap){
+        object.reduce$boot$t0 <- x$boot$t0[c(subset.meanRisk,NROW(x$meanRisk)+subset.diffRisk,NROW(x$meanRisk)+NROW(x$diffRisk)+subset.ratioRisk)]
+        object.reduce$boot$t <- x$boot$t[,c(subset.meanRisk,NROW(x$meanRisk)+subset.diffRisk,NROW(x$meanRisk)+NROW(x$diffRisk)+subset.ratioRisk),drop=FALSE]
+    }
     object.reduce$estimator <- estimator ## side effect: drop attributes but they are not used by confintIID.ate
+    attr(object.reduce$estimator,"TD") <- attr(x$estimator,"TD")
     object.reduce$eval.times <- times
     object.reduce$contrasts <- contrasts
     object.reduce$allContrasts <- utils::combn(contrasts, m = 2)
@@ -113,7 +113,7 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
     object.reduce$inference.allContrasts <- utils::combn(contrasts, m = 2)
 
     ## *** call confint
-    out <- stats::confint(object.reduce)[[type]]
+    out <- stats::confint(object.reduce, ...)[[type]]
 
     ## *** export
     return(out)

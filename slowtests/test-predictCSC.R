@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct 15 2024 (10:57) 
+## last-updated: Oct 17 2024 (10:21) 
 ##           By: Brice Ozenne
-##     Update #: 349
+##     Update #: 350
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1286,65 +1286,6 @@ test_that("product.limit=-1",{
 })
 
 ## * [predictCSC] Miscelaneous
-## ** Confidence bands vs. timereg
-cat("[predictCSC] Confidence band vs. timereg \n")
-
-## ** Data
-set.seed(10)
-dt <- sampleData(1e2, outcome = "competing.risks")
-newdata <- dt[1:10,]
-
-## ** Model
-e.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = dt)
-vec.times <- e.CSC$eventTimes
-
-e.timereg <- comp.risk(Event(time, event) ~ const(X1) + const(X2),
-                       model = "rcif",
-                       data = dt, cause = 1)
-coef(e.timereg)
-coef(e.CSC)
-
-## ** Compute confidence bands
-if(FALSE){
-    resTimereg <- predict.timereg(e.timereg,
-                                  newdata = newdata[1,,drop=FALSE],
-                                  times = vec.times,
-                                  resample.iid = 1,
-                                  n.sim = n.sim)
-    resTimereg$P1
-}
-predRR <- predict(e.CSC,
-                  newdata = newdata,
-                  times = vec.times-1e-5,
-                  se = TRUE,
-                  band = TRUE,
-                  n.sim = n.sim,
-                  cause = 1)
-## debuging
-
-## cumHazard.coxph <- predictCox(fit.coxph)$cumhazard
-## iid.coxph <- iidCox(fit.coxph)
-## iid.lambda <- iid.coxph$ICcumhazard[[1]][1,]
-
-## X.design <- model.matrix(formula(fit.coxph),newdata[i,,drop=FALSE])[,-1]
-## eLP <- exp(X.design %*% cbind(coef(fit.coxph)))
-## Xiid.beta <- X.design %*% iid.coxph$IFbeta[1,]
-
-## term1 <- as.numeric(eLP * iid.lambda)
-## term2 <- as.numeric(eLP * cumHazard.coxph * Xiid.beta)
-
-## ls.args <- list(delta = res$cumhazard.iid[i,,],
-##                 nObs = 1,
-##                 nt = length(times),
-##                 n = NROW(d),
-##                 mpt = n.sim*1,
-##                 nSims = n.sim)
-## ls.args$se <-  apply(ls.args$delta^2, 1, sum)^0.5
-
-## mpt <- .C("confBandBasePredict", delta = as.double(delta), 
-##           nObs = as.integer(nobs), nt = as.integer(nt), n = as.integer(n), 
-##           se = as.double(se), mpt = double(n.sim * nobs), nSims = as.integer(n.sim), 
-##           PACKAGE = "timereg")$mpt
 
 ## ** Order of the prediction times
 cat("[predictCSC] order of the prediction times \n")

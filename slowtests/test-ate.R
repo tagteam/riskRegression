@@ -1269,6 +1269,47 @@ test_that("Case only ate", {
     expect_equal(ignore_attr=TRUE,as.data.table(e.ateC)$se, e2.se.ateC, tol = 1e-5)
 })
 
+
+## * [ate] Double robust
+
+## ** generate data
+n <- 500
+set.seed(10)
+dt <- sampleData(n, outcome="competing.risks")
+dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
+
+## working models
+m.event <-  CSC(Hist(time,event)~ X1+X2+X3+X5+X8,data=dt)
+m.censor <-  coxph(Surv(time,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
+m.treatment <-  glm(X1~X2+X3+X5+X8,data=dt,family=binomial(link="logit"))
+
+test_that("double robust ate with censoring",{
+
+    ## fast (2s)
+    ateRobust <- ate(event = m.event,
+                     treatment = m.treatment,
+                     censor = m.censor,
+                     data = dt, times = 5:10, 
+                     cause = 1, verbose = FALSE)
+
+    expect_equal(model.tables(ateRobust)$estimate,
+                 c(0.3688685, 0.4130646, 0.4404965, 0.4718681, 0.4998190, 0.5056177, 0.3648557, 0.3767246, 0.4011882, 0.4177342, 0.4537798, 0.4756062),
+                 tol = 1e-5)
+    expect_equal(model.tables(ateRobust)$se,
+                 c(0.02889309, 0.03011649, 0.03116681, 0.03209942, 0.03260198, 0.03275641, 0.03563280, 0.03593144, 0.03697987, 0.03784298, 0.03984653, 0.04095340),
+                 tol = 1e-5)
+
+    ## slow (10s)
+    ## ateRobust.bis <- ate(event = m.event,
+    ##                      treatment = m.treatment,
+    ##                      censor = m.censor,
+    ##                      data = dt, times = 5:10, method.iid = 2,
+    ##                      cause = 1, verbose = FALSE)
+    ## same se   
+    ## range(model.tables(ateRobust)$se - model.tables(ateRobust.bis)$se)
+})
+
+
 ## * [ate] Miscellaneous
 cat("[ate] Miscellaneous \n")
 
@@ -1291,7 +1332,6 @@ test_that("[ate] Cox model/G-formula - precompute iid", {
 
     expect_equal(ignore_attr=TRUE,as.data.table(test), as.data.table(GS))
 })
-## ** Ate using list of formulae
 
 ## ** Specification of the censoring mecanism
 test_that("[ate] Specification of the censoring mecanism",{
@@ -1456,3 +1496,64 @@ test_that("no error", { ## firs censoring happens at 1 which used to cause probl
     expect_equal(ignore_attr=TRUE,as.data.table(testAfter1)$se, c(0.02559758, 0.02458960, 0.02724511, 0.04936567), tol = 1e-6)
 })
 
+## ** double robust estimator [Github issue: #61 ]
+library(riskRegression)
+library(survival)
+
+set.seed(134)
+n <- 1000
+
+# Simulate the treatment variable
+treat <- rbinom(n, size = 1, prob = 0.35)
+# Simulate covariate, e.g Age
+age <- rnorm(n, mean = 60, sd = 10)
+# Simulate time variable
+time <- rlnorm(n, meanlog = 0.5, sdlog =1.2)
+time[time > 30] <- 30 #censored at time=30
+# Simulate status variable (event=1, competing risk=2)
+status <- rbinom(n, size = 1, prob = 0.20)+1
+
+#combine data
+example_data <- data.frame(treat, age, time, status)
+example_data$status <- ifelse(example_data$time==30, 0, example_data$status) ## censored at time=30
+example_data$treat <- factor(example_data$treat)
+example_data$status30 <- (example_data$status==1)*(example_data$time<=30)
+
+#treatment model
+treatment_model <- glm(treat ~ age, family="binomial", data=example_data)
+#outcome model
+outcome_model <- riskRegression::CSC(Hist(time, status) ~ treat+age, example_data)
+outcome_model2 <- glm(status30 ~ treat+age, family = "binomial", data = example_data)
+#censoring model
+censor_model <- coxph(Surv(time, status==0) ~ 1, data=example_data, x=TRUE)
+
+tau <- c(sort(unique(example_data$time))[c(1,50,100,200)], 30)
+
+test_that("double robust ate without censoring",{
+    output <- ate(event=outcome_model,
+                  censor=censor_model,
+                  treatment=treatment_model,
+                  data=example_data,
+                  times=tau,
+                  cause=1,
+                  se=T,
+                  estimator="AIPTW",
+                  verbose = FALSE)
+
+    output2 <- ate(event=outcome_model2,
+                   treatment=treatment_model,
+                   data=example_data,
+                   times=30,
+                   cause=1,
+                   se=T,
+                   estimator="AIPTW",
+                   verbose = FALSE)
+
+    expect_equal(ignore_attr=TRUE, unname(coef(output2)), c(0.7781729, 0.7776825), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE, unname(model.tables(output2)$se), c(0.01613524, 0.02262813), tol = 1e-6)
+
+    expect_equal(ignore_attr=TRUE, unname(coef(output, times = 30)), c(0.7781716, 0.7776827), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE, unname(model.tables(output, times = 30)$se), c(0.01613474, 0.02262757), tol = 1e-6)
+
+
+})
