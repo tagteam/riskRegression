@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: Oct 16 2024 (12:31) 
+## Last-Updated: Oct 17 2024 (11:44) 
 ##           By: Brice Ozenne
-##     Update #: 1028
+##     Update #: 1041
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,6 +40,7 @@ ATE_TI <- function(object.event,
                    data.index,
                    method.iid,
                    product.limit,
+                   store,
                    ...){
 
     tol <- 1e-12 ## difference in jump time must be above tol
@@ -142,7 +143,7 @@ ATE_TI <- function(object.event,
     if(attr(estimator,"IPCW")){
         iPred <- lapply(1:n.times, function(iT){ ## iT <- 1
             1-predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iT]+1],
-                          diag = TRUE, product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
+                          diag = TRUE, product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance, store = store)
         })
             
         G.T_tau <- do.call(cbind,iPred)
@@ -199,7 +200,7 @@ ATE_TI <- function(object.event,
             }
             outRisk <- predictRisk(object.event, newdata = data.i, times = times,
                                    average.iid = factor, cause = cause,
-                                   product.limit = product.limit)
+                                   product.limit = product.limit, store = store)
 
             F1.ctf.tau[[iC]][ls.index.strata[[iC]],] <- outRisk
             if(return.iid.nuisance){
@@ -225,7 +226,7 @@ ATE_TI <- function(object.event,
 
         ## absolute risk at event times and jump times of the censoring process
         predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
-                                 iid = (method.iid==2)*return.iid.nuisance)
+                                 iid = (method.iid==2)*return.iid.nuisance, store = store)
         F1.tau <- predTempo[,1:n.times,drop=FALSE]
         F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
         if((method.iid==2)*return.iid.nuisance){
@@ -234,7 +235,7 @@ ATE_TI <- function(object.event,
         
         ## survival at all jump of the censoring process
         S.jump <- predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
-                              iid = (method.iid==2)*return.iid.nuisance)
+                              iid = (method.iid==2)*return.iid.nuisance, store = store)
         if((method.iid==2)*return.iid.nuisance){
             out$store$iid.nuisance.survival <- attr(S.jump,"iid")
             attr(S.jump,"iid") <- NULL
@@ -243,14 +244,14 @@ ATE_TI <- function(object.event,
         ## martingale for the censoring process
         ## at all times of jump of the censoring process
         G.jump <- 1-predictRisk(object.censor, newdata = mydata, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
-                                product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
+                                product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance, store = store)
         
         if(return.iid.nuisance && (method.iid==2)){
             out$store$iid.nuisance.censoring <- -attr(G.jump,"iid")
             attr(G.jump,"iid") <- NULL
         }
         dN.jump <- do.call(cbind,lapply(time.jumpC, function(iJump){(mydata[[eventVar.time]] == iJump)*(mydata[[eventVar.status]] == level.censoring)}))
-        dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
+        dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance, store = store)
         if((method.iid==2)*return.iid.nuisance){
             out$store$iid.nuisance.martingale <- dLambda.jump$hazard.iid
         }

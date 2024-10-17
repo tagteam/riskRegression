@@ -297,14 +297,14 @@ predict.CauseSpecificCox <- function(object,
             stop("Incorrect names for argument \'store\': should \"data\" and \"iid\". \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
-        if("data" %in% names(store)){
+        if("data" %in% names(store) && !is.null(store[["data"]])){
             if(store[["data"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(data = \"full\") or store = c(data = \"minimal\").\n")
             }
             store.data <- store[["data"]]
         }
-        if("iid" %in% names(store)){
+        if("iid" %in% names(store) && !is.null(store[["iid"]])){
             if(store[["iid"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(iid = \"full\") or store = c(iid = \"minimal\").\n")

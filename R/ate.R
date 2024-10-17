@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 16 2024 (12:48) 
+## last-updated: Oct 17 2024 (11:30) 
 ##           By: Brice Ozenne
-##     Update #: 2453
+##     Update #: 2482
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -603,14 +603,15 @@ ate <- function(event,
                                  censorVar.status = censorVar.status,
                                  return.iid.nuisance = return.iid.nuisance,
                                  data.index = data.index,
-                                 method.iid = method.iid),
-                            dots)
+                                 method.iid = method.iid,
+                                 store = store),
+                            dots[names(dots) %in% "store" == FALSE])
     if (attr(estimator,"TD")){       
         args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
     }
     ## note: system.time() seems to slow down the execution of the function, this is why Sys.time is used instead.
     tps1 <- Sys.time()
-    
+
     pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate)
     
     tps2 <- Sys.time()
@@ -1139,14 +1140,14 @@ ate_initArgs <- function(object.event,
             stop("Incorrect names for argument \'store\': should \"data\" and \"iid\". \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
-        if("data" %in% names(store)){
+        if("data" %in% names(store) && !is.null(store[["data"]])){
             if(store[["data"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(data = \"full\") or store = c(data = \"minimal\").\n")
             }
             store.data <- store[["data"]]
         }
-        if("iid" %in% names(store)){
+        if("iid" %in% names(store) && !is.null(store[["iid"]])){
             if(store[["iid"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(iid = \"full\") or store = c(iid = \"minimal\").\n")
