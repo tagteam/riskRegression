@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Oct 16 2024 (10:12) 
+## last-updated: Oct 17 2024 (09:48) 
 ##           By: Brice Ozenne
-##     Update #: 566
+##     Update #: 567
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1584,3 +1584,153 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
 
+## * predictRisk.wglm
+#' @rdname predictRisk
+#' @method predictRisk wglm
+#' @export
+predictRisk.wglm <- function(object, newdata, times = NULL, 
+                             product.limit = NULL, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
+
+    dots <- list(...)
+    if(is.null(dots$se)){ ## hidden se argument
+        se <- "robust"
+    }else{
+        se <- match.arg(se, c("robust","robust-wknown"))
+    }
+
+    ## ** extract information and normalize arguments
+    if(is.null(times)){
+        times <- object$times
+    }else{
+        if(any(times %in% object$times == FALSE)){
+            stop("Incorrect specification of argument \'times\' \n",
+                 "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
+            
+        }
+    }
+
+    if(is.null(product.limit)){
+        product.limit <- object$product.limit
+    }
+    n.times <- length(times)
+    n.sample <- sum(coxN(object))
+    n.newdata <- NROW(newdata)
+
+    if(average.iid){
+        if(is.null(attr(average.iid,"factor"))){
+            factor <- list(matrix(1, nrow = n.newdata, ncol = n.times))
+        }else{
+            factor <- attr(average.iid, "factor")
+            if(is.matrix(factor)){
+                factor <- list(factor)
+            }
+            if(!is.list(factor)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list \n")
+            }
+            if(any(sapply(factor, is.matrix)==FALSE)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices \n")
+            }
+            for(iFactor in 1:length(factor)){ ## iFactor <- 1
+                ## when only one column and diag = FALSE, use the same weights at all times
+                if((diag == FALSE) && (NCOL(factor[[iFactor]])==1) && (n.times > 1)){
+                    factor[[iFactor]] <- matrix(factor[[iFactor]][,1],
+                                                nrow = NROW(factor[[iFactor]]),
+                                                ncol = n.times, byrow = FALSE)
+                }
+                ## check dimensions
+                if(any(dim(factor[[iFactor]])!=c(n.newdata, diag + (1-diag)*n.times))){
+                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",n.newdata,",",diag + (1-diag)*n.times," \n")
+                }
+            }
+        }
+        n.factor <- length(factor)
+    }
+
+    ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
+    level <- list(...)$level
+    type <- dots$type ## hidden argument for ate
+    if(identical(type,"survival")){
+        stop("Unkown argument \'type\' for predictRisk.wglm: use argument \'level\' instead. \n")
+    }
+
+    ## ** prepare output
+    out <- matrix(NA, nrow = n.newdata, ncol = n.times)
+    if(iid){
+        attr(out,"iid") <- array(NA, dim = c(n.sample, n.times, n.newdata))
+    }
+    if(average.iid){
+        attr(out,"average.iid") <- lapply(1:n.factor, function(x){matrix(NA, nrow = n.sample, ncol = n.times)})
+        if(!is.null(names(factor))){
+            names(attr(out,"average.iid")) <- names(factor)
+        }
+    }
+
+    if(iid || average.iid){
+        if(se=="robust"){
+            object.iid <- lava::iid(object, simplify = FALSE, times = times)
+        }else if(se == "robust-wknown"){
+            object.iid <- lapply(object$fit[match(times, object$times)],lava::iid)
+        }
+    }
+
+    
+    for(iTime in 1:n.times){
+        iTime2 <- which(object$times == times[iTime])
+        iObject <- object$fit[[iTime2]]
+        iFormula <- stats::formula(iObject)
+        
+        ## ** identify correct level
+        if(!is.null(level)){
+            matching.Ylevel <- table(iObject$data[[all.vars(formula(iObject))[1]]],
+                                     iObject$y)
+            all.levels <- rownames(matching.Ylevel)
+            level <- match.arg(level, all.levels)
+
+            index.level <- which(matching.Ylevel[level,]>0)
+            if(length(index.level) > 1){
+                stop("Unknown value for the outcome variable \n")
+            }
+        }else{
+            index.level <- 2
+        }
+
+        ## ** point estimate
+        if(index.level == 1){
+            out[,iTime] <- 1-predict(iObject, type = "response", newdata = newdata, se = FALSE)
+        }else{
+            out[,iTime] <- predict(iObject, type = "response", newdata = newdata, se = FALSE)
+        }
+        
+        ## ** uncertainty (chain rule)
+        if(iid || average.iid){
+            iid.beta <- object.iid[[iTime]]
+            newX <- model.matrix(delete.response(terms(iFormula)), newdata)
+            Xbeta <- predict(iObject, type = "link", newdata = newdata, se = FALSE)
+
+            if(average.iid){
+                for(iFactor in 1:n.factor){
+                    iE.X <- colMeans(colMultiply_cpp(newX, scale = factor[[iFactor]][,iTime] * exp(-Xbeta)/(1+exp(-Xbeta))^2))
+                    if(index.level == 1){
+                        attr(out,"average.iid")[[iFactor]][,iTime] <- -iid.beta %*% iE.X
+                    }else{
+                        attr(out,"average.iid")[[iFactor]][,iTime] <- iid.beta %*% iE.X
+                    }
+                }
+            }
+            if(iid){
+                if(index.level == 1){
+                    attr(out,"iid")[,iTime,] <- -iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
+                }else{
+                    attr(out,"iid")[,iTime,] <- iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
+                }
+            }
+        }
+    }
+
+    ## ** export
+    if(average.iid && is.null(attr(average.iid,"factor"))){
+        attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
+    }
+    return(out)
+
+}
