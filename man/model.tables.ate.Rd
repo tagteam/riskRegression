@@ -5,7 +5,7 @@
 \title{Statistical Inference for the Average Treatment Effect}
 \usage{
 \method{model.tables}{ate}(
-  object,
+  x,
   contrasts = NULL,
   times = NULL,
   estimator = NULL,
@@ -14,7 +14,7 @@
 )
 }
 \arguments{
-\item{object}{A \code{ate} object, i.e. output of the \code{ate} function.}
+\item{x}{A \code{ate} object, i.e. output of the \code{ate} function.}
 
 \item{contrasts}{[character vector] levels of the treatment variable for which the estimates should be assessed or compared. Default is to consider all levels.}
 

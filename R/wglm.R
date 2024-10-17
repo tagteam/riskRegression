@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: Oct 16 2024 (12:54) 
+## Last-Updated: Oct 17 2024 (09:51) 
 ##           By: Brice Ozenne
-##     Update #: 722
+##     Update #: 733
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -148,8 +148,35 @@ wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
     if(inherits(formula.censor,"formula")==FALSE){
         stop("Argument \'formula.censor' should be a formula. \n")
     }
+    
     if(length(formula.censor)!=2){
-        stop("Argument \'formula.censor\' should not have a left hand side. \n")
+        varSurv2 <- SurvResponseVar(formula.censor)
+        if(is.null(varSurv2$operator)){
+            stop("Argument \'formula.censor\' should not have a left hand side. \n")
+        }
+        if(varSurv2$time %in% names(data) == FALSE || varSurv2$status %in% names(data) == FALSE){
+            stop("Mismatch between argument \'formula.event\' and argument \'data\'. \n",
+                 "Could not find the variable(s) \'",paste(setdiff(c(varSurv2$time,varSurv2$status), names(data)), collapse = "\', \'"),"\' \n.")
+        }
+        if(any(abs(data[[varSurv2$time]]-data.time)>1e-12)){
+            stop("Mismatch between the time variable of argument \'formula.event\' and \'formula.censor\'. \n",
+                 "Largest discrepancy: ",max(abs(data[[varSurv2$time]]-data.time)),"\n .")
+        }
+        data.cens <- stats::model.frame(formula.censor, data)$Surv[,2]
+        if(all(data.cens + (data[[varSurv$status]] == code.cens) ==1) ){
+            stop("Inconsistency between the status variable of argument \'formula.event\' and \'formula.censor\'. \n",
+                 "The status variable in argument \'formula.event\' should indicate events while it should indicate censoring in argument \'formula.censor\'. \n",
+                 "Typically formula.event=Surv(time,event)~X whereas formula.censor=Surv(time,event==0)~Z. \n")
+        }else if(any(data.cens==1 & (data[[varSurv$status]] != code.cens))){
+            stop("Inconsistency between the status variable of argument \'formula.event\' and \'formula.censor\'. \n",
+                 "Some observations (e.g. ",which(data.cens==1 & (data[[varSurv$status]] != code.cens))[1],") are non-censored for \'formula.event\' while being an event (i.e. censored) in \'formula.censor\'. \n")
+        }else if(any(data.cens==0 & (data[[varSurv$status]] == code.cens))){
+            stop("Inconsistency between the status variable of argument \'formula.event\' and \'formula.censor\'. \n",
+                 "Some observations (e.g. ",which(data.cens==0 & (data[[varSurv$status]] == code.cens))[1],") are censored for \'formula.event\' while not being an event (i.e. non-censored) in \'formula.censor\'. \n")
+        }
+
+        ## remove left hand sideo
+        formula.censor <- formula(stats::delete.response(terms(formula.censor)))
     }
 
     ## *** fitter
@@ -286,7 +313,7 @@ formula.wglm <- function(x, ...){
 #' @title Estimates from IPCW Logistic Regressions
 #' @description Display the estimated regression parameters from logistic regressions.
 #'
-#' @param x a wglm object.
+#' @param object a wglm object.
 #' @param times [numeric vector] time points at which the estimates should be output. 
 #' @param simplify [logical] should the ouput be converted to a vector when only one timepoint is requested. Otherwise will always return a matrix.
 #' @param ... Not used.
@@ -316,7 +343,7 @@ coef.wglm <- function(object, times = NULL, simplify = TRUE, ...){
 #' @title Variance-covariance for IPCW Logistic Regressions
 #' @description Compute the variance-covariance matrix of the estimated model parameters of IPCW logistic regressions.
 #'
-#' @param x a wglm object.
+#' @param object a wglm object.
 #' @param times [numeric vector] time points at which the variance-covariance matrix should be output. 
 #' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
@@ -624,162 +651,12 @@ iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
     }
 }
 
-## * predictRisk.wglm
-#' @rdname predictRisk
-#' @method predictRisk wglm
-#' @export
-predictRisk.wglm <- function(object, newdata, times = NULL, 
-                             product.limit = NULL, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
-
-    dots <- list(...)
-    if(is.null(dots$se)){ ## hidden se argument
-        se <- "robust"
-    }else{
-        se <- match.arg(se, c("robust","robust-wknown"))
-    }
-
-    ## ** extract information and normalize arguments
-    if(is.null(times)){
-        times <- object$times
-    }else{
-        if(any(times %in% object$times == FALSE)){
-            stop("Incorrect specification of argument \'times\' \n",
-                 "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
-            
-        }
-    }
-
-    if(is.null(product.limit)){
-        product.limit <- object$product.limit
-    }
-    n.times <- length(times)
-    n.sample <- sum(coxN(object))
-    n.newdata <- NROW(newdata)
-
-    if(average.iid){
-        if(is.null(attr(average.iid,"factor"))){
-            factor <- list(matrix(1, nrow = n.newdata, ncol = n.times))
-        }else{
-            factor <- attr(average.iid, "factor")
-            if(is.matrix(factor)){
-                factor <- list(factor)
-            }
-            if(!is.list(factor)){
-                stop("Attribute \'factor\' for argument \'average.iid\' must be a list \n")
-            }
-            if(any(sapply(factor, is.matrix)==FALSE)){
-                stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices \n")
-            }
-            for(iFactor in 1:length(factor)){ ## iFactor <- 1
-                ## when only one column and diag = FALSE, use the same weights at all times
-                if((diag == FALSE) && (NCOL(factor[[iFactor]])==1) && (n.times > 1)){
-                    factor[[iFactor]] <- matrix(factor[[iFactor]][,1],
-                                                nrow = NROW(factor[[iFactor]]),
-                                                ncol = n.times, byrow = FALSE)
-                }
-                ## check dimensions
-                if(any(dim(factor[[iFactor]])!=c(n.newdata, diag + (1-diag)*n.times))){
-                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",n.newdata,",",diag + (1-diag)*n.times," \n")
-                }
-            }
-        }
-        n.factor <- length(factor)
-    }
-
-    ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
-    level <- list(...)$level
-    type <- dots$type ## hidden argument for ate
-    if(identical(type,"survival")){
-        stop("Unkown argument \'type\' for predictRisk.wglm: use argument \'level\' instead. \n")
-    }
-
-    ## ** prepare output
-    out <- matrix(NA, nrow = n.newdata, ncol = n.times)
-    if(iid){
-        attr(out,"iid") <- array(NA, dim = c(n.sample, n.times, n.newdata))
-    }
-    if(average.iid){
-        attr(out,"average.iid") <- lapply(1:n.factor, function(x){matrix(NA, nrow = n.sample, ncol = n.times)})
-        if(!is.null(names(factor))){
-            names(attr(out,"average.iid")) <- names(factor)
-        }
-    }
-
-    if(iid || average.iid){
-        if(se=="robust"){
-            object.iid <- lava::iid(object, simplify = FALSE, times = times)
-        }else if(se == "robust-wknown"){
-            object.iid <- lapply(object$fit[match(times, object$times)],lava::iid)
-        }
-    }
-
-    
-    for(iTime in 1:n.times){
-        iTime2 <- which(object$times == times[iTime])
-        iObject <- object$fit[[iTime2]]
-        iFormula <- stats::formula(iObject)
-        
-        ## ** identify correct level
-        if(!is.null(level)){
-            matching.Ylevel <- table(iObject$data[[all.vars(formula(iObject))[1]]],
-                                     iObject$y)
-            all.levels <- rownames(matching.Ylevel)
-            level <- match.arg(level, all.levels)
-
-            index.level <- which(matching.Ylevel[level,]>0)
-            if(length(index.level) > 1){
-                stop("Unknown value for the outcome variable \n")
-            }
-        }else{
-            index.level <- 2
-        }
-
-        ## ** point estimate
-        if(index.level == 1){
-            out[,iTime] <- 1-predict(iObject, type = "response", newdata = newdata, se = FALSE)
-        }else{
-            out[,iTime] <- predict(iObject, type = "response", newdata = newdata, se = FALSE)
-        }
-        
-        ## ** uncertainty (chain rule)
-        if(iid || average.iid){
-            iid.beta <- object.iid[[iTime]]
-            newX <- model.matrix(delete.response(terms(iFormula)), newdata)
-            Xbeta <- predict(iObject, type = "link", newdata = newdata, se = FALSE)
-
-            if(average.iid){
-                for(iFactor in 1:n.factor){
-                    iE.X <- colMeans(colMultiply_cpp(newX, scale = factor[[iFactor]][,iTime] * exp(-Xbeta)/(1+exp(-Xbeta))^2))
-                    if(index.level == 1){
-                        attr(out,"average.iid")[[iFactor]][,iTime] <- -iid.beta %*% iE.X
-                    }else{
-                        attr(out,"average.iid")[[iFactor]][,iTime] <- iid.beta %*% iE.X
-                    }
-                }
-            }
-            if(iid){
-                if(index.level == 1){
-                    attr(out,"iid")[,iTime,] <- -iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
-                }else{
-                    attr(out,"iid")[,iTime,] <- iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
-                }
-            }
-        }
-    }
-
-    ## ** export
-    if(average.iid && is.null(attr(average.iid,"factor"))){
-        attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
-    }
-    return(out)
-
-}
 
 ## * weights.wglm
 #' @title Extract IPCW Weights
 #' @description Extract IPCW weights of IPCW logistic regressions.
 #'
-#' @param x a wglm object.
+#' @param object a wglm object.
 #' @param times [numeric vector] time points at which the weights should be output. 
 #' @param simplify [logical] should the ouput be converted to a vector when only one timepoint is requested. Otherwise will always return a matrix.
 #' @param ... Not used.
