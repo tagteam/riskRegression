@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct 17 2024 (10:21) 
+## last-updated: Oct 20 2024 (21:33) 
 ##           By: Brice Ozenne
-##     Update #: 350
+##     Update #: 351
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -463,7 +463,7 @@ test_that("predict.CSC (no covariates): compare to mstate",{
 })
 ## ** With covariates
 test_that("predict.CSC (covariates): compare to mstate",{
-    for(iX in 0:1){
+    for(iX in 0:1){ ## iX <- 0
         newdata <- data.frame(X1 = iX, X2 = 0, X16 = 0)
         newdata.L <- data.frame(X1.1 = c(iX, 0), X1.2 = c(0, iX),
                                 X2.1 = c(0, 0), X2.2 = c(0, 0),

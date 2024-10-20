@@ -358,6 +358,9 @@ List calcSeMinimalCox_cpp(const arma::vec& seqTau, // horizon time for the predi
 }
 
 // * calcAIFsurv_cpp: compute average IF for the cumlative hazard / survival (method 3)
+// ls_indexStrata: list with the s-th element indicating the position of the observations belonging to the s-th strata among all observations
+// ls_indexStrataTime: list with the s-th element indicating the position of the timepoints for the observations belonging to the s-th strata among timepoints evaluated for the s-th strata
+// (can differ ls_indexStrata in case of individuals having the same timepoints and the influence function is only saved from unique timepoints to save memory)
 // [[Rcpp::export]]
 std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::mat>& ls_IFcumhazard,
 													  const arma::mat& IFbeta,
@@ -367,6 +370,7 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 													  const arma::mat& X,
 													  const NumericVector& prevStrata,
 													  const std::vector<arma::uvec>& ls_indexStrata,
+													  const std::vector<arma::uvec>& ls_indexStrataTime,
 													  const std::vector<arma::mat>& factor,
 													  int nTimes,
 													  int nObs,
@@ -435,13 +439,13 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 		// first term
 		if(exportCumHazard){
 		  // Rcout << "b: ";
-		  iAIF_H = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
+		  iAIF_H = ls_IFcumhazard[iStrata].cols(ls_indexStrataTime[iStrata]);
 		  iAIF_H.each_row() %= trans(iW_eXb);
 		  iAIF_H = sum(iAIF_H,1)/nObs_strata;
 		  // Rcout << endl;
 		}
 		if(exportSurvival){
-		  iAIF_S = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
+		  iAIF_S = ls_IFcumhazard[iStrata].cols(ls_indexStrataTime[iStrata]);
 		  iAIF_S.each_row() %= trans(iW_eXb_S);
 		  iAIF_S = sum(iAIF_S,1)/nObs_strata;
 		}

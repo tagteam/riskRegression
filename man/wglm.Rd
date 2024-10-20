@@ -13,6 +13,8 @@ wglm(
   fitter = NULL,
   ties = NULL,
   product.limit = NULL,
+  iid = FALSE,
+  se = TRUE,
   store = NULL
 )
 }
@@ -34,7 +36,11 @@ Ignored if fitter equals to \code{"prodlim"}.}
 
 \item{product.limit}{[logical] if \code{TRUE} the survival is computed using the product limit estimator.}
 
-\item{store}{[vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} and/or \code{iid="full"}.}
+\item{iid}{[logical] should the influence function of the logistic regression parameters be computed, accounting for the uncertainty of the weights. This can be computationally and memory intensive.}
+
+\item{se}{[logical] should the variance-covariance matrix of the logistic regression parameters be stored, accounting for the uncertainty of the weights. This can be computationally and memory intensive.}
+
+\item{store}{[vector] when evaluating the iid, should prediction be only computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}). Otherwise use \code{data="full"}.}
 }
 \value{
 an object of class \code{"wglm"}.
