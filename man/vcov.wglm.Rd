@@ -4,12 +4,15 @@
 \alias{vcov.wglm}
 \title{Variance-covariance for IPCW Logistic Regressions}
 \usage{
-\method{vcov}{wglm}(object, times = NULL, simplify = TRUE, ...)
+\method{vcov}{wglm}(object, times = NULL, type = "robust", simplify = TRUE, ...)
 }
 \arguments{
 \item{object}{a wglm object.}
 
 \item{times}{[numeric vector] time points at which the variance-covariance matrix should be output.}
+
+\item{type}{[character] should the robust variance-covariance matrix be computing accounting for the uncertainty of the IPCW (\code{"robust"})
+or ignoring the uncertainty of the IPCW (\code{"robust-wknown"}), or model-based ignoring the uncertainty of the IPCW  (\code{"model-wknown"})?}
 
 \item{simplify}{[logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.}
 

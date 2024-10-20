@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: Oct 17 2024 (09:51) 
+## Last-Updated: Oct 20 2024 (13:59) 
 ##           By: Brice Ozenne
-##     Update #: 733
+##     Update #: 774
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,9 @@
 #' @param ties [character] method used to handle ties when using a Cox model (\code{"breslow"} or \code{"efron"}).
 #' Ignored if fitter equals to \code{"prodlim"}.
 #' @param product.limit [logical] if \code{TRUE} the survival is computed using the product limit estimator.
-#' @param store [vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} and/or \code{iid="full"}.
+#' @param iid [logical] should the influence function of the logistic regression parameters be computed, accounting for the uncertainty of the weights. This can be computationally and memory intensive.
+#' @param se [logical] should the variance-covariance matrix of the logistic regression parameters be stored, accounting for the uncertainty of the weights. This can be computationally and memory intensive.
+#' @param store [vector] when evaluating the iid, should prediction be only computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}). Otherwise use \code{data="full"}.
 #'
 #' @details First, a Cox model is fitted (argument formula.censor)
 #' and the censoring probabilities are computed relative to each timepoint (argument times) to obtain the censoring weights.
@@ -82,7 +84,8 @@
 
 #' @export
 wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
-                 fitter = NULL, ties = NULL, product.limit = NULL, store = NULL){
+                 fitter = NULL, ties = NULL, product.limit = NULL,
+                 iid = FALSE, se = TRUE, store = NULL){
     
     tol <- 1e-12
     mycall <- match.call()
@@ -123,10 +126,12 @@ wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
         stop("Mismatch between argument \'formula.event\' and argument \'data\'. \n",
              "Could not find the variable(s) \'",paste(setdiff(c(varSurv$time,varSurv$status), names(data)), collapse = "\', \'"),"\' \n.")
     }
+    if(is.logical(data[[varSurv$status]])){
+        data[[varSurv$status]] <- as.numeric(data[[varSurv$status]])
+    }
     if(any(is.na(data))){
         warning("Argument \'data\' contains missing values. \n")
     }
-
     init.Hist <- Hist(time = data[[varSurv$time]], event = data[[varSurv$status]])
     allStates <- c(attr(init.Hist, "cens.code"),attr(init.Hist, "states"))
     code.cens <- attr(init.Hist, "cens.code")
@@ -262,7 +267,7 @@ wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
         iIndex <- which(data[[obs.newname[iTime]]]>0)
         if(n.censor[iTime]>0){
             iPred <- predictRisk(object.censor, diag = TRUE, newdata = data[iIndex,,drop=FALSE], times = pmin(data.time[iIndex], times[iTime]) - tol,
-                                 type = "survival", product.limit = product.limit)[,1]
+                                 type = "survival", product.limit = product.limit, store = store)[,1]
         }else{
             iPred <- rep(1, length(iIndex))
         }        
@@ -295,6 +300,15 @@ wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
     out$product.limit <- product.limit
     out$fitter <- fitter
     class(out) <- append("wglm",class(out))
+    if(iid || se){
+        out$iid <- iid(out, simplify = FALSE)
+    }
+    if(se){
+        out$vcov <- stats::vcov(out)
+        if(iid == FALSE){
+            out$iid <- NULL
+        }
+    }
     return(out)
 }
 
@@ -319,6 +333,13 @@ formula.wglm <- function(x, ...){
 #' @param ... Not used.
 #' @export
 coef.wglm <- function(object, times = NULL, simplify = TRUE, ...){
+
+    ## ** normalize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
     if(is.null(times)){
         times <- object$times
     }else{
@@ -330,12 +351,90 @@ coef.wglm <- function(object, times = NULL, simplify = TRUE, ...){
     }
     n.times <- length(times)
 
+    ## ** extract coefficients
     M.coef <- do.call(rbind,setNames(lapply(object$fit, coef),object$time))
     if(simplify && length(times)==1){
         out <- stats::setNames(M.coef[object$times %in% times,], colnames(M.coef))
     }else{
         out <- M.coef[object$times %in% times,,drop=FALSE]
     }
+
+    ## ** export
+    return(out)
+}
+
+## * confint.wglm
+#' @title Confidence intervals for Estimate from IPCW Logistic Regressions
+#' @description Display the confidence intervals w.r.t. the estimated regression parameters from IPCW logistic regressions.
+#'
+#' @param object a wglm object.
+#' @param parm not used. For compatibility with the generic method.
+#' @param level [numeric, 0-1] Level of confidence.
+#' @param times [numeric vector] time points at which the estimates should be output. 
+#' @param type [character] should the robust variance-covariance matrix be computing accounting for the uncertainty of the IPCW (\code{"robust"})
+#' or ignoring the uncertainty of the IPCW (\code{"robust-wknown"}), or model-based ignoring the uncertainty of the IPCW  (\code{"model-wknown"})?
+#' @param ... Not used.
+#' @export
+confint.wglm <- function(object, parm = NULL, level = 0.95, times = NULL, type = "robust", ...){
+
+    ## ** extract coefficients
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
+    outTable <- model.tables(object, times = times, type = type, level = level)
+
+    ## ** export
+    out <- outTable[,c("estimate","lower","upper")]
+    rownames(out) <- paste0(outTable$name,"(t=",outTable$time,")")
+    return(out)
+}
+
+## * model.tables.wglm
+#' @title Statistical Inference for Estimate from IPCW Logistic Regressions
+#' @description Export estimated regression parameters from IPCW logistic regressions with their uncertainty (standard errors, confidence intervals and p-values).
+#'
+#' @param x a wglm object.
+#' @param times [numeric vector] time points at which the estimates should be output. 
+#' @param type [character] should the robust variance-covariance matrix be computing accounting for the uncertainty of the IPCW (\code{"robust"})
+#' or ignoring the uncertainty of the IPCW (\code{"robust-wknown"}), or model-based ignoring the uncertainty of the IPCW  (\code{"model-wknown"})?
+#' @param level [numeric, 0-1] Level of confidence.
+#' @param ... Not used.
+#' @export
+model.tables.wglm <- function(x, times = NULL, type = "robust", level = 0.95, ...){
+
+    ## ** normalize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
+    if(is.null(times)){
+        times <- x$times
+    }else{
+        if(any(times %in% x$times == FALSE)){
+            stop("Incorrect specification of argument \'times\' \n",
+                 "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
+            
+        }
+    }
+    n.times <- length(times)
+
+    ## ** extract coefficients and se
+    Mcoef <- coef(x, times = times, simplify = FALSE)
+    Mse <- lapply(stats::vcov(x, times = times, type = type, simplify = FALSE), function(iM){sqrt(diag(iM))})
+    ls.out <- lapply(1:length(Mse), function(iTime){data.frame(name = names(Mse[[iTime]]), time = times[iTime], estimate = Mcoef[iTime,], se = Mse[[iTime]])})
+    out <- do.call(rbind,ls.out)
+    rownames(out) <- NULL
+    
+    ## ** evaluate ci and p.value
+    out$statistic <- out$estimate/out$se
+    out$lower <- out$estimate + qnorm((1-level)/2)*out$se
+    out$upper <- out$estimate + qnorm(1-(1-level)/2)*out$se
+    out$p.value <- 2*(1-pnorm(abs(out$statistic)))
+
+    ## ** export
     return(out)
 }
 
@@ -345,16 +444,53 @@ coef.wglm <- function(object, times = NULL, simplify = TRUE, ...){
 #'
 #' @param object a wglm object.
 #' @param times [numeric vector] time points at which the variance-covariance matrix should be output. 
+#' @param type [character] should the robust variance-covariance matrix be computing accounting for the uncertainty of the IPCW (\code{"robust"})
+#' or ignoring the uncertainty of the IPCW (\code{"robust-wknown"}), or model-based ignoring the uncertainty of the IPCW  (\code{"model-wknown"})?
 #' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' @export
-vcov.wglm <- function(object, times = NULL, simplify = TRUE, ...){
-    ls.iid <- iid(object, times = times, simplify = simplify)
-    if(is.list(ls.iid)){
-        out <- lapply(ls.iid, crossprod)
-    }else{
-        out <- crossprod(ls.iid)
+vcov.wglm <- function(object, times = NULL, type = "robust", simplify = TRUE, ...){
+
+    ## ** normalize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
     }
+
+    type <- match.arg(type, c("robust","robust-wknown","model-wknown"))
+    if(is.null(times)){
+        times <- object$times
+    }else{
+        if(any(times %in% object$times == FALSE)){
+            stop("Incorrect specification of argument \'times\' \n",
+                 "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
+            
+        }
+    }
+
+    ## ** evaluate variance-covariance matrix
+    if(type == "robust"){
+        if(!is.null(object$vcov)){
+            out <- object$vcov[match(times, object$times)]
+        }else{
+            if(!is.null(object$iid)){
+                ls.iid <- object$iid[match(times, object$times)]
+            }else{
+                ls.iid <- iid(object, times = times, simplify = simplify)
+            }
+            if(is.list(ls.iid)){
+                out <- lapply(ls.iid, crossprod)
+            }else{
+                out <- crossprod(ls.iid)
+            }
+        }        
+    }else if(type == "model-wknown"){
+        out <- lapply(object$fit[match(times, object$times)],stats::vcov)
+    }else if(type == "robust-wknown"){
+        out <- lapply(object$fit[match(times, object$times)], function(iO){crossprod(lava::iid(iO))})
+    }
+
+    ## ** export
     return(out)
 }
 
@@ -373,11 +509,7 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
         }
     }
     n.times <- length(times)
-    if(se == "robust"){
-        object.iid <- lava::iid(object, simplify = FALSE, times = times)
-    }else if(se == "robust-wknown"){
-        object.iid <- lapply(object$fit[match(times, object$times)],lava::iid)
-    }
+    object.vcov <- stats::vcov(object, simplify = FALSE, times = times, type = se)
     
     out <- setNames(vector(mode = "list", length = n.times), times)
     if(print){
@@ -387,7 +519,7 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
         iTime2 <- which(object$times == times[iTime])
         suppressWarnings(out[[iTime]] <- summary(object$fit[[iTime2]])$coef)
         if(se %in% c("robust","robust-wknown")){
-            out[[iTime]][,"Std. Error"] <- sqrt(diag(crossprod(object.iid[[iTime]])))
+            out[[iTime]][,"Std. Error"] <- sqrt(diag(object.vcov[[iTime]]))
             out[[iTime]][,3] <- out[[iTime]][,"Estimate"]/out[[iTime]][,"Std. Error"] ## name change from z to t stat when using quasibinomial instead binomial
             out[[iTime]][,4] <- 2*(1-pnorm(abs(out[[iTime]][,3])))
         }
@@ -412,6 +544,11 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
 print.wglm <- function(x, times = NULL, short = FALSE, ...){
 
     ## ** prepare
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
     if(is.null(times)){
         times <- x$times
     }else{
@@ -476,6 +613,13 @@ print.wglm <- function(x, times = NULL, short = FALSE, ...){
 #' @param ... Not used.
 #' @export
 score.wglm <- function(x, indiv = FALSE, times = NULL, simplify = TRUE, ...){
+
+    ## ** noramlize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
     if(inherits(x,"glm") && !inherits(x,"wglm")){
         x <- list(fit = list("1" = x),
                   times = "1")
@@ -491,6 +635,7 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplify = TRUE, ...){
     }
     n.times <- length(times)
 
+    ## ** compute score
     out <- setNames(vector(mode = "list", length = n.times), times)
     for(iTime in 1:n.times){
         iTime2 <- which(x$times == times[iTime])
@@ -505,6 +650,7 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplify = TRUE, ...){
         if(indiv==FALSE){out[[iTime]] <- colSums(out[[iTime]])}
     }
 
+    ## ** export
     if(n.times == 1 && simplify){
         return(out[[1]])
     }else{
@@ -522,6 +668,13 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplify = TRUE, ...){
 #' @param ... Not used.
 #' @export
 information.wglm <- function(x, times = NULL, simplify = TRUE, ...){
+
+    ## ** normalize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
     if(inherits(x,"glm") && !inherits(x,"wglm")){
         x <- list(fit = list("1" = x),
                   times = "1")
@@ -537,6 +690,7 @@ information.wglm <- function(x, times = NULL, simplify = TRUE, ...){
     }
     n.times <- length(times)
 
+    ## ** compute information
     out <- setNames(vector(mode = "list", length = n.times), times)
     for(iTime in 1:n.times){
         iTime2 <- which(x$times == times[iTime])
@@ -549,6 +703,7 @@ information.wglm <- function(x, times = NULL, simplify = TRUE, ...){
         rownames(out[[iTime]]) <- colnames(out[[iTime]])
     }
 
+    ## ** export
     if(n.times == 1 && simplify){
         return(out[[1]])
     }else{
@@ -564,9 +719,17 @@ information.wglm <- function(x, times = NULL, simplify = TRUE, ...){
 #' @param x a wglm object.
 #' @param times [numeric vector] time points at which the iid should be output. 
 #' @param simplify [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param store [vector] when evaluating the iid, should prediction be only computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}). Otherwise use \code{data="full"}.
 #' @param ... Not used.
 #' @export
-iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
+iid.wglm <- function(x, times = NULL, simplify = TRUE, store = NULL, ...){
+
+    ## ** normalize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
+
     if(inherits(x,"glm") && !inherits(x,"wglm")){
         x <- list(fit = list("1" = x),
                   times = "1",
@@ -582,16 +745,19 @@ iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
             
         }
     }
+
+    ## ** prepare (glm score and information)
     n.times <- length(times)
     ls.score <- lava::score(x, times = times, simplify = FALSE, indiv = TRUE)
     ls.info <- lava::information(x, times = times, simplify = FALSE)
 
+    ## ** evaluate iid
     out <- setNames(vector(mode = "list", length = n.times), times)
-    for(iTime in 1:n.times){
-        iTime2 <- which(x$times == times[iTime])
-        iObject <- x$fit[[iTime2]]
+    for(iT in 1:n.times){ ## iT <- 1
+        iT2 <- which(x$times == times[iT])
+        iObject <- x$fit[[iT2]]
 
-        ## ** compute the uncertainty related to the weights
+        ## *** compute the uncertainty related to the weights
         ## S score, I information matrix, H hessian, X design matrix, Y outcome, \pi fitted probabilities
         ## \beta regresssion parameters (logit) \eta nuisance parameters (censoring)
         ## The estimating equation of \beta is
@@ -611,7 +777,7 @@ iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
         ##               = (S_i + n*AIF_{W,X*(Y-pi)}(O_i) / I
         ## NOTE: IF_{W_O}(O_i) = dW(O,\eta)/d\eta \IF_\eta(O_i)
         
-        if(x$n.censor[iTime]>0){
+        if(x$n.censor[iT2]>0){
             n.obs <- sum(coxN(iObject))
             W2 <- iObject$prior.weights2
             X <- stats::model.matrix(iObject)
@@ -621,25 +787,25 @@ iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
 
             attr(factor,"factor") <- lapply(apply(colMultiply_cpp(X, -W2*(Y - pi)), 2, list), function(iVec){cbind(iVec[[1]])})
             iPred <- predictRisk(x$model.censor, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
-                                 type = "survival", product.limit = x$product.limit, average.iid = factor)
+                                 type = "survival", product.limit = x$product.limit, average.iid = factor, store = store)
         }
 
-        ## ** assemble uncertainty
+        ## *** assemble uncertainty
         ## (S+dS/dW)/I
-        if(x$n.censor[iTime]>0){
-            out[[iTime]] <- (ls.score[[iTime]] + do.call(cbind,attr(iPred, "average.iid"))*NROW(x$data)) %*% solve(ls.info[[iTime]])
+        if(x$n.censor[iT2]>0){
+            out[[iT]] <- (ls.score[[iT]] + do.call(cbind,attr(iPred, "average.iid"))*NROW(x$data)) %*% solve(ls.info[[iT]])
         }else{
-            out[[iTime]] <- ls.score[[iTime]] %*% solve(ls.info[[iTime]])
+            out[[iT]] <- ls.score[[iT]] %*% solve(ls.info[[iT]])
         }
         ## ## WRONG VERSION
         ## factor1 <- colMultiply_cpp(X, (Y - pi)) %*% iVcov
-        ## factor2 <- - ls.score[[iTime]] %*% crossprod(iVcov) %*% t(colMultiply_cpp(X, scale = -pi*(1-pi))) %*% X
+        ## factor2 <- - ls.score[[iT]] %*% crossprod(iVcov) %*% t(colMultiply_cpp(X, scale = -pi*(1-pi))) %*% X
         
         ## factor <- TRUE        
         ## attr(factor,"factor") <- lapply(apply(factor1 + factor2, 2, list), function(iVec){cbind(iVec[[1]])})
         ## iPred <- predictRisk(x$model.censor, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
         ##                      type = "survival", product.limit = FALSE, average.iid = factor)
-        ## out[[iTime]] <- out[[iTime]] - do.call(cbind,attr(iPred, "average.iid"))*NROW(x$data)
+        ## out[[iT]] <- out[[iT]] - do.call(cbind,attr(iPred, "average.iid"))*NROW(x$data)
 
     }
     
@@ -664,15 +830,25 @@ iid.wglm <- function(x, times = NULL, simplify = TRUE, ...){
 #'
 weights.wglm <- function(object, times = NULL, simplify = TRUE, ...){
 
-    out <- object$data[object$name.IPCW]
+    ## ** normalize user input
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
+    }
     if(!is.null(times)){
         if(any(times %in% object$time == FALSE)){
             stop("Unknown timepoint ",paste(setdiff(times,object$time), collapse = ", ")," in argument \'times\'. \n",
                  "Valid timepoints: ",paste(object$time, collapse = ", "),". \n")
         }
+    }
+
+    ## ** extract weights
+    out <- object$data[object$name.IPCW]
+    if(!is.null(times)){
         out <- out[match(times,object$time)]
     }
 
+    ## ** export
     if(simplify && NCOL(out)==1){
         return(out[[1]])
     }else{

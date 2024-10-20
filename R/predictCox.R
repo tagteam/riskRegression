@@ -234,6 +234,10 @@ predictCox <- function(object,
         nTimes <- 0
         times <- numeric(0)
     }else{
+        if(!is.numeric(times) && !is.integer(times)){
+            stop("Argument \'times\' should be a numeric vector. \n",
+                 "Provide class: ",class(times)[1],". \n")
+        }
         nTimes <- length(times)
     }
     needOrder <- (nTimes[1]>0 && is.unsorted(times))
