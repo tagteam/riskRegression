@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 19 2020 (09:18) 
 ## Version: 
-## Last-Updated: Oct 16 2024 (11:52) 
+## Last-Updated: Oct 21 2024 (17:43) 
 ##           By: Brice Ozenne
-##     Update #: 72
+##     Update #: 73
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,6 +38,7 @@
 ##' @examples
 ##' library(survival)
 ##' library(data.table)
+##' library(ggplot2)
 ##' 
 ##' \dontrun{
 ##' ## simulate data
@@ -48,7 +49,7 @@
 ##' dtS <- dtS[dtS$X12!="D"]
 ##'
 ##' ## model fit
-##' fit <- cph(formula = Surv(time,event)~ X1+X6,data=dtS,y=TRUE,x=TRUE)
+##' fit <- coxph(formula = Surv(time,event)~ X1+X6,data=dtS,y=TRUE,x=TRUE)
 ##' seqTime <- 1:10
 ##' ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 ##'               times = seqTime, B = 0, iid = TRUE, se = TRUE, verbose = TRUE, band = TRUE)

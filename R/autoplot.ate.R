@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: okt  7 2021 (20:54) 
+## last-updated: Oct 21 2024 (17:37) 
 ##           By: Brice Ozenne
-##     Update #: 191
+##     Update #: 192
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,7 +52,6 @@
 ## * autoplot.ate (examples)
 #' @examples
 #' library(survival)
-#' library(rms)
 #' library(ggplot2)
 #' 
 #' #### simulate data ####
@@ -62,7 +61,7 @@
 #' seqTimes <- c(0,sort(dtS$time[dtS$event==1]),max(dtS$time))
 #' 
 #' #### Cox model ####
-#' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+#' fit <- coxph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
 #' #### plot.type = 1: for few timepoints ####
 #' ateFit <- ate(fit, data = dtS, treatment = "X1",
