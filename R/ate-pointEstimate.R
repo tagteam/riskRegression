@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (13:25) 
+## Last-Updated: Oct 21 2024 (15:25) 
 ##           By: Brice Ozenne
-##     Update #: 1048
+##     Update #: 1098
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -224,9 +224,19 @@ ATE_TI <- function(object.event,
         
         augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
 
+        ## exclude individuals with event before the first censoring as they do not contribute to the integral term
+        if(method.iid==2){ ## slow but simple i.e. no subset
+            index.obsIntegral <- 1:n.obs
+        }else{
+            ## index.obsIntegral <- 1:n.obs
+            index.obsIntegral <- which(index.obsSINDEXjumpC.int[,n.times]>0) ## WARNING do not use index.obsSINDEXjumpC as it is evaluated just before the jump (i.e. time-tol)
+        }
+        mydataIntegral <- mydata[index.obsIntegral,,drop=FALSE]
+        n.obsIntegral <- NROW(mydataIntegral)
+
         ## *** evaluate survival functions (event, censoring)
         ## absolute risk at event times and jump times of the censoring process
-        predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
+        predTempo <- predictRisk(object.event, newdata = mydataIntegral, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
                                  iid = (method.iid==2)*return.iid.nuisance, store = store)
         F1.tau <- predTempo[,1:n.times,drop=FALSE]
         F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
@@ -235,7 +245,7 @@ ATE_TI <- function(object.event,
         }
         
         ## survival at all jump of the censoring process
-        S.jump <- predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
+        S.jump <- predictRisk(object.event, type = "survival", newdata = mydataIntegral, times = time.jumpC-tol, product.limit = product.limit,
                               iid = (method.iid==2)*return.iid.nuisance, store = store)
         if((method.iid==2)*return.iid.nuisance){
             out$store$iid.nuisance.survival <- attr(S.jump,"iid")
@@ -244,14 +254,14 @@ ATE_TI <- function(object.event,
 
         ## martingale for the censoring process
         ## at all times of jump of the censoring process
-        G.jump <- 1-predictRisk(object.censor, newdata = mydata, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
+        G.jump <- 1-predictRisk(object.censor, newdata = mydataIntegral, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
                                 product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance, store = store)
         
         if(return.iid.nuisance && (method.iid==2)){
             out$store$iid.nuisance.censoring <- -attr(G.jump,"iid")
             attr(G.jump,"iid") <- NULL
         }
-        dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance, store = store)
+        dLambda.jump <- predictCox(object.censor, newdata = mydataIntegral, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance, store = store)
         if((method.iid==2)*return.iid.nuisance){
             out$store$iid.nuisance.martingale <- dLambda.jump$hazard.iid
         }
@@ -263,32 +273,35 @@ ATE_TI <- function(object.event,
 
         ## version 2: fast
         dM.jump <- - dLambda.jump$hazard
-        indexTime.jumpCindiv <- match(mydata[[eventVar.time]],  time.jumpC) ## index of the individual event times matching the jumps
-        index.jumpCindiv <- intersect(which(!is.na(indexTime.jumpCindiv)), which(mydata[[eventVar.status]] == level.censoring)) ## index of the individual jumping at the right time and having a censoring event
+        indexTime.jumpCindiv <- match(mydataIntegral[[eventVar.time]],  time.jumpC) ## index of the individual event times matching the jumps
+        index.jumpCindiv <- intersect(which(!is.na(indexTime.jumpCindiv)), which(mydataIntegral[[eventVar.status]] == level.censoring)) ## index of the individual jumping at the right time and having a censoring event
         ## range(which(dN.jump!=0) - sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obsIntegral))
-        dM.jump[sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obs)] <- 1 + dM.jump[sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obs)]
+        dM.jump[sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obsIntegral)] <- 1 + dM.jump[sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obsIntegral)]
 
         ## *** evaluate integral
         ## integral = \int_0^min(T_i,\tau) (F1(\tau|A_i,W_i)-F1(t|A_i,W_i)) / S(t|A_i,W_i) * dM_i^C(t)/Gc(t|A_i,W_i)
         ##          = F1(\tau|A_i,W_i) \int_0^min(T_i,\tauf) dM_i^C(t) / (S(t|A_i,W_i) * Gc(t|A_i,W_i)) - \int_0^min(T_i,\tauf) F1(t|A_i,W_i) dM_i^C(t) / (S(t|A_i,W_i) * Gc(t|A_i,W_i))
 
         ## ## version 1 (matrix product and sums): does not scale well with sample size
-        ## integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
-        ## integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
-        ## index.beforeEvent.jumpC <- which(beforeEvent.jumpC) ## identify which increment to put in the integral, i.e. when the individual was still at risk of being censored
+        ## integrand <- matrix(0, nrow = n.obsIntegral, ncol = index.lastjumpC)
+        ## integrand2 <- matrix(0, nrow = n.obsIntegral, ncol = index.lastjumpC)
+        ## index.beforeEvent.jumpC <- which(beforeEvent.jumpC[index.obsIntegral,,drop=FALSE]) ## identify which increment to put in the integral, i.e. when the individual was still at risk of being censored
         ## integrand[index.beforeEvent.jumpC] <- dM.jump[index.beforeEvent.jumpC] / (G.jump[index.beforeEvent.jumpC] * S.jump[index.beforeEvent.jumpC])
         ## integrand2[index.beforeEvent.jumpC] <- F1.jump[index.beforeEvent.jumpC] * integrand[index.beforeEvent.jumpC]
         ## integral <- rowCumSum(integrand)
         ## integral2 <- rowCumSum(integrand2)
-        ## augTerm[,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
+        ## augTerm[index.obsIntegral,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
 
-        ## version 1 (loop): scale ok with sample size
-        for(iObs in which(index.obsSINDEXjumpC.int[,n.times]>0)){ ## iObs <- 1
-            iMax.jumpC <- index.obsSINDEXjumpC.int[iObs,n.times]            
+        ## version 2 (loop): scale ok with sample size
+        for(iObs in 1:n.obsIntegral){ ## iObs <- which(index.obsIntegral[iObs]==428)
+            iMax.jumpC <- index.obsSINDEXjumpC.int[index.obsIntegral[iObs],n.times]
+            if(iMax.jumpC==0){next} ## case where method.iid = 2
             iIndex.tau <- pmin(beforeTau.nJumpC.n0, iMax.jumpC)
             iIntegrand <- dM.jump[iObs,1:iMax.jumpC] / (G.jump[iObs,1:iMax.jumpC] * S.jump[iObs, 1:iMax.jumpC])
-            augTerm[iObs,beforeTau.nJumpC!=0] <- F1.tau[iObs,beforeTau.nJumpC!=0,drop=FALSE] * cumsum(iIntegrand)[iIndex.tau] - cumsum(F1.jump[iObs,1:iMax.jumpC] * iIntegrand)[iIndex.tau]
+            augTerm[index.obsIntegral[iObs],beforeTau.nJumpC!=0] <- F1.tau[iObs,beforeTau.nJumpC!=0,drop=FALSE] * cumsum(iIntegrand)[iIndex.tau] - cumsum(F1.jump[iObs,1:iMax.jumpC] * iIntegrand)[iIndex.tau]
         }
+        ## augTerm.GS <<- augTerm
+        augTerm.test <<- augTerm
     }
 
     ## ** Compute individual contribution to the ATE + influence function for the G-formula
@@ -374,6 +387,7 @@ ATE_TI <- function(object.event,
             out$store$beforeEvent.jumpC <- beforeEvent.jumpC
             out$store$beforeTau.nJumpC <- beforeTau.nJumpC
             out$store$index.obsSINDEXjumpC.int <- index.obsSINDEXjumpC.int
+            out$store$index.obsIntegral <- index.obsIntegral            
         }
     }
 
