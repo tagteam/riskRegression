@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: Oct 17 2024 (11:44) 
+## Last-Updated: Oct 21 2024 (13:25) 
 ##           By: Brice Ozenne
-##     Update #: 1041
+##     Update #: 1048
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -224,6 +224,7 @@ ATE_TI <- function(object.event,
         
         augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
 
+        ## *** evaluate survival functions (event, censoring)
         ## absolute risk at event times and jump times of the censoring process
         predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
                                  iid = (method.iid==2)*return.iid.nuisance, store = store)
@@ -250,22 +251,44 @@ ATE_TI <- function(object.event,
             out$store$iid.nuisance.censoring <- -attr(G.jump,"iid")
             attr(G.jump,"iid") <- NULL
         }
-        dN.jump <- do.call(cbind,lapply(time.jumpC, function(iJump){(mydata[[eventVar.time]] == iJump)*(mydata[[eventVar.status]] == level.censoring)}))
         dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance, store = store)
         if((method.iid==2)*return.iid.nuisance){
             out$store$iid.nuisance.martingale <- dLambda.jump$hazard.iid
         }
-        dM.jump <- dN.jump - dLambda.jump$hazard
+
+        ## *** evaluate martingal w.r.t. the censoring mechanism
+        ## ## version 1: slow
+        ## dN.jump <- do.call(cbind,lapply(time.jumpC, function(iJump){(mydataIntegral[[eventVar.time]] == iJump)*(mydataIntegral[[eventVar.status]] == level.censoring)}))
+        ## dM.jump <- dN.jump - dLambda.jump$hazard
+
+        ## version 2: fast
+        dM.jump <- - dLambda.jump$hazard
+        indexTime.jumpCindiv <- match(mydata[[eventVar.time]],  time.jumpC) ## index of the individual event times matching the jumps
+        index.jumpCindiv <- intersect(which(!is.na(indexTime.jumpCindiv)), which(mydata[[eventVar.status]] == level.censoring)) ## index of the individual jumping at the right time and having a censoring event
+        ## range(which(dN.jump!=0) - sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obsIntegral))
+        dM.jump[sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obs)] <- 1 + dM.jump[sort(index.jumpCindiv + (indexTime.jumpCindiv[index.jumpCindiv]-1)*n.obs)]
+
+        ## *** evaluate integral
         ## integral = \int_0^min(T_i,\tau) (F1(\tau|A_i,W_i)-F1(t|A_i,W_i)) / S(t|A_i,W_i) * dM_i^C(t)/Gc(t|A_i,W_i)
         ##          = F1(\tau|A_i,W_i) \int_0^min(T_i,\tauf) dM_i^C(t) / (S(t|A_i,W_i) * Gc(t|A_i,W_i)) - \int_0^min(T_i,\tauf) F1(t|A_i,W_i) dM_i^C(t) / (S(t|A_i,W_i) * Gc(t|A_i,W_i))
-        integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
-        integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
-        index.beforeEvent.jumpC <- which(beforeEvent.jumpC) ## identify which increment to put in the integral, i.e. when the individual was still at risk of being censored
-        integrand[index.beforeEvent.jumpC] <- dM.jump[index.beforeEvent.jumpC] / (G.jump[index.beforeEvent.jumpC] * S.jump[index.beforeEvent.jumpC])
-        integrand2[index.beforeEvent.jumpC] <- F1.jump[index.beforeEvent.jumpC] * integrand[index.beforeEvent.jumpC]
-        integral <- rowCumSum(integrand)
-        integral2 <- rowCumSum(integrand2)
-        augTerm[,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
+
+        ## ## version 1 (matrix product and sums): does not scale well with sample size
+        ## integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
+        ## integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
+        ## index.beforeEvent.jumpC <- which(beforeEvent.jumpC) ## identify which increment to put in the integral, i.e. when the individual was still at risk of being censored
+        ## integrand[index.beforeEvent.jumpC] <- dM.jump[index.beforeEvent.jumpC] / (G.jump[index.beforeEvent.jumpC] * S.jump[index.beforeEvent.jumpC])
+        ## integrand2[index.beforeEvent.jumpC] <- F1.jump[index.beforeEvent.jumpC] * integrand[index.beforeEvent.jumpC]
+        ## integral <- rowCumSum(integrand)
+        ## integral2 <- rowCumSum(integrand2)
+        ## augTerm[,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
+
+        ## version 1 (loop): scale ok with sample size
+        for(iObs in which(index.obsSINDEXjumpC.int[,n.times]>0)){ ## iObs <- 1
+            iMax.jumpC <- index.obsSINDEXjumpC.int[iObs,n.times]            
+            iIndex.tau <- pmin(beforeTau.nJumpC.n0, iMax.jumpC)
+            iIntegrand <- dM.jump[iObs,1:iMax.jumpC] / (G.jump[iObs,1:iMax.jumpC] * S.jump[iObs, 1:iMax.jumpC])
+            augTerm[iObs,beforeTau.nJumpC!=0] <- F1.tau[iObs,beforeTau.nJumpC!=0,drop=FALSE] * cumsum(iIntegrand)[iIndex.tau] - cumsum(F1.jump[iObs,1:iMax.jumpC] * iIntegrand)[iIndex.tau]
+        }
     }
 
     ## ** Compute individual contribution to the ATE + influence function for the G-formula

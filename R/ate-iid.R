@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: Oct 17 2024 (11:39) 
+## Last-Updated: Oct 21 2024 (11:56) 
 ##           By: Brice Ozenne
-##     Update #: 1360
+##     Update #: 1361
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -144,7 +144,7 @@ iidATE <- function(estimator,
         factor <- TRUE        
         for(iTime in 1:n.times){ ## iTime <- 1
             attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTime]*Y.tau[,iTime])})
-## browser()
+
             term.censoring <- attr(predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iTime]+1],
                                                diag = TRUE, product.limit = product.limit, average.iid = factor, store = store),"average.iid")
 

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  9 2024 (14:04) 
 ## Version: 
-## Last-Updated: Oct 15 2024 (11:46) 
+## Last-Updated: Oct 21 2024 (09:46) 
 ##           By: Brice Ozenne
-##     Update #: 151
+##     Update #: 169
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -87,7 +87,7 @@ compressData <- function(object, newdata, times, diag, average.iid,
                     stop("Incorrect argument \'newdata\': missing column(s) \"",paste(setdiff(allStrata.var,names(newdata)), collapse = "\", \""),"\". \n")
                 }
                 newdata.strata <- as.data.frame(newdata)[allStrata.var]
-                if(NCOL(newdata.X)==0){
+                if(NCOL(newdata.X)==0 || length(newdata.X)==0){ ## for cph object with strata, newdata.X may be list() i.e. has one column but 0 length
                     newdata.X <- newdata.strata
                 }else{
                     newdata.X <- cbind(newdata.X,newdata.strata)
@@ -114,6 +114,10 @@ compressData <- function(object, newdata, times, diag, average.iid,
                                     sterms = infoVar$strata.sterms, 
                                     strata.vars = infoVar$stratavars, 
                                     strata.levels = infoVar$strata.levels)
+        if(is.factor(newdata.strata)){
+            newdata.strata <- droplevels(newdata.strata)
+        }
+
         ## associate each observation to a unique combination of predictors
         newdata.index <- tapply(1:NROW(newdata), INDEX = newdata.strata, FUN = identity, simplify = FALSE)
         attr(newdata.index,"vectorwise") <- as.numeric(newdata.strata)
