@@ -33,15 +33,13 @@ ate(
 }
 \arguments{
 \item{event}{Outcome model which describes how the probability of experiencing a terminal event depends
-on treatment and covariates. The object carry its own call and
-have a \code{predictRisk} method. See examples.}
+on treatment and covariates. The object carry its own call and have a \code{predictRisk} method. See details section and examples section.}
 
-\item{treatment}{Treatment model which describes how the probability of being allocated to a treatment group depends
-on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
-See examples.}
+\item{treatment}{Name of the treatment variable or treatment model which describes how the probability of being allocated to a treatment group depends
+on covariates. See details section and examples section.}
 
 \item{censor}{Censoring model which describes how the probability of being censored depends
-on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.}
+on treatment and covariates. See details section and examples section.}
 
 \item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions
 based on the outcome model}
@@ -112,9 +110,28 @@ to estimate the average treatment
     effect (absolute risk difference or ratio)
 based on Cox regression with or without competing risks.
 }
+\details{
+\bold{event}: \itemize{
+\item IPTW estimate: a character vector indicating the event and status variables.
+\item G-formula or AIPTW estimator: a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}),
+a competing risk model (e.g. cause-specific Cox \code{"riskRegression::CSC"}),
+a logistic model (e.g. \code{"stats::glm"} when argument \code{censor} is \code{NULL} otherwise \code{"riskRegression::wglm"}).
+Other models can be specified, provided a suitable \code{predictRisk} method exists, but the standard error should be computed using non-parametric bootstrap,
+as the influence function of the estimator will typically not be available.
+}
+\bold{treatment}: \itemize{
+\item G-formula estimator: a character indicating the treatment variable.
+\item IPTW or AIPTW estimator: a \code{"stats::glm"} model with family \code{"binomial"} (two treatment options) or a \code{"nnet::multinom"} (more than two treatment options).
+}
+\bold{censor}: \itemize{
+\item G-formula estimator: NULL
+\item IPTW or AIPTW estimator: NULL if no censoring and otherwise a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}) 
+}
+\bold{estimator}: when using a IPCW logistic model (\code{"riskRegression::wglm"}), the integral term w.r.t. to the martingale of the censoring process is not computed for augmented estimator,
+i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020.
+}
 \examples{
 library(survival)
-library(rms)
 library(prodlim)
 library(data.table)
 
@@ -130,24 +147,33 @@ dtS <- sampleData(n, outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
-##### estimate the Cox model ####
-fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+##### estimate the survival model ####
+## Cox proportional hazard model
+fit.Cox <- coxph(Surv(time,event)~ X1+X2, data=dtS, y=TRUE, x=TRUE)
+## Kaplan Meier - same as copxh(Surv(time,event)~ strata(X1)+strata(X2), ties = "breslow")
+fit.KM <- prodlim(Hist(time,event)~ X1+X2, data=dtS)
 
 ##### compute the ATE ####
 ## at times 5, 6, 7, and 8 using X1 as the treatment variable
 ## standard error computed using the influence function
 ## confidence intervals / p-values based on asymptotic results
-ateFit1a <- ate(fit, treatment = "X1", times = 5:8, data = dtS)
+ateFit1a <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS)
 summary(ateFit1a)
-summary(ateFit1a, short = TRUE, type = "meanRisk")
-summary(ateFit1a, short = TRUE, type = "diffRisk")
-summary(ateFit1a, short = TRUE, type = "ratioRisk")
+model.tables(ateFit1a, type = "meanRisk")
+model.tables(ateFit1a, type = "diffRisk")
+model.tables(ateFit1a, type = "ratioRisk")
+
+## relaxing PH assumption using a stratified model
+ateFit1a.NPH <- ate(fit.KM, treatment = "X1", times = 5:8, data = dtS,
+                    product.limit = FALSE)
+model.tables(ateFit1a.NPH, times = 5) ## no PH assumption
+model.tables(ateFit1a, times = 5)  ## PH assumption
 
 \dontrun{
 #### ATE with confidence bands ####
 ## same as before with in addition the confidence bands / adjusted p-values
 ## (argument band = TRUE)
-ateFit1b <- ate(fit, treatment = "X1", times = 5:8, data = dtS, band = TRUE)
+ateFit1b <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS, band = TRUE)
 summary(ateFit1b)
 
 ## by default bands/adjuste p-values computed separately for each treatment modality
@@ -162,23 +188,23 @@ summary(ateFit1b, band = 2,
 #### ATE with non-parametric bootstrap ####
 ## confidence intervals / p-values computed using 1000 bootstrap samples
 ## (argument se = TRUE and B = 1000) 
-ateFit1c <- ate(fit, treatment = "X1", times = 5:8, data = dtS,
+ateFit1c <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS,
                 se = TRUE, B = 50, handler = "mclapply")
 ## NOTE: for real applications 50 bootstrap samples is not enough 
 
 ## same but using 2 cpus for generating and analyzing the bootstrap samples
 ## (parallel computation, argument mc.cores = 2) 
-ateFit1d <- ate(fit, treatment = "X1", times = 5:8, data = dtS, 
+ateFit1d <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS, 
                 se = TRUE, B = 50, mc.cores = 2)
 
 ## manually defining the cluster to be used
 ## useful when specific packages need to be loaded in each cluster
-fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
+fit.CoxNL <- coxph(Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
 
 cl <- parallel::makeCluster(2)
 parallel::clusterEvalQ(cl, library(rms))
 
-ateFit1e <- ate(fit, treatment = "X1", times = 5:8, data = dtS, 
+ateFit1e <- ate(fit.CoxNL, treatment = "X1", times = 5:8, data = dtS, 
                 se = TRUE, B = 50, handler = "foreach", cl = cl)
 parallel::stopCluster(cl)
 }
@@ -196,12 +222,12 @@ dt <- sampleData(n, outcome="competing.risks")
 dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
 
 #### estimate cause specific Cox model ####
-fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
+fit.CR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 
 #### compute the ATE ####
 ## at times 1, 5, 10
 ## using X1 as the treatment variable
-ateFit2a <- ate(fitCR, treatment = "X1", times = c(1,5,10), data = dt, 
+ateFit2a <- ate(fit.CR, treatment = "X1", times = c(1,5,10), data = dt, 
                 cause = 1, se = TRUE, band = TRUE)
 summary(ateFit2a)
 as.data.table(ateFit2a)
@@ -217,23 +243,23 @@ dtB <- sampleData(n, outcome="binary")
 dtB[, X2 := as.numeric(X2)]
 
 ##### estimate a logistic regression model ####
-fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
+fit.glm <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 
 #### compute the ATE ####
 ## using X1 as the treatment variable
 ## only point estimate (argument se = FALSE)
-ateFit1a <- ate(fit, treatment = "X1", data = dtB, se = FALSE)
+ateFit1a <- ate(fit.glm, treatment = "X1", data = dtB, se = FALSE)
 ateFit1a
 
 \dontrun{
 ## with confidence intervals
-ateFit1b <- ate(fit, data = dtB, treatment = "X1",
+ateFit1b <- ate(fit.glm, data = dtB, treatment = "X1",
                times = 5) ## just for having a nice output not used in computations
 summary(ateFit1b, short = TRUE)
 
 ## using the lava package
 library(lava)
-ateLava <- estimate(fit, function(p, data){
+ateLava <- estimate(fit.glm, function(p, data){
 a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 R.X11 <- expit(a + b + c * data[["X2"]])
 R.X10 <- expit(a + c * data[["X2"]])
@@ -312,20 +338,20 @@ vet2 <- survSplit(Surv(time, status) ~., data = veteran,
                   cut=c(60, 120), episode ="timegroup")
 
 ## fit Cox model
-fitTD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
+fit.TD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
                data= vet2, x = TRUE)
 
 ## run ATE with bootstrap for uncertainty quantification
 set.seed(16)
-resVet <- ate(fitTD, treatment = "celltype", times = 5, data = vet2,
+resVet <- ate(fit.TD, treatment = "celltype", times = 5, data = vet2,
               formula=Hist(entry=tstart,time=time,event=status)~1,
               landmark = c(0,30,60,90), B = 50)
 summary(resVet)
 
 ## for reference
-fitRef <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
+fit.Ref <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
                data= veteran, x = TRUE)
-ateRef <- ate(fitRef, treatment = "celltype", times = c(5,35), data = veteran)
+ateRef <- ate(fit.Ref, treatment = "celltype", times = c(5,35), data = veteran)
 ## exactly the same when landmark = 0
 confint(ateRef)$meanRisk[1] 
 confint(resVet)$meanRisk[1]

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Oct 17 2024 (09:48) 
+## last-updated: Oct 21 2024 (10:38) 
 ##           By: Brice Ozenne
-##     Update #: 567
+##     Update #: 576
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -770,14 +770,20 @@ predictRisk.prodlim <- function(object,
         type <- dots$type ## hidden argument    
         product.limit <- dots$product.limit ## hidden argument    
         iPred <- predictCox(object, diag = diag, newdata = newdata, times = times,
-                            type = "survival", product.limit = product.limit, iid = iid, average.iid = average.iid)
+                            type = "survival", product.limit = product.limit, iid = iid, average.iid = average.iid,
+                            store = dots$store) ## hidden argument
+
         if(is.null(type) || "risk" == type){
             p <- 1-iPred$survival
             if(iid){
                 attr(p,"iid") <- -iPred$survival.iid
             }
             if(average.iid){
-                attr(p,"average.iid") <- -iPred$survival.average.iid
+                if(is.list(iPred$survival.average.iid)){
+                    attr(p,"average.iid") <- lapply(iPred$survival.average.iid, function(iM){-iM})
+                }else{
+                    attr(p,"average.iid") <- -iPred$survival.average.iid
+                }
             }
         }else if("survival" == type){
             p <- iPred$survival

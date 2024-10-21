@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 17 2024 (11:30) 
+## last-updated: Oct 21 2024 (11:04) 
 ##           By: Brice Ozenne
-##     Update #: 2482
+##     Update #: 2543
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,13 +24,11 @@
 #' @name ate
 #' 
 #' @param event Outcome model which describes how the probability of experiencing a terminal event depends
-#'     on treatment and covariates. The object carry its own call and
-#'     have a \code{predictRisk} method. See examples.
-#' @param treatment Treatment model which describes how the probability of being allocated to a treatment group depends
-#'     on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
-#'     See examples.
+#'     on treatment and covariates. The object carry its own call and have a \code{predictRisk} method. See details section and examples section.
+#' @param treatment Name of the treatment variable or treatment model which describes how the probability of being allocated to a treatment group depends
+#'     on covariates. See details section and examples section.
 #' @param censor Censoring model which describes how the probability of being censored depends
-#'     on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.
+#'     on treatment and covariates. See details section and examples section.
 #' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
 #' based on the outcome model
 #' @param data.index [numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
@@ -78,14 +76,30 @@
 #' @author Brice Ozenne \email{broz@@sund.ku.dk}
 #' and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
 #'
+#' @details \bold{event}: \itemize{
+#' \item IPTW estimate: a character vector indicating the event and status variables.
+#' \item G-formula or AIPTW estimator: a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}),
+#' a competing risk model (e.g. cause-specific Cox \code{"riskRegression::CSC"}),
+#' a logistic model (e.g. \code{"stats::glm"} when argument \code{censor} is \code{NULL} otherwise \code{"riskRegression::wglm"}).
+#' Other models can be specified, provided a suitable \code{predictRisk} method exists, but the standard error should be computed using non-parametric bootstrap,
+#' as the influence function of the estimator will typically not be available.
+#' }
+#' \bold{treatment}: \itemize{
+#' \item G-formula estimator: a character indicating the treatment variable.
+#' \item IPTW or AIPTW estimator: a \code{"stats::glm"} model with family \code{"binomial"} (two treatment options) or a \code{"nnet::multinom"} (more than two treatment options).
+#' }
+#' \bold{censor}: \itemize{
+#' \item G-formula estimator: NULL
+#' \item IPTW or AIPTW estimator: NULL if no censoring and otherwise a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}) 
+#' }
+#' \bold{estimator}: when using a IPCW logistic model (\code{"riskRegression::wglm"}), the integral term w.r.t. to the martingale of the censoring process is not computed for augmented estimator,
+#' i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020.
+#' 
 #' @references
-#'
 #' Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas
 #'    Alexander Gerds. On the estimation of average treatment effects with right-
 #'    censored time to event outcome and competing risks. Biometrical Journal, 62
 #'    (3):751--763, 2020.
-#' 
-#'
 #' 
 #' @seealso
 #' \code{\link{autoplot.ate}} for a graphical representation the standardized risks. \cr
@@ -97,7 +111,6 @@
 ## * ate (examples)
 #' @examples 
 #' library(survival)
-#' library(rms)
 #' library(prodlim)
 #' library(data.table)
 #'
@@ -113,24 +126,33 @@
 #' dtS$time <- round(dtS$time,1)
 #' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
-#' ##### estimate the Cox model ####
-#' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+#' ##### estimate the survival model ####
+#' ## Cox proportional hazard model
+#' fit.Cox <- coxph(Surv(time,event)~ X1+X2, data=dtS, y=TRUE, x=TRUE)
+#' ## Kaplan Meier - same as copxh(Surv(time,event)~ strata(X1)+strata(X2), ties = "breslow")
+#' fit.KM <- prodlim(Hist(time,event)~ X1+X2, data=dtS)
 #'
 #' ##### compute the ATE ####
 #' ## at times 5, 6, 7, and 8 using X1 as the treatment variable
 #' ## standard error computed using the influence function
 #' ## confidence intervals / p-values based on asymptotic results
-#' ateFit1a <- ate(fit, treatment = "X1", times = 5:8, data = dtS)
+#' ateFit1a <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS)
 #' summary(ateFit1a)
-#' summary(ateFit1a, short = TRUE, type = "meanRisk")
-#' summary(ateFit1a, short = TRUE, type = "diffRisk")
-#' summary(ateFit1a, short = TRUE, type = "ratioRisk")
+#' model.tables(ateFit1a, type = "meanRisk")
+#' model.tables(ateFit1a, type = "diffRisk")
+#' model.tables(ateFit1a, type = "ratioRisk")
+#'
+#' ## relaxing PH assumption using a stratified model
+#' ateFit1a.NPH <- ate(fit.KM, treatment = "X1", times = 5:8, data = dtS,
+#'                     product.limit = FALSE)
+#' model.tables(ateFit1a.NPH, times = 5) ## no PH assumption
+#' model.tables(ateFit1a, times = 5)  ## PH assumption
 #' 
 #' \dontrun{
 #' #### ATE with confidence bands ####
 #' ## same as before with in addition the confidence bands / adjusted p-values
 #' ## (argument band = TRUE)
-#' ateFit1b <- ate(fit, treatment = "X1", times = 5:8, data = dtS, band = TRUE)
+#' ateFit1b <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS, band = TRUE)
 #' summary(ateFit1b)
 #'
 #' ## by default bands/adjuste p-values computed separately for each treatment modality
@@ -145,23 +167,23 @@
 #' #### ATE with non-parametric bootstrap ####
 #' ## confidence intervals / p-values computed using 1000 bootstrap samples
 #' ## (argument se = TRUE and B = 1000) 
-#' ateFit1c <- ate(fit, treatment = "X1", times = 5:8, data = dtS,
+#' ateFit1c <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS,
 #'                 se = TRUE, B = 50, handler = "mclapply")
 #' ## NOTE: for real applications 50 bootstrap samples is not enough 
 #'
 #' ## same but using 2 cpus for generating and analyzing the bootstrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit1d <- ate(fit, treatment = "X1", times = 5:8, data = dtS, 
+#' ateFit1d <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS, 
 #'                 se = TRUE, B = 50, mc.cores = 2)
 #'
 #' ## manually defining the cluster to be used
 #' ## useful when specific packages need to be loaded in each cluster
-#' fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
+#' fit.CoxNL <- coxph(Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
 #'
 #' cl <- parallel::makeCluster(2)
 #' parallel::clusterEvalQ(cl, library(rms))
 #' 
-#' ateFit1e <- ate(fit, treatment = "X1", times = 5:8, data = dtS, 
+#' ateFit1e <- ate(fit.CoxNL, treatment = "X1", times = 5:8, data = dtS, 
 #'                 se = TRUE, B = 50, handler = "foreach", cl = cl)
 #' parallel::stopCluster(cl)
 #' }
@@ -179,12 +201,12 @@
 #' dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
 #'
 #' #### estimate cause specific Cox model ####
-#' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
+#' fit.CR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
 #' #### compute the ATE ####
 #' ## at times 1, 5, 10
 #' ## using X1 as the treatment variable
-#' ateFit2a <- ate(fitCR, treatment = "X1", times = c(1,5,10), data = dt, 
+#' ateFit2a <- ate(fit.CR, treatment = "X1", times = c(1,5,10), data = dt, 
 #'                 cause = 1, se = TRUE, band = TRUE)
 #' summary(ateFit2a)
 #' as.data.table(ateFit2a)
@@ -200,23 +222,23 @@
 #' dtB[, X2 := as.numeric(X2)]
 #' 
 #' ##### estimate a logistic regression model ####
-#' fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
+#' fit.glm <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 #' 
 #' #### compute the ATE ####
 #' ## using X1 as the treatment variable
 #' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, treatment = "X1", data = dtB, se = FALSE)
+#' ateFit1a <- ate(fit.glm, treatment = "X1", data = dtB, se = FALSE)
 #' ateFit1a
 #' 
 #' \dontrun{
 #' ## with confidence intervals
-#' ateFit1b <- ate(fit, data = dtB, treatment = "X1",
+#' ateFit1b <- ate(fit.glm, data = dtB, treatment = "X1",
 #'                times = 5) ## just for having a nice output not used in computations
 #' summary(ateFit1b, short = TRUE)
 #' 
 #' ## using the lava package
 #' library(lava)
-#' ateLava <- estimate(fit, function(p, data){
+#' ateLava <- estimate(fit.glm, function(p, data){
 #' a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 #' R.X11 <- expit(a + b + c * data[["X2"]])
 #' R.X10 <- expit(a + c * data[["X2"]])
@@ -295,20 +317,20 @@
 #'                   cut=c(60, 120), episode ="timegroup")
 #' 
 #' ## fit Cox model
-#' fitTD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
+#' fit.TD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
 #'                data= vet2, x = TRUE)
 #'
 #' ## run ATE with bootstrap for uncertainty quantification
 #' set.seed(16)
-#' resVet <- ate(fitTD, treatment = "celltype", times = 5, data = vet2,
+#' resVet <- ate(fit.TD, treatment = "celltype", times = 5, data = vet2,
 #'               formula=Hist(entry=tstart,time=time,event=status)~1,
 #'               landmark = c(0,30,60,90), B = 50)
 #' summary(resVet)
 #'
 #' ## for reference
-#' fitRef <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
+#' fit.Ref <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
 #'                data= veteran, x = TRUE)
-#' ateRef <- ate(fitRef, treatment = "celltype", times = c(5,35), data = veteran)
+#' ateRef <- ate(fit.Ref, treatment = "celltype", times = c(5,35), data = veteran)
 #' ## exactly the same when landmark = 0
 #' confint(ateRef)$meanRisk[1] 
 #' confint(resVet)$meanRisk[1]
@@ -860,16 +882,16 @@ ate_initArgs <- function(object.event,
         censoringMF <- coxModelFrame(model.censor)
         test.censor <- censoringMF$status == 1
         n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
-
         info.censor <- SurvResponseVar(coxFormula(model.censor))
         censorVar.status <- info.censor$status
         censorVar.time <- info.censor$time
         if(inherits(model.censor,"prodlim")){
-            if(model.censor$reverse){
-                level.censoring <- unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==0])
-            }else{
-                level.censoring <- unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==1])
-            }            
+            level.censoring <- attr(model.censor$model.response,"cens.code")
+            if(is.numeric(mydata[[censorVar.status]])){
+                level.censoring <- as.numeric(level.censoring)
+            }
+            ## Not reliable due to re-ordering and reverse arguments
+            ## unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==1])
         }else{
             level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[,2]==1])
         }
@@ -881,7 +903,7 @@ ate_initArgs <- function(object.event,
             test.censor <- model.event$response[,"status"] == 0        
             n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] < t))})
             level.censoring <- attr(model.event$response,"cens.code")
-        }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){ 
+        }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg") || inherits(model.event,"prodlim")){ 
             censoringMF <- coxModelFrame(model.event)
             test.censor <- censoringMF$status == 0
             n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
@@ -914,10 +936,23 @@ ate_initArgs <- function(object.event,
         }
         if(is.null(product.limit)){product.limit <- TRUE}
         level.states <- model.event$cause
+    }else if(inherits(model.event,"prodlim")){
+        responseVar <- SurvResponseVar(formula.event)
+        eventVar.time <- responseVar$time
+        eventVar.status <- responseVar$status
+        level.states <- attr(model.event$model.response,"state")
+        if(is.numeric(mydata[[eventVar.status]])){
+            level.states <- as.numeric(level.states)
+        }
+        if(is.na(cause)){ ## handle Hist(time,event > 0) ~ ...
+            cause <- level.states[1]
+        }
+        if(is.null(product.limit)){product.limit <- TRUE}
     }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){
         responseVar <- SurvResponseVar(formula.event)
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
+
         if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
             if(any(model.event$y[,NCOL(model.event$y)]==1)){
                 modeldata <- try(eval(model.event$call$data), silent = TRUE)
@@ -1037,7 +1072,6 @@ ate_initArgs <- function(object.event,
         }else{
             test.monotone <- FALSE
         }
-
         if(any(estimator == "IPTW") && any(n.censor>0)){
             estimator[estimator == "IPTW"] <- "IPTW,IPCW"
         }
@@ -1119,6 +1153,11 @@ ate_initArgs <- function(object.event,
         attr(estimator.output,"export.AIPTW") <- FALSE
     }
     attr(estimator.output,"full") <- estimator
+    if(!attr(estimator.output,"integral") && any(estimator == "AIPTW,AIPCW")){
+        attr(estimator.output,"full")[attr(estimator.output,"full")=="AIPTW,AIPCW"] <- "AIPTW,IPCW"
+    }else{
+        
+    }
     attr(estimator.output,"monotone") <- test.monotone
 
     ## ** sample size
@@ -1229,7 +1268,7 @@ ate_checkArgs <- function(call,
 
     ## ** status
     if(eventVar.status %in% names(mydata) == FALSE){
-        stop("The data set does not seem to have a variable ",eventVar.status," (argument: event[2]). \n")
+        stop("The data set does not seem to have a variable called \'",eventVar.status,"\' (argument: event[2]). \n")
     }
     if(inherits(object.event,"glm") && is.na(cause)){
         stop("Argument \'cause\' should not be specified when using a glm model in argument \'event\'")
@@ -1278,8 +1317,14 @@ ate_checkArgs <- function(call,
     
     ## ** object.event
     if(!is.null(object.event)){
-        candidateMethods <- paste("predictRisk",class(object.event),sep=".")
-        if (all(match(candidateMethods,options$method.predictRisk,nomatch=0)==0)){
+        ## look for all function in riskRegression
+        ## unclass(lsf.str(envir = asNamespace("riskRegression"), all = T))
+        vec.candidateMethods <- paste("predictRisk",class(object.event),sep=".")
+        for(iCandidate in vec.candidateMethods){
+            test <- try(is.function(eval(parse(text=iCandidate))), silent = TRUE)            
+            if(!inherits(test, "try-error") && test==TRUE){candidateMethods <- iCandidate; break}
+        }
+        if (inherits(test, "try-error") || test==FALSE){
             stop(paste("Could not find predictRisk S3-method for ",paste(class(object.event),collapse=", "),sep=""))
         }
         if((inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")) && (cause %in% object.event$causes == FALSE)){
@@ -1337,7 +1382,6 @@ ate_checkArgs <- function(call,
         if(!identical(censorVar.time,eventVar.time)){
             stop("The time variable should be the same in \'object.event\' and \'object.censor\' \n")
         }
-        
         if(any(cause == level.censoring)){
             stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
                  "maybe you have forgotten to set the event type == 0 in the censoring model \n")
@@ -1410,11 +1454,9 @@ ate_checkArgs <- function(call,
         }
         
         if(!is.null(object.event)){
-            candidateMethods <- paste("predictRiskIID",class(object.event),sep=".")
-            if (all(match(candidateMethods,options$method.predictRiskIID,nomatch=0)==0)){
-                stop(paste("Could not find predictRiskIID S3-method for ",class(object.event),collapse=" ,"),"\n",
-                     "Functional delta method not implemented for this type of object \n",
-                     "Set argument \'B\' to a positive integer to use a bootstrap instead \n",sep="")
+            if ("average.iid" %in% names(formals(candidateMethods)) == FALSE){
+                stop(paste("The method ",candidateMethods," is missing an argument average.iid to be used for the functional delta method. \n",
+                           "Set argument \'B\' to a positive integer to use a bootstrap instead \n",sep=""))
             }
         }
         if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size

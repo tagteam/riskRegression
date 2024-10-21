@@ -1,6 +1,6 @@
-Version: 2024.18.10 (Brice - 2024/18/10)
-- [feature] add confint and model.tables method to wglm for extracting coefficients with the confidence intervals and p-values.
-- [internal] wglm automatically compute the variance covariance matrix instead of doing it on the fly when calling summary. Can be disabled with argument se.
+Version: 2024.21.10 (Brice - 2024/18/10)
+- [feature] add weight, vcov, confint and model.tables method to wglm for extracting IPCW, variance covariance matrix, coefficients with the confidence intervals and p-values.
+- [internal] wglm automatically compute the variance covariance matrix (instead of doing it on the fly when calling summary). Can be disabled with argument se.
 - [internal] speed-up for iidCox with non-unique times: it internals works on unique times and expand the results at the end to match the user-request.
 - [internal] speed-up for predictCox with non-unique times when diag=TRUE: call iidCox with unique times to reduce memory usage.
 

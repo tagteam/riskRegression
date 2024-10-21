@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Oct 16 2024 (11:48) 
 ## Version: 
-## Last-Updated: Oct 17 2024 (12:16) 
+## Last-Updated: Oct 21 2024 (09:58) 
 ##           By: Brice Ozenne
-##     Update #: 18
+##     Update #: 21
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -116,7 +116,7 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
     out <- stats::confint(object.reduce, ...)[[type]]
 
     ## *** export
-    return(out)
+    return(out[])
 
 }
 
