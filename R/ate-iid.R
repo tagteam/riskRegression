@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (15:20) 
+## Last-Updated: Oct 21 2024 (16:40) 
 ##           By: Brice Ozenne
-##     Update #: 1396
+##     Update #: 1397
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -149,7 +149,7 @@ iidATE <- function(estimator,
             attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTime]*Y.tau[,iTime])})
 
             term.censoring <- attr(predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iTime]+1],
-                                               diag = TRUE, product.limit = product.limit, average.iid = factor, store = store),"average.iid")
+                                               diag = TRUE, product.limit = product.limit, average.iid = factor, store = store[c("data","iid")]),"average.iid")
 
             for(iC in 1:n.contrasts){ ## iGrid <- 1
                 ## - because predictRisk outputs the risk instead of the survival                 
@@ -195,7 +195,7 @@ iidATE <- function(estimator,
         ## attr(factor,"factor")[[iC]][c(26,30,372),]
 
         term.intF1_tau <- attr(predictRisk(object.event, newdata = mydataIntegral, times = times, cause = cause,
-                                           average.iid = factor, product.limit = product.limit, store = store),"average.iid")
+                                           average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]),"average.iid")
         for(iC in 1:n.contrasts){ ## iC <- 1
             iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]*n.obsIntegral/n.obs
         }
@@ -206,7 +206,7 @@ iidATE <- function(estimator,
         })
         
         integrand.F1t <- attr(predictRisk(object.event, newdata = mydataIntegral, times = time.jumpC, cause = cause,
-                                          average.iid = factor, product.limit = product.limit, store = store), "average.iid")
+                                          average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]), "average.iid")
 
         for(iC in 1:n.contrasts){ ## iC <- 1
             iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]])*n.obsIntegral/n.obs,
@@ -240,7 +240,7 @@ iidATE <- function(estimator,
             return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEventIntegral.jumpC, scale = iW.IPTW[index.obsIntegral,iC]))
         })
         integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydataIntegral, times = time.jumpC-tol, cause = cause,
-                                         average.iid = factor, product.limit = product.limit, store = store), "average.iid")
+                                         average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]), "average.iid")
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
@@ -262,7 +262,7 @@ iidATE <- function(estimator,
         })
 
         integrand.G1 <- predictCox(object.censor, newdata = mydataIntegral, times = time.jumpC - tol, 
-                                   average.iid = factor, store = store)$survival.average.iid
+                                   average.iid = factor, store = store[c("data","iid")])$survival.average.iid
 
         ## ## integral censoring martingale
         factor <- TRUE
@@ -272,7 +272,7 @@ iidATE <- function(estimator,
             return(-colMultiply_cpp(ls.F1tau_F1t_SG[[iTau]]*beforeEventIntegral.jumpC, scale = iW.IPTW[index.obsIntegral,iC]))
         })
         integrand.G2 <- predictCox(object.censor, newdata = mydataIntegral, times = time.jumpC, type = "hazard",
-                                   average.iid = factor, store = store)$hazard.average.iid
+                                   average.iid = factor, store = store[c("data","iid")])$hazard.average.iid
 
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]

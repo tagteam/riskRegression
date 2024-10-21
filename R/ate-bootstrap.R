@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Mar  7 2022 (08:36) 
-##           By: Thomas Alexander Gerds
-##     Update #: 343
+## Last-Updated: Oct 21 2024 (16:44) 
+##           By: Brice Ozenne
+##     Update #: 344
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,12 +18,12 @@
 ## * calcBootATE
 ## generate a boot object for the ate function that will be used to compute CI and p.values
 calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
-                        handler, B, seed, mc.cores, cl,
-                        verbose){
+                        handler, B, seed, mc.cores, cl){
 
                                         # {{{ prepare arguments
     
     ## hard copy of the dataset before bootstrap
+    verbose <- args$verbose                        
     ls.data <- list(object.event = NULL,
                     object.treatment = NULL,
                     object.censor = NULL)

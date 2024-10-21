@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 21 2024 (11:04) 
+## last-updated: Oct 21 2024 (17:18) 
 ##           By: Brice Ozenne
-##     Update #: 2543
+##     Update #: 2566
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -92,8 +92,20 @@
 #' \item G-formula estimator: NULL
 #' \item IPTW or AIPTW estimator: NULL if no censoring and otherwise a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}) 
 #' }
+#' 
 #' \bold{estimator}: when using a IPCW logistic model (\code{"riskRegression::wglm"}), the integral term w.r.t. to the martingale of the censoring process is not computed for augmented estimator,
-#' i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020.
+#' i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020. \cr
+#'
+#' In presence of censoring, the computation time and memory usage for the evaluation of the AIPTW estimator and its uncertainty do not scale well with the number of observations (n) or the number of unique timepoints (T).
+#' Point estimation involves n by T matrices and influence function n by T by n arrays. \itemize{
+#' \item for large datasets (e.g. n>5000), bootstrap is recommended as the memory need for the influence function may be prohibitive.
+#' \item it is possible to decrease the memory usage for the point estimation by setting the (hidden) argument \code{store=c(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
+#' \item reducing the number of unique timepoints (e.g. by rounding them) will lead to a less efficient but faster and less memory demanding estimation procedure.
+#' }
+#'  
+#' 
+#' 
+#' 
 #' 
 #' @references
 #' Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas
@@ -275,7 +287,7 @@
 #'                  treatment = m.treatment,
 #'                  censor = m.censor,
 #'                  data = dt, times = 5:10, 
-#'                  cause = 1, band = TRUE)
+#'                  cause = 1)
 #' summary(ateRobust)
 #' 
 #' ## compare various estimators
@@ -290,20 +302,28 @@
 #' as.data.table(ateRobust2, type = "meanRisk")
 #' as.data.table(ateRobust2, type = "diffRisk")
 #'
+#' ## reduce memory load by computing the integral term
+#' ## on only 100 observations at a time (only relevant when iid = FALSE)
+#' ateRobust3 <- ate(event = m.event,
+#'                  treatment = m.treatment,
+#'                  censor = m.censor,
+#'                  data = dt, times = 5:10, 
+#'                  cause = 1, se = FALSE,
+#'                  store = c("size.split" = 100), verbose = 2)
+#' coef(ateRobust3) - coef(ateRobust) ## same
+#'
 #' ## approximation to speed up calculations
 #' dt$time.round <- round(dt$time/0.5)*0.5 ## round to the nearest half
 #' dt$time.round[dt$time.round==0] <- 0.1 ## ensure strictly positive event times
 #' mRound.event <-  CSC(Hist(time.round,event)~ X1+X2+X3+X5+X8,data=dt)
 #' mRound.censor <-  coxph(Surv(time.round,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
-#' system.time( ## about 0.6s
-#' ateRobust3 <- ate(event = mRound.event,
-#'                  treatment = m.treatment,
-#'                  censor = mRound.censor,
-#'                  estimator = c("GFORMULA","IPTW","AIPTW"),
-#'                  data = dt, times = c(5:10), 
-#'                  cause = 1, se = TRUE)
+#' system.time( ## about 0.4s
+#' ateRobustFast <- ate(event = mRound.event, treatment = m.treatment,
+#'                     censor = mRound.censor,
+#'                  estimator = c("GFORMULA","IPTW","AIPTW"), product.limit = FALSE,
+#'                  data = dt, times = c(5:10), cause = 1, se = TRUE)
 #' )
-#' ateRobust2$meanRisk$estimate - ateRobust3$meanRisk$estimate ## inaccuracy
+#' coef(ateRobustFast) - coef(ateRobust) ## inaccuracy
 #' }
 #' 
 #' ###################################
@@ -626,7 +646,8 @@ ate <- function(event,
                                  return.iid.nuisance = return.iid.nuisance,
                                  data.index = data.index,
                                  method.iid = method.iid,
-                                 store = store),
+                                 store = store,
+                                 verbose = verbose),
                             dots[names(dots) %in% "store" == FALSE])
     if (attr(estimator,"TD")){       
         args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
@@ -679,8 +700,7 @@ ate <- function(event,
                                    B = B,
                                    seed = seed,
                                    mc.cores = mc.cores,
-                                   cl = cl,
-                                   verbose = verbose)
+                                   cl = cl)
 
             ## store
             out$boot <- list(t0 = estimate,
@@ -893,7 +913,16 @@ ate_initArgs <- function(object.event,
             ## Not reliable due to re-ordering and reverse arguments
             ## unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==1])
         }else{
-            level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[,2]==1])
+            mydata.censor <- try(eval(model.censor$call$data), silent = TRUE)
+            if(!inherits(mydata.censor, "try-error") && (inherits(mydata.censor,"list") || inherits(mydata.censor,"data.frame"))){
+                level.censoring <- unique(mydata.censor[[censorVar.status]][model.censor$y[,2]==1])
+            }else if(is.numeric(mydata[[censorVar.status]])){
+                level.censoring <- 0
+            }else if(is.character(mydata[[censorVar.status]])){
+                level.censoring <- sort(unique(mydata[[censorVar.status]]))[1]
+            }else if(is.factor(mydata[[censorVar.status]])){
+                level.censoring <- levels(mydata[[censorVar.status]])[1]
+            }            
         }
     }else{ ## G-formula or IPTW (no censoring)
         censorVar.status <- NA
@@ -1170,31 +1199,39 @@ ate_initArgs <- function(object.event,
     ## ** store
     store.data <- NULL
     store.iid <- "full"
+    store.size.split <- NULL
     if(!is.null(store)){
         if(length(store) > 2){
             stop("Argument \'store\' should contain at most two elements. \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
-        if(is.null(names(store)) || any(names(store) %in% c("data","iid") == FALSE)){
-            stop("Incorrect names for argument \'store\': should \"data\" and \"iid\". \n",
+        if(is.null(names(store)) || any(names(store) %in% c("data","iid", "size.split") == FALSE)){
+            stop("Incorrect names for argument \'store\': should be \"data\", \"iid\", \"size.split\". \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
         if("data" %in% names(store) && !is.null(store[["data"]])){
             if(store[["data"]] %in% c("minimal","full") == FALSE){
-                stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
+                stop("Element \"data\" in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(data = \"full\") or store = c(data = \"minimal\").\n")
             }
             store.data <- store[["data"]]
         }
         if("iid" %in% names(store) && !is.null(store[["iid"]])){
             if(store[["iid"]] %in% c("minimal","full") == FALSE){
-                stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
+                stop("Element \"iid\" in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(iid = \"full\") or store = c(iid = \"minimal\").\n")
             }
             store.iid <- store[["iid"]]
         }
+        if("size.split" %in% names(store)){
+            if(!is.numeric(store[["size.split"]]) || store[["size.split"]] < 0 || (store[["size.split"]] %% 1>0)){
+                stop("Element \"size.split\" in argument \'store\' should be a positive integer.\n")
+            }
+            store.size.split <- store[["size.split"]]
+        }
+        
     }
-    store <- list(data = store.data, iid = store.iid)
+    store <- list(data = store.data, iid = store.iid, size.split = store.size.split)
 
     ## ** output
     return(list(object.event = model.event,

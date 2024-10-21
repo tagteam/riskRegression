@@ -127,8 +127,16 @@ as the influence function of the estimator will typically not be available.
 \item G-formula estimator: NULL
 \item IPTW or AIPTW estimator: NULL if no censoring and otherwise a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}) 
 }
+
 \bold{estimator}: when using a IPCW logistic model (\code{"riskRegression::wglm"}), the integral term w.r.t. to the martingale of the censoring process is not computed for augmented estimator,
-i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020.
+i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020. \cr
+
+In presence of censoring, the computation time and memory usage for the evaluation of the AIPTW estimator and its uncertainty do not scale well with the number of observations (n) or the number of unique timepoints (T).
+Point estimation involves n by T matrices and influence function n by T by n arrays. \itemize{
+\item for large datasets (e.g. n>5000), bootstrap is recommended as the memory need for the influence function may be prohibitive.
+\item it is possible to decrease the memory usage for the point estimation by setting the (hidden) argument \code{store=c(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
+\item reducing the number of unique timepoints (e.g. by rounding them) will lead to a less efficient but faster and less memory demanding estimation procedure.
+}
 }
 \examples{
 library(survival)
@@ -296,7 +304,7 @@ ateRobust <- ate(event = m.event,
                  treatment = m.treatment,
                  censor = m.censor,
                  data = dt, times = 5:10, 
-                 cause = 1, band = TRUE)
+                 cause = 1)
 summary(ateRobust)
 
 ## compare various estimators
@@ -311,20 +319,28 @@ ateRobust2 <- ate(event = m.event,
 as.data.table(ateRobust2, type = "meanRisk")
 as.data.table(ateRobust2, type = "diffRisk")
 
+## reduce memory load by computing the integral term
+## on only 100 observations at a time (only relevant when iid = FALSE)
+ateRobust3 <- ate(event = m.event,
+                 treatment = m.treatment,
+                 censor = m.censor,
+                 data = dt, times = 5:10, 
+                 cause = 1, se = FALSE,
+                 store = c("size.split" = 100), verbose = 2)
+coef(ateRobust3) - coef(ateRobust) ## same
+
 ## approximation to speed up calculations
 dt$time.round <- round(dt$time/0.5)*0.5 ## round to the nearest half
 dt$time.round[dt$time.round==0] <- 0.1 ## ensure strictly positive event times
 mRound.event <-  CSC(Hist(time.round,event)~ X1+X2+X3+X5+X8,data=dt)
 mRound.censor <-  coxph(Surv(time.round,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
-system.time( ## about 0.6s
-ateRobust3 <- ate(event = mRound.event,
-                 treatment = m.treatment,
-                 censor = mRound.censor,
-                 estimator = c("GFORMULA","IPTW","AIPTW"),
-                 data = dt, times = c(5:10), 
-                 cause = 1, se = TRUE)
+system.time( ## about 0.4s
+ateRobustFast <- ate(event = mRound.event, treatment = m.treatment,
+                    censor = mRound.censor,
+                 estimator = c("GFORMULA","IPTW","AIPTW"), product.limit = FALSE,
+                 data = dt, times = c(5:10), cause = 1, se = TRUE)
 )
-ateRobust2$meanRisk$estimate - ateRobust3$meanRisk$estimate ## inaccuracy
+coef(ateRobustFast) - coef(ateRobust) ## inaccuracy
 }
 
 ###################################
