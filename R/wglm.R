@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: Oct 20 2024 (13:59) 
+## Last-Updated: Oct 21 2024 (18:23) 
 ##           By: Brice Ozenne
-##     Update #: 774
+##     Update #: 782
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,6 +40,13 @@
 #' 
 #' @return an object of class \code{"wglm"}.
 #'
+#' @seealso
+#' \code{\link{coef.wglm}} to output the estimated parameters from the logistic regression. \cr
+#' \code{\link{confint.wglm}} to output the estimated parameters from the logistic regression with their confidence interval. \cr
+#' \code{\link{model.tables.wglm}} to output a data.frame containing the estimated parameters from the logistic regression with its confidence intervals and p-values.   \cr
+#' \code{\link{predictRisk.wglm}} to evaluate event probabilities (e.g. survival probabilities) conditional on covariates. \cr
+#' \code{summary.wglm} for displaying in the console a summary of the results. \cr
+#' \code{\link{weights.wglm}} to extract the IPCW weights. 
 
 ## * wglm (examples)
 #' @examples
@@ -56,7 +63,11 @@
 #' #### no censoring ####
 #' e.wglm <- wglm(Surv(time,event) ~ X1, 
 #'                times = tau, data = dFull, product.limit = TRUE)
-#' e.wglm ## same as a logistic regression
+#' e.wglm ## same as a logistic regression at each timepoint
+#' 
+#' coef(e.wglm)
+#' confint(e.wglm)
+#' model.tables(e.wglm)
 #'
 #' summary(ate(e.wglm, data = dFull, times = tau, treatment = "X1", verbose = FALSE))
 #'
@@ -64,7 +75,9 @@
 #' ## no covariante in the censoring model (independent censoring)
 #' eC.wglm <- wglm(Surv(time,event) ~ X1,
 #'                times = tau, data = dSurv, product.limit = TRUE)
-#' eC.wglm
+#' summary(eC.wglm)
+#'
+#' weights(eC.wglm)
 #'
 #' ## with covariates in the censoring model
 #' eC2.wglm <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1*X8,
@@ -824,11 +837,12 @@ iid.wglm <- function(x, times = NULL, simplify = TRUE, store = NULL, ...){
 #'
 #' @param object a wglm object.
 #' @param times [numeric vector] time points at which the weights should be output. 
+#' @param prefix [character] used to name the columns. Can be \code{NA} to keep the original names.
 #' @param simplify [logical] should the ouput be converted to a vector when only one timepoint is requested. Otherwise will always return a matrix.
 #' @param ... Not used.
 #' @export
 #'
-weights.wglm <- function(object, times = NULL, simplify = TRUE, ...){
+weights.wglm <- function(object, times = NULL, prefix = "t", simplify = TRUE, ...){
 
     ## ** normalize user input
     dots <- list(...)
@@ -840,10 +854,16 @@ weights.wglm <- function(object, times = NULL, simplify = TRUE, ...){
             stop("Unknown timepoint ",paste(setdiff(times,object$time), collapse = ", ")," in argument \'times\'. \n",
                  "Valid timepoints: ",paste(object$time, collapse = ", "),". \n")
         }
-    }
-
+    }    
     ## ** extract weights
-    out <- object$data[object$name.IPCW]
+    if(is.data.table(object$data)){
+        out <- as.data.frame(object$data[,.SD,.SDcols = object$name.IPCW])
+    }else{
+        out <- object$data[object$name.IPCW]
+    }
+    if(!is.na(prefix)){
+        names(out) <- paste0(prefix,object$time)
+    }
     if(!is.null(times)){
         out <- out[match(times,object$time)]
     }

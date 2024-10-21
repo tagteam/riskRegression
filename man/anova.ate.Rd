@@ -49,6 +49,7 @@ Experimental!!!
 \examples{
 library(survival)
 library(data.table)
+library(ggplot2)
 
 \dontrun{
 ## simulate data
@@ -59,7 +60,7 @@ dtS$X12 <- LETTERS[as.numeric(as.factor(paste0(dtS$X1,dtS$X2)))]
 dtS <- dtS[dtS$X12!="D"]
 
 ## model fit
-fit <- cph(formula = Surv(time,event)~ X1+X6,data=dtS,y=TRUE,x=TRUE)
+fit <- coxph(formula = Surv(time,event)~ X1+X6,data=dtS,y=TRUE,x=TRUE)
 seqTime <- 1:10
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = seqTime, B = 0, iid = TRUE, se = TRUE, verbose = TRUE, band = TRUE)

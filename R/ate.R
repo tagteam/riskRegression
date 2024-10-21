@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 21 2024 (17:18) 
+## last-updated: Oct 21 2024 (18:04) 
 ##           By: Brice Ozenne
-##     Update #: 2566
+##     Update #: 2572
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,31 +76,31 @@
 #' @author Brice Ozenne \email{broz@@sund.ku.dk}
 #' and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
 #'
-#' @details \bold{event}: \itemize{
-#' \item IPTW estimate: a character vector indicating the event and status variables.
+#' @details Argument \bold{event}: \itemize{
+#' \item IPTW estimator: a character vector indicating the event and status variables.
 #' \item G-formula or AIPTW estimator: a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}),
 #' a competing risk model (e.g. cause-specific Cox \code{"riskRegression::CSC"}),
 #' a logistic model (e.g. \code{"stats::glm"} when argument \code{censor} is \code{NULL} otherwise \code{"riskRegression::wglm"}).
 #' Other models can be specified, provided a suitable \code{predictRisk} method exists, but the standard error should be computed using non-parametric bootstrap,
 #' as the influence function of the estimator will typically not be available.
 #' }
-#' \bold{treatment}: \itemize{
+#' Argument \bold{treatment}: \itemize{
 #' \item G-formula estimator: a character indicating the treatment variable.
 #' \item IPTW or AIPTW estimator: a \code{"stats::glm"} model with family \code{"binomial"} (two treatment options) or a \code{"nnet::multinom"} (more than two treatment options).
 #' }
-#' \bold{censor}: \itemize{
+#' Argument \bold{censor}: \itemize{
 #' \item G-formula estimator: NULL
 #' \item IPTW or AIPTW estimator: NULL if no censoring and otherwise a survival model (e.g. Cox \code{"survival::coxph"}, Kaplan Meier \code{"prodlim::prodlim"}) 
 #' }
 #' 
-#' \bold{estimator}: when using a IPCW logistic model (\code{"riskRegression::wglm"}), the integral term w.r.t. to the martingale of the censoring process is not computed for augmented estimator,
-#' i.e. AIPTW,IPCW estimator instead AIPTW,AIPCW with the notation of Ozenne et al. 2020. \cr
+#' Argument \bold{estimator}: when set to \code{"AIPTW"} with argument \code{event} being IPCW logistic model (\code{"riskRegression::wglm"}), the integral term w.r.t. to the martingale of the censoring process is not computed,
+#' i.e. using the notation of Ozenne et al. (2020) an AIPTW,IPCW estimator instead of an AIPTW,AIPCW is evaluated. \cr
 #'
 #' In presence of censoring, the computation time and memory usage for the evaluation of the AIPTW estimator and its uncertainty do not scale well with the number of observations (n) or the number of unique timepoints (T).
-#' Point estimation involves n by T matrices and influence function n by T by n arrays. \itemize{
-#' \item for large datasets (e.g. n>5000), bootstrap is recommended as the memory need for the influence function may be prohibitive.
+#' Point estimation involves n by T matrices, influence function involves n by T by n arrays. \itemize{
+#' \item for large datasets (e.g. n>5000), bootstrap is recommended as the memory need for the influence function is likely prohibitive.
 #' \item it is possible to decrease the memory usage for the point estimation by setting the (hidden) argument \code{store=c(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
-#' \item reducing the number of unique timepoints (e.g. by rounding them) will lead to a less efficient but faster and less memory demanding estimation procedure.
+#' \item reducing the number of unique timepoints (e.g. by rounding them) will lead to an approximate estimation procedure that is less demanding both in term of computation and memory. The resulting estimator will be more variable than the one based on the original timepoints (i.e. wider confidence intervals).
 #' }
 #'  
 #' 

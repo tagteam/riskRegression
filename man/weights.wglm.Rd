@@ -4,12 +4,14 @@
 \alias{weights.wglm}
 \title{Extract IPCW Weights}
 \usage{
-\method{weights}{wglm}(object, times = NULL, simplify = TRUE, ...)
+\method{weights}{wglm}(object, times = NULL, prefix = "t", simplify = TRUE, ...)
 }
 \arguments{
 \item{object}{a wglm object.}
 
 \item{times}{[numeric vector] time points at which the weights should be output.}
+
+\item{prefix}{[character] used to name the columns. Can be \code{NA} to keep the original names.}
 
 \item{simplify}{[logical] should the ouput be converted to a vector when only one timepoint is requested. Otherwise will always return a matrix.}
 
