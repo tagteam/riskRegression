@@ -869,9 +869,11 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                     ## times <- sort(unique(c(start,times)))
                     times <- sort(unique(times))
             }
-            (if (any(times > maxtime))
-                 message(paste0("Upper limit of followup is ",
-                                maxtime,"\nResults at times higher than ",maxtime," are not computed.")))
+            (if (any(times > maxtime)){
+                 if (verbose>0)
+                     message(paste0("Upper limit of followup is ",
+                                    maxtime,"\nResults at times higher than ",maxtime," are not computed.")))
+            }
             ## need to save indices to modify matrix input
             include.times <- times <= maxtime
             times <- times[include.times]
