@@ -48,7 +48,7 @@ predict.FGR <- function(object,newdata,times,...){
     args <- list(object=object$crrFit,cov1=cov1,cov2=cov2,...)
     args <- args[!sapply(args,is.null)]
     ## warning("uuu")
-    print(colnames(args$cov1))
+    ## print(colnames(args$cov1))
     pred <- do.call(cmprsk::predict.crr,args)
     ## warning("bbb")
     out <- pred[,-1,drop=FALSE]
