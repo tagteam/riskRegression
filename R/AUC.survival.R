@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jun 25 2024 (09:47) 
+## Last-Updated: Dec  6 2024 (13:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 52
+##     Update #: 55
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -32,6 +32,7 @@ AUC.survival <- function(DT,
                          cutpoints,
                          ...){
     riskRegression_ID=model=times=risk=Cases=riskRegression_time=riskRegression_status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
+    output = NULL
     cause <- 1
     aucDT <- DT[model>0]
     ## remove null model comparisons
@@ -57,7 +58,7 @@ AUC.survival <- function(DT,
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     if (!is.null(cutpoints)){
-        breaks <- sort(cutpoints,decreasing = TRUE)
+        ## breaks <- sort(cutpoints,decreasing = TRUE)
         aucDT[,nth.times:=as.numeric(factor(times))]
         cutpoint.helper.fun <- function(FPR,
                                         TPR,
@@ -113,7 +114,7 @@ AUC.survival <- function(DT,
                 else {
                     TPRi <- FPRi <- 0
                 }
-                if (den_PPV > 1e-10){
+                if (den_PPV > 0){
                     PPV <- (TPRi*den_TPR)/den_PPV
                     if (se.fit){
                         #OBS, check other causes, paul's implementation
@@ -130,9 +131,9 @@ AUC.survival <- function(DT,
                     }
                 }
                 else {
-                    PPV <- NA
+                    PPV <- SE.PPV <- NA
                 }
-                if (den_NPV > 1e-10){
+                if (den_NPV > 0){
                     NPV <- ((1-FPRi)*den_FPR)/den_NPV
                     if (se.fit){
                         IC0.NPV <- (risk <= cutpoints[i])/den_NPV*(((ipcwCases)*N)*(1*(riskRegression_event!=1 & riskRegression_event!=0)-1*(riskRegression_event!=0)*NPV)+ipcwControls*N*(1-NPV)) #OBS, check other causes, paul's implementation
@@ -148,7 +149,7 @@ AUC.survival <- function(DT,
                     }
                 }
                 else {
-                    NPV <- NA
+                    NPV <- SE.NPV <- NA
                 }
                 res[[i]] <- data.table(risk = cutpoints[i],
                                        TPR=TPRi,
@@ -162,26 +163,26 @@ AUC.survival <- function(DT,
             }
             do.call("rbind",res)
         }
-        output <- list(cutpoints=aucDT[,
-                                     cutpoint.helper.fun(FPR = FPR,
-                                                         TPR = TPR,
-                                                         risk = risk,
-                                                         ipcwCases = ipcwCases,
-                                                         ipcwControls = ipcwControls,
-                                                         N = N,
-                                                         riskRegression_time = riskRegression_time,
-                                                         times = times[1],
-                                                         riskRegression_event = riskRegression_status,
-                                                         cens.model = cens.model,
-                                                         nth.times = nth.times[1],
-                                                         conservative = conservative,
-                                                         IC.G = MC,
-                                                         cutpoints = cutpoints,
-                                                         se.fit = se.fit),by=list(model,times)])
+        output <- c(output,list(cutpoints=aucDT[,
+                                                cutpoint.helper.fun(FPR = FPR,
+                                                                    TPR = TPR,
+                                                                    risk = risk,
+                                                                    ipcwCases = ipcwCases,
+                                                                    ipcwControls = ipcwControls,
+                                                                    N = N,
+                                                                    riskRegression_time = riskRegression_time,
+                                                                    times = times[1],
+                                                                    riskRegression_event = riskRegression_status,
+                                                                    cens.model = cens.model,
+                                                                    nth.times = nth.times[1],
+                                                                    conservative = conservative,
+                                                                    IC.G = MC,
+                                                                    cutpoints = sort(cutpoints,decreasing = TRUE),
+                                                                    se.fit = se.fit),by=list(model,times)]))
     }
-    else if (ROC==TRUE) {
+    if (ROC[[1]]==TRUE) {
         if (is.null(breaks)){
-            output <- list(ROC=aucDT[nodups,c("model","times","risk","TPR","FPR"),with=FALSE])
+            output <- c(output,list(ROC=aucDT[nodups,c("model","times","risk","TPR","FPR"),with=FALSE]))
         }
         else {
             breaks <- sort(breaks,decreasing = TRUE)
@@ -189,10 +190,8 @@ AUC.survival <- function(DT,
                 indeces <- sindex(risk,breaks,comp = "greater",FALSE)
                 data.table(risk = breaks, TPR = c(rep(0,sum(indeces==0)),TPR[indeces[indeces!=0]]), FPR = c(rep(0,sum(indeces==0)),FPR[indeces[indeces!=0]]))
             }
-            output <- list(ROC=aucDT[, helper.fun(FPR,TPR,risk,breaks=breaks),by=list(model,times)])
+            output <- c(output,list(ROC=aucDT[, helper.fun(FPR,TPR,risk,breaks=breaks),by=list(model,times)]))
         }
-    }else{
-        output <- NULL
     }
     aucDT <- merge(score,aucDT,by = c("model","times"),all=TRUE)
     data.table::setkey(aucDT,model,times)
