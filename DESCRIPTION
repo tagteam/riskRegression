@@ -76,7 +76,7 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 VignetteBuilder: R.rsp
 Encoding: UTF-8
 URL: https://github.com/tagteam/riskRegression
