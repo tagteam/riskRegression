@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 11 2024 (18:32) 
+## last-updated: feb 27 2025 (10:43) 
 ##           By: Brice Ozenne
-##     Update #: 2360
+##     Update #: 2368
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -534,17 +534,26 @@ ate <- function(event,
         }else{
             var.group <- treatment
         }
+        data.contrasts <- data[data[[var.group]] %in% contrasts]
+
         if(attr(estimator,"TD")){
-            attr(out$eval.times,"n.at.risk") <- dcast(cbind(times = paste0(times,"+",landmark),
-                                                            data[data[[var.group]] %in% contrasts,
-                                                                 list(pc = sapply(times+landmark, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
-                                                      value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
+            grid.timeLand <- expand.grid(times = times, landmark = landmark)
+            grid.timeLand$name <- paste0(grid.timeLand$time,"+",grid.timeLand$landmark)
+            grid.timeLand$value <- grid.timeLand$time + grid.timeLand$landmark
+            
+            ## do not use [,,by=...] because there can be confusion between the argument times and a column named times when present in the data.table
+            data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
+                iM <- do.call(rbind,lapply(1:NROW(grid.timeLand), function(iG){c(times = grid.timeLand$name[iG], pc = sum(iDF[[eventVar.time]]>=grid.timeLand$value[iG]))}))
+                return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
+            }))
         }else{
-            attr(out$eval.times,"n.at.risk") <- dcast(cbind(times = times,
-                                                            data[data[[var.group]] %in% contrasts,
-                                                                 list(pc = sapply(times, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
-                                                      value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
+            ## do not use [,,by=...] because there can be confusion between the argument times and a column named times when present in the data.table
+            data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
+                iM <- do.call(rbind,lapply(times, function(t){c(times = t, pc = sum(iDF[[eventVar.time]]>=t))}))
+                return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
+            }))
         }
+        attr(out$eval.times,"n.at.risk") <- dcast(data.timeContrasts, value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
     }
     
     attr(out$eval.times,"n.censored") <- n.censor
