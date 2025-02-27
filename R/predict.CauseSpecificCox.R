@@ -297,14 +297,14 @@ predict.CauseSpecificCox <- function(object,
             stop("Incorrect names for argument \'store\': should \"data\" and \"iid\". \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
-        if("data" %in% names(store)){
+        if("data" %in% names(store) && !is.null(store[["data"]])){
             if(store[["data"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(data = \"full\") or store = c(data = \"minimal\").\n")
             }
             store.data <- store[["data"]]
         }
-        if("iid" %in% names(store)){
+        if("iid" %in% names(store) && !is.null(store[["iid"]])){
             if(store[["iid"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(iid = \"full\") or store = c(iid = \"minimal\").\n")
@@ -351,12 +351,13 @@ predict.CauseSpecificCox <- function(object,
                                 oorder.times = oorder.times, times.sorted = times[order.times], level = store.data)
     if(!is.null(outCompress)){
         newdata <- outCompress$newdata
+        times.sorted <- outCompress$times.sorted
         diag <- outCompress$diag
         order.times <- outCompress$order.times
         oorder.times <- outCompress$oorder.times
+        nTimes <- outCompress$nTimes
         average.iid <- outCompress$average.iid
     }
-
 
     ## ** extract baseline hazard, linear predictor and strata from Cox models
     new.n <- NROW(newdata)
@@ -441,9 +442,15 @@ predict.CauseSpecificCox <- function(object,
                                  exportSurv = (se || band || iid || average.iid))
 
     }else if(type == "survival" && object$surv.type=="hazard"){
-        attr(times,"etimes.max") <- attr(eventTimes,"etimes.max")
-     
-        out <- .predictSurv_CSC(object, times = times, newdata = newdata, ls.hazard = ls.hazard, eXb = M.eXb,
+        
+        if(!is.null(outCompress)){
+            times2 <- times.sorted
+        }else{
+            times2 <- times
+        }
+        attr(times2,"etimes.max") <- attr(eventTimes,"etimes.max")
+
+        out <- .predictSurv_CSC(object, times = times2, newdata = newdata, ls.hazard = ls.hazard, eXb = M.eXb,
                                 etimes = eventTimes, etimeMax = vec.etimes.max, strata = M.strata.num,
                                 keep.times = keep.times, keep.strata = keep.strata, keep.newdata = keep.newdata,
                                 se = se, band = band, iid = iid, 
@@ -518,10 +525,14 @@ predict.CauseSpecificCox <- function(object,
                                store.iid = store.iid,
                                diag = diag)
 
-        oorder.times2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
+        if(!is.null(outCompress)){
+            oorder.times2 <- prodlim::sindex(jump.times = Utimes, eval.times = times.sorted)
+        }else{
+            oorder.times2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
+        }
         needOrder2 <- !identical(1:length(oorder.times2),oorder.times2)
     }
-    
+
     ## ** gather all outputs
     if(type == "absRisk"){
         if(needOrder && (diag == FALSE)){
@@ -529,7 +540,6 @@ predict.CauseSpecificCox <- function(object,
         }else{
             out <- list(absRisk = outCpp$cif) # reorder prediction times
         }
-    
         if(se+band){
             if(needOrder2 && (diag == FALSE)){
                 out$absRisk.se <- out.seCSC$se[,oorder.times2,drop=FALSE]
@@ -596,7 +606,7 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** retrieve original patient profile from unique patient profiles
     if(!is.null(outCompress)){
-        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, iid = iid, average.iid = average.iid,
+        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, confint = confint, band = band, iid = iid, average.iid = average.iid,
                               newdata.index = outCompress$newdata.index, times.sorted = outCompress$times.sorted, needOrder = needOrder)
         newdata <- outCompress$newdata.save
     }
@@ -658,7 +668,6 @@ predict.CauseSpecificCox <- function(object,
     iid <- (iid || se)
 
     ## ** prepare output        
-    n.sample <- sum(coxN(object))
     out <- list(survival = NULL, survival.iid = NULL, survival.average.iid = NULL,
                 lastEventTime = NA,
                 se = se, band = band, type = "survival", diag = diag)

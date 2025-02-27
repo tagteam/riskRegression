@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep 10 2024 (09:54) 
+## Last-Updated: Oct 21 2024 (16:40) 
 ##           By: Brice Ozenne
-##     Update #: 1341
+##     Update #: 1397
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,6 +40,8 @@ iidATE <- function(estimator,
                    G.jump,
                    dM.jump,
                    index.obsSINDEXjumpC,
+                   index.obsSINDEXjumpC.int,
+                   index.obsIntegral,
                    eventVar.time,
                    time.jumpC,
                    beforeEvent.jumpC,
@@ -47,6 +49,7 @@ iidATE <- function(estimator,
                    n.obs,
                    n.times,
                    product.limit,
+                   store,
                    ...){
 
     ## ** prepare output
@@ -66,11 +69,12 @@ iidATE <- function(estimator,
         iSG <- matrix(0, nrow = NROW(SG), ncol = NCOL(SG))
         iSGG <- matrix(0, nrow = NROW(SG), ncol = NCOL(SG))
         iSSG <- matrix(0, nrow = NROW(SG), ncol = NCOL(SG))
-        index.beforeEvent.jumpC <- which(beforeEvent.jumpC)
-        if(length(index.beforeEvent.jumpC)>0){
-            iSG[index.beforeEvent.jumpC] <- 1/SG[index.beforeEvent.jumpC]
-            iSGG[index.beforeEvent.jumpC] <- 1/SGG[index.beforeEvent.jumpC]
-            iSSG[index.beforeEvent.jumpC] <- 1/SSG[index.beforeEvent.jumpC]
+
+        beforeEventIntegral.jumpC <- beforeEvent.jumpC[index.obsIntegral,,drop=FALSE]
+        if(any(beforeEventIntegral.jumpC>0)){
+            iSG[beforeEventIntegral.jumpC] <- 1/SG[beforeEventIntegral.jumpC]
+            iSGG[beforeEventIntegral.jumpC] <- 1/SGG[beforeEventIntegral.jumpC]
+            iSSG[beforeEventIntegral.jumpC] <- 1/SSG[beforeEventIntegral.jumpC]
         }
         
         dM_SG <- dM.jump * iSG
@@ -143,9 +147,9 @@ iidATE <- function(estimator,
         factor <- TRUE        
         for(iTime in 1:n.times){ ## iTime <- 1
             attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTime]*Y.tau[,iTime])})
-## browser()
+
             term.censoring <- attr(predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iTime]+1],
-                                               diag = TRUE, product.limit = product.limit, average.iid = factor),"average.iid")
+                                               diag = TRUE, product.limit = product.limit, average.iid = factor, store = store[c("data","iid")]),"average.iid")
 
             for(iC in 1:n.contrasts){ ## iGrid <- 1
                 ## - because predictRisk outputs the risk instead of the survival                 
@@ -165,6 +169,9 @@ iidATE <- function(estimator,
     ## *** augmentation censoring term
     if(attr(estimator,"integral")){
 
+        mydataIntegral <- mydata[index.obsIntegral,,drop=FALSE]
+        n.obsIntegral <- length(index.obsIntegral)
+
         ## **** outcome term
         ## at tau
             
@@ -174,34 +181,35 @@ iidATE <- function(estimator,
         ## extract integral over the right time spand
         factor <- TRUE
         attr(factor,"factor") <- lapply(1:n.contrasts, function(iC){
-            matrix(NA, nrow = n.obs, ncol = n.times)
+            matrix(NA, nrow = n.obsIntegral, ncol = n.times)
         })
 
         for(iTau in 1:n.times){ ## iTau <- 1
-            index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(mydata[[eventVar.time]],times[iTau]))
+            index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(mydataIntegral[[eventVar.time]],times[iTau]))
             for(iC in 1:n.contrasts){
-                attr(factor,"factor")[[iC]][,iTau] <- cbind(iW.IPTW[,iC] * int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])
+                attr(factor,"factor")[[iC]][,iTau] <- cbind(iW.IPTW[index.obsIntegral,iC] * int.IFF1_tau[(1:n.obsIntegral) + (index.col-1) * n.obsIntegral])
             }
         }
+        attr(factor,"factor")[[1]]
+        ## setdiff(1:n.obs,index.obsIntegral) ## 26 30 372
+        ## attr(factor,"factor")[[iC]][c(26,30,372),]
 
-        term.intF1_tau <- attr(predictRisk(object.event, newdata = mydata, times = times, cause = cause,
-                                           average.iid = factor, product.limit = product.limit),"average.iid")
-
+        term.intF1_tau <- attr(predictRisk(object.event, newdata = mydataIntegral, times = times, cause = cause,
+                                           average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]),"average.iid")
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]*n.obsIntegral/n.obs
         }
-          
         ## ## at t
         factor <- TRUE
-        attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){
-            -colMultiply_cpp(dM_SG*beforeEvent.jumpC, scale = iW.IPTW[,iC])
+        attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){ ## iC <- 2
+            -colMultiply_cpp(dM_SG*beforeEventIntegral.jumpC, scale = iW.IPTW[index.obsIntegral,iC])
         })
         
-        integrand.F1t <- attr(predictRisk(object.event, newdata = mydata, times = time.jumpC, cause = cause,
-                                          average.iid = factor, product.limit = product.limit), "average.iid")
+        integrand.F1t <- attr(predictRisk(object.event, newdata = mydataIntegral, times = time.jumpC, cause = cause,
+                                          average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]), "average.iid")
 
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]]),
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]])*n.obsIntegral/n.obs,
                                                              index = beforeTau.nJumpC,
                                                              default = 0, col = TRUE)
         }
@@ -211,15 +219,15 @@ iidATE <- function(estimator,
         ## **** treatment term
         for(iC in 1:n.contrasts){ ## iC <- 1
             factor <- TRUE
-            attr(factor,"factor") <- list(AIPTW = colMultiply_cpp(augTerm, scale = -iW.IPTW2[,iC]))
+            attr(factor,"factor") <- list(AIPTW = colMultiply_cpp(augTerm[index.obsIntegral,,drop=FALSE], scale = -iW.IPTW2[index.obsIntegral,iC]))
 
             term.treatment <- attr(predictRisk(object.treatment,
-                                               newdata = mydata,
+                                               newdata = mydataIntegral,
                                                average.iid = factor,
                                                level = contrasts[iC]), "average.iid")
 
             ## print(colSums(term.treatment[["AIPTW"]]^2))
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.treatment[["AIPTW"]]
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.treatment[["AIPTW"]]*n.obsIntegral/n.obs
         }
         ## cat("Augmentation treatment (method=1) \n")
         ## print(sapply(lapply(iid.AIPTW,abs),colSums))
@@ -229,16 +237,16 @@ iidATE <- function(estimator,
         attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
-            return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
+            return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEventIntegral.jumpC, scale = iW.IPTW[index.obsIntegral,iC]))
         })
-        integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, cause = cause,
-                                         average.iid = factor, product.limit = product.limit), "average.iid")
+        integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydataIntegral, times = time.jumpC-tol, cause = cause,
+                                         average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]), "average.iid")
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
                         
             if(beforeTau.nJumpC[iTau]>0){
-                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])*n.obsIntegral/n.obs
             }
         }
         ## cat("Augmentation survival (method=1) \n")
@@ -250,27 +258,27 @@ iidATE <- function(estimator,
         attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
-            return(-colMultiply_cpp(ls.F1tau_F1t_dM_SGG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
+            return(-colMultiply_cpp(ls.F1tau_F1t_dM_SGG[[iTau]]*beforeEventIntegral.jumpC, scale = iW.IPTW[index.obsIntegral,iC]))
         })
 
-        integrand.G1 <- predictCox(object.censor, newdata = mydata, times = time.jumpC - tol, 
-                                   average.iid = factor)$survival.average.iid
+        integrand.G1 <- predictCox(object.censor, newdata = mydataIntegral, times = time.jumpC - tol, 
+                                   average.iid = factor, store = store[c("data","iid")])$survival.average.iid
 
         ## ## integral censoring martingale
         factor <- TRUE
         attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
-            return(-colMultiply_cpp(ls.F1tau_F1t_SG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
+            return(-colMultiply_cpp(ls.F1tau_F1t_SG[[iTau]]*beforeEventIntegral.jumpC, scale = iW.IPTW[index.obsIntegral,iC]))
         })
-        integrand.G2 <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard",
-                                   average.iid = factor)$hazard.average.iid
+        integrand.G2 <- predictCox(object.censor, newdata = mydataIntegral, times = time.jumpC, type = "hazard",
+                                   average.iid = factor, store = store[c("data","iid")])$hazard.average.iid
 
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
             if(beforeTau.nJumpC[iTau]>0){
-                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])*n.obsIntegral/n.obs
             }
         }
     } ## end attr(estimator,"integral")

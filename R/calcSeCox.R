@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep 10 2024 (10:31) 
+## last-updated: Oct 20 2024 (13:50) 
 ##           By: Brice Ozenne
-##     Update #: 903
+##     Update #: 950
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,9 +74,21 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     ## ** Computation of the influence function
     if(is.iidCox(object)){
         store.iid <- object$iid$store.iid
-        iid.object <- selectJump(object$iid, times = times, type = type)
+        if(diag && any(duplicated(times)) && store.iid[[1]] != "minimal"){
+            iid.object <- selectJump(object$iid, times = sort(unique(times)), type = type)
+            compress.time <- TRUE
+        }else{
+            iid.object <- selectJump(object$iid, times = times, type = type)
+            compress.time <- FALSE
+        }
     }else{
-        iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid, return.object = FALSE)
+        if(diag && any(duplicated(times)) && store.iid[[1]] != "minimal"){
+            iid.object <- iidCox(object, tau.hazard = sort(unique(times)), store.iid = store.iid, return.object = FALSE)
+            compress.time <- TRUE
+        }else{
+            iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid, return.object = FALSE)
+            compress.time <- FALSE
+        }
     }
 
     ## ** Prepare arguments
@@ -211,25 +223,28 @@ calcSeCox <- function(object, times, nTimes, type, diag,
 
             for(iStrata in 1:nStrata){ ## iStrata <- 1
                 indexStrata <- which(new.strata==iStrata)
+                if(compress.time){
+                    indexStrata.time <- match(times[indexStrata], iid.object$time[[iStrata]])                        
+                }else{
+                    indexStrata.time <- indexStrata
+                }
                 if(length(indexStrata)==0){next}
                 iPrevalence <- length(indexStrata)/new.n
 
                 ## compute iid
                 if("hazard" %in% type){
                     if(nVar.lp==0){
-                        iIFhazard <- iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE]
+                        iIFhazard <- iid.object$IFhazard[[iStrata]][,indexStrata.time,drop=FALSE]
                     }else{
-                        iIFhazard <- rowMultiply_cpp(iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE],
-                                                                                                                               scale = Lambda0$hazard[[iStrata]][indexStrata]),
+                        iIFhazard <- rowMultiply_cpp(iid.object$IFhazard[[iStrata]][,indexStrata.time,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE], scale = Lambda0$hazard[[iStrata]][indexStrata]),
                                                      scale = new.eXb[indexStrata])
                     }
                 }
                 if("cumhazard" %in% type || "survival" %in% type){
                     if(nVar.lp==0){
-                        iIFcumhazard <- iid.object$IFcumhazard[[iStrata]][,indexStrata,drop=FALSE]
+                        iIFcumhazard <- iid.object$IFcumhazard[[iStrata]][,indexStrata.time,drop=FALSE]
                     }else{
-                        iIFcumhazard <- rowMultiply_cpp(iid.object$IFcumhazard[[iStrata]][,indexStrata,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE],
-                                                                                                                                     scale = Lambda0$cumhazard[[iStrata]][indexStrata]),
+                        iIFcumhazard <- rowMultiply_cpp(iid.object$IFcumhazard[[iStrata]][,indexStrata.time,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE], scale = Lambda0$cumhazard[[iStrata]][indexStrata]),
                                                         scale = new.eXb[indexStrata])
                     }
                     if("survival" %in% type && ("iid" %in% export || "average.iid" %in% export)){
@@ -337,6 +352,11 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         if(is.null(new.survival)){
             new.survival <- matrix()
         }
+        if(compress.time){
+            new.indexStrataTime <- lapply(1:nStrata, function(iS){match(times[new.indexStrata[[iS]]+1], iid.object$time[[iS]])-1})
+        }else{
+            new.indexStrataTime <- new.indexStrata
+        }
 
         ## C++
         if("hazard" %in% type){
@@ -348,6 +368,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                               X = new.LPdata,
                                               prevStrata = new.prevStrata,
                                               ls_indexStrata = new.indexStrata,
+                                              ls_indexStrataTime = new.indexStrataTime,
                                               factor = factor,
                                               nTimes = nTimes,
                                               nObs = object.n,
@@ -366,6 +387,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                                  X = new.LPdata,
                                                  prevStrata = new.prevStrata,
                                                  ls_indexStrata = new.indexStrata,
+                                                 ls_indexStrataTime = new.indexStrataTime,
                                                  factor = factor,
                                                  nTimes = nTimes,
                                                  nObs = object.n,

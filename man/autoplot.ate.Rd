@@ -65,7 +65,6 @@ Plot average risks.
 }
 \examples{
 library(survival)
-library(rms)
 library(ggplot2)
 
 #### simulate data ####
@@ -75,7 +74,7 @@ dtS <- sampleData(n,outcome="survival")
 seqTimes <- c(0,sort(dtS$time[dtS$event==1]),max(dtS$time))
 
 #### Cox model ####
-fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+fit <- coxph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 #### plot.type = 1: for few timepoints ####
 ateFit <- ate(fit, data = dtS, treatment = "X1",

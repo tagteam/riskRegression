@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Feb 10 2023 (09:19) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1006
+## Last-Updated: Oct 17 2024 (12:22) 
+##           By: Brice Ozenne
+##     Update #: 1020
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,8 +16,8 @@
 ### Code:
 
 ## * confint.ate (documentation)
-##' @title Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)
-##' @description Confidence intervals and confidence Bands for the predicted absolute risk (cumulative incidence function).
+##' @title Confidence Intervals and Confidence Bands for the average treatment effect.
+##' @description Confidence intervals and confidence Bands for the average treatment effect.
 ##' @name confint.ate
 ##' 
 ##' @param object A \code{ate} object, i.e. output of the \code{ate} function.
@@ -48,7 +48,7 @@
 ##' must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.
 ##' @param bootci.method [character] Method for constructing bootstrap confidence intervals.
 ##' Either "perc" (the default), "norm", "basic", "stud", or "bca".
-##' @param ... not used.
+##' @param ... Not used. For compatibility with the generic method.
 ##'
 ##' @details
 ##' Argument \code{ci}, \code{band}, \code{p.value}, \code{method.band}, \code{alternative}, \code{meanRisk.transform}, \code{diffRisk.transform}, \code{ratioRisk.transform} are only active when the \code{ate} object contains the influence function.
@@ -61,6 +61,12 @@
 ##' using the \code{boot.ci} function of the \code{boot} package.
 ##' p-value are obtained using test inversion method
 ##' (finding the smallest confidence level such that the interval contain the null hypothesis).
+##'
+##' @return A list with elements\itemize{
+##' \item \code{meanRisk}: estimated average risk (i.e. had everybody received the same treatment).
+##' \item \code{diffRisk}: difference in estimated average risk
+##' \item \code{ratioRisk}: ratio between estimated average risk
+##' }
 ##' 
 ##' @author Brice Ozenne
 
@@ -407,16 +413,25 @@ confintBoot.ate <- function(object, estimator, out, seed){
             out$ratioRisk[iEstimator, c("p.value") :=  boot.p[indexRatio], on = "estimator"]
         }
     }
+    
     ## ** export
+    col.meanRisk <- c("estimator","time","treatment","estimate","estimate.boot","se","lower","upper")
+    col.diffRisk <- c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper")
+    col.ratioRisk <- c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper")
+        
     if(attr(object$estimator,"TD")){
-        setcolorder(out$meanRisk, neworder = c("estimator","time","landmark","treatment","estimate","estimate.boot","se","lower","upper"))
-        setcolorder(out$diffRisk, neworder = c("estimator","time","landmark","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
-        setcolorder(out$ratioRisk, neworder = c("estimator","time","landmark","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
-    }else{
-        setcolorder(out$meanRisk, neworder = c("estimator","time","treatment","estimate","estimate.boot","se","lower","upper"))
-        setcolorder(out$diffRisk, neworder = c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
-        setcolorder(out$ratioRisk, neworder = c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
+        col.meanRisk <- c(col.meanRisk[1:2], "landmark", col.meanRisk[-(1:2)])
+        col.diffRisk <- c(col.diffRisk[1:2], "landmark", col.diffRisk[-(1:2)])
+        col.ratioRisk <- c(col.ratioRisk[1:2], "landmark", col.ratioRisk[-(1:2)])
     }
+    if(p.value){
+        col.diffRisk <- c(col.diffRisk, "p.value")
+        col.ratioRisk <- c(col.ratioRisk, "p.value")
+    }
+    setcolorder(out$meanRisk, neworder = col.meanRisk)
+    setcolorder(out$diffRisk, neworder = col.diffRisk)
+    setcolorder(out$ratioRisk, neworder = col.ratioRisk)
+
     data.table::setattr(out$meanRisk, name = "vcov", value = vcov.meanRisk)
     data.table::setattr(out$diffRisk, name = "vcov", value = vcov.diffRisk)
     data.table::setattr(out$ratioRisk, name = "vcov", value = vcov.ratioRisk)
@@ -585,7 +600,7 @@ confintIID.ate <- function(object, estimator, out, seed){
         ## reshape data
         estimate.rR <- matrix(NA, nrow = n.allContrasts, ncol = n.times)
         iid.rR <- array(NA, dim = c(n.obs, n.times, n.allContrasts))
-    
+
         for(iC in 1:n.allContrasts){ ## iC <- 1
             estimate.rR[iC,] <- object$ratioRisk[list(iEstimator,allContrasts[1,iC],allContrasts[2,iC]), .SD$estimate, on = c("estimator","A","B")]
 

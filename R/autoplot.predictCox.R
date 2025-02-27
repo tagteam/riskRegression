@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: aug 31 2023 (11:19) 
+## last-updated: Oct 16 2024 (09:24) 
 ##           By: Brice Ozenne
-##     Update #: 1277
+##     Update #: 1299
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -358,10 +358,22 @@ autoplot.predictCox <- function(object,
             }
             status <- NULL
             if(first.derivative && ci){
-                if(is.null(object$vcov[[type]])){
+                if(is.null(object[[paste0(type,".iid")]])){
                     stop("Set argument \'iid\' to TRUE when calling predictCox to be able to display confidence intervals for the first derivative of the ",type,".\n")
                 }
-                attr(first.derivative,"vcov") <- object$vcov[[type]]
+                iIID <- object[[paste0(type,".iid")]]
+                ## compute variance-covariance matrix
+                attr(first.derivative,"vcov") <- lapply(1:(dim(iIID)[3]), function(iObs){
+                    if(dim(iIID)[2]==1){
+                        if(type=="lp"){
+                            return(sum(iIID[,iObs,]^2))
+                        }else{
+                            return(sum(iIID[,,iObs]^2))
+                        }
+                    }else{ ## crossprod among timepoints where the 'survival' is not only NA 
+                        return(crossprod(iIID[,,iObs][,colSums(!is.na(iIID[,,iObs]))>0,drop=FALSE]))
+                    }
+                })
             }
         }
 
@@ -379,7 +391,7 @@ autoplot.predictCox <- function(object,
                               digits = digits
                               )
     }
-    
+
     ## ** display
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = type,
@@ -557,7 +569,7 @@ predict2plot <- function(dataL, name.outcome,
 
             dataL[, c(paste0(name.outcome,".smooth")) := warper(.SD), by = "row"]
             if(ci){
-                warperCI <- function(data, Sigma, n.sim){ ## data <- dataL[row==1] ; Sigma <- attr(first.derivative,"vcov")[[1]]
+                warperCI <- function(data, Sigma, n.sim){ ## data <- dataL[row==2] ; Sigma <- attr(first.derivative,"vcov")[[2]]
                     ls.deriv <- lapply(1:n.sim, function(x){
                         data2 <- data.table::copy(data)
                         data2[, c(name.outcome) := mvtnorm::rmvnorm(1, mean = data[[name.outcome]], sigma = Sigma)[1,]]                        
@@ -611,7 +623,7 @@ predict2plot <- function(dataL, name.outcome,
                                                         linewidth = size.band)
                 gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
                                                                        "ggplot2::aes(x = time, y = upperBand.smooth, group = ",group.by, ", color = ",group.by,", linetype = \"band\")"))),
-                                                        size = size.band)
+                                                        linewidth = size.band)
             }
         }else{
             if(!is.na(alpha)){
