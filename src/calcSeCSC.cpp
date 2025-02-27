@@ -348,14 +348,14 @@ List calcSeMinimalCSC_cpp(const arma::vec& seqTau, // horizon time for the predi
 // * calcSeCif2_cpp: compute IF for the absolute risk (method 2)
 // [[Rcpp::export]]
 List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<arma::mat>& ls_X,
-					const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival, const arma::mat& cif,
-					const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard,
-					const NumericMatrix& eXb,
-					int nJumpTime, const NumericVector& JumpMax,
+		    const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival, const arma::mat& cif,
+		    const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard,
+		    const arma::mat& eXb,
+		    int nJumpTime, const NumericVector& JumpMax,
 		    const NumericVector& tau, const arma::vec& tauIndex, int nTau,
 		    int nObs,  
 		    int theCause, int nCause, bool hazardType, arma::vec nVar,
-		    int nNewObs, NumericMatrix strata,
+		    int nNewObs, arma::mat strata,
 		    bool exportSE, bool exportIF, bool exportIFsum, bool diag){
 
   arma::mat X_IFbeta;
@@ -460,51 +460,51 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
 
       iStrataCause = strata(iNewObs,iCause);
       if(diag){
-		iUvec_strata(0) = iStrataCause;
+	iUvec_strata(0) = iStrataCause;
       }
 	  
       // Rcout << "2 ";
       if(nVar[iCause]>0){
-		X_IFbeta = ls_IFbeta[iCause] * (ls_X[iCause].row(iNewObs)).t();
-		ieXb = eXb(iNewObs,iCause);
+	X_IFbeta = ls_IFbeta[iCause] * (ls_X[iCause].row(iNewObs)).t();
+	ieXb = eXb(iNewObs,iCause);
       }
 
       // Rcout << "3 ";
       if(hazardType || (iCause != theCause)){
-		if(nVar[iCause]>0){
-		  if(diag){
-			IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause].cols(iUvec_linspace) + X_IFbeta * ls_tcumhazard[iCause].submat(iUvec_strata,iUvec_linspace));
-		  }else{
-			IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * ls_tcumhazard[iCause].row(iStrataCause));
-		  }
-		}else{
-		  if(diag){
-			IFcumhazard += ls_IFcumhazard[iCause][iStrataCause].cols(iUvec_linspace);
-		  }else{
-			IFcumhazard += ls_IFcumhazard[iCause][iStrataCause];
-		  }
-		}
+	if(nVar[iCause]>0){
+	  if(diag){
+	    IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause].cols(iUvec_linspace) + X_IFbeta * ls_tcumhazard[iCause].submat(iUvec_strata,iUvec_linspace));
+	  }else{
+	    IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * ls_tcumhazard[iCause].row(iStrataCause));
+	  }
+	}else{
+	  if(diag){
+	    IFcumhazard += ls_IFcumhazard[iCause][iStrataCause].cols(iUvec_linspace);
+	  }else{
+	    IFcumhazard += ls_IFcumhazard[iCause][iStrataCause];
+	  }
+	}
       }
 	  
       // Rcout << "4 ";
       if(iCause == theCause){
-		if(nVar[iCause] > 0){
-		  if(diag){
-			hazard = ieXb * ls_hazard.submat(iUvec_linspace,iUvec_strata);
-			IFhazard = ieXb * (ls_IFhazard[iStrataCause].cols(iUvec_linspace) + X_IFbeta * ls_thazard.submat(iUvec_strata,iUvec_linspace));
-		  }else{
-			hazard = ieXb * ls_hazard.col(iStrataCause);
-			IFhazard = ieXb * (ls_IFhazard[iStrataCause] + X_IFbeta * ls_thazard.row(iStrataCause));
-		  }
-		}else{
-		  if(diag){
-			hazard = ls_hazard.submat(iUvec_linspace,iUvec_strata);
-			IFhazard = ls_IFhazard[iStrataCause].cols(iUvec_linspace);
-		  }else{
-			hazard = ls_hazard.col(iStrataCause);
-			IFhazard = ls_IFhazard[iStrataCause];		
-		  }
-		}
+	if(nVar[iCause] > 0){
+	  if(diag){
+	    hazard = ieXb * ls_hazard.submat(iUvec_linspace,iUvec_strata);
+	    IFhazard = ieXb * (ls_IFhazard[iStrataCause].cols(iUvec_linspace) + X_IFbeta * ls_thazard.submat(iUvec_strata,iUvec_linspace));
+	  }else{
+	    hazard = ieXb * ls_hazard.col(iStrataCause);
+	    IFhazard = ieXb * (ls_IFhazard[iStrataCause] + X_IFbeta * ls_thazard.row(iStrataCause));
+	  }
+	}else{
+	  if(diag){
+	    hazard = ls_hazard.submat(iUvec_linspace,iUvec_strata);
+	    IFhazard = ls_IFhazard[iStrataCause].cols(iUvec_linspace);
+	  }else{
+	    hazard = ls_hazard.col(iStrataCause);
+	    IFhazard = ls_IFhazard[iStrataCause];		
+	  }
+	}
       }
     }
      
@@ -516,13 +516,13 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
       // Rcout << "5 " ;
       // prepare IF
       if(hazard[iJump]>0){
-		if(iJump==0){
-		  IF_tempo = IFhazard.col(iJump);
-		}else{
-		  // survival is evaluated just before the jump
-		  IF_tempo = (IFhazard.col(iJump) - IFcumhazard.col(iJump-1) * hazard[iJump]) * survival(iNewObs,iJump);
-		}
-		cumIF_tempo = cumIF_tempo + IF_tempo;
+	if(iJump==0){
+	  IF_tempo = IFhazard.col(iJump);
+	}else{
+	  // survival is evaluated just before the jump
+	  IF_tempo = (IFhazard.col(iJump) - IFcumhazard.col(iJump-1) * hazard[iJump]) * survival(iNewObs,iJump);
+	}
+	cumIF_tempo = cumIF_tempo + IF_tempo;
       }
 
 	
@@ -531,32 +531,32 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
       // Rcout << "test (" << iiTau << ") : " << tauIndex[iiTau] << " " << iJump << "/ " << nJumpTime << " | " << tau[iiTau] << " " << JumpMax[iNewObs] << endl;
       while((iiTau < iNTau) && (tauIndex[iiTau] == iJump) && (tau[iiTau] <= JumpMax[iNewObs])){
 
-		if(exportSE){
-		  // Rcout << "a";
-		  if(diag && cif(iNewObs,0)<1){
-			outSE.row(iNewObs).col(0) = sqrt(accu(pow(cumIF_tempo,2)));
-		  }else if(cif(iNewObs,iiTau)<1){
-			outSE.row(iNewObs).col(iiTau) = sqrt(accu(pow(cumIF_tempo,2)));
-		  }
-		}
-		if(exportIF){
-		  // Rcout << "b";
-		  if(diag && cif(iNewObs,0)<1){
-			outIF.slice(0).row(iNewObs) = cumIF_tempo.t();
-		  }else if(cif(iNewObs,iiTau)<1){
-			outIF.slice(iiTau).row(iNewObs) = cumIF_tempo.t();
-		  }
-		}
-		if(exportIFsum){
-		  // Rcout << "c";
-		  if(diag && cif(iNewObs,0)<1){
-			outIFsum.col(0) += cumIF_tempo;
-		  }else if(cif(iNewObs,iiTau)<1){
-			outIFsum.col(iiTau) += cumIF_tempo;
-		  }
-		}
-		// Rcout << "increment: " << iiTau << " " << iNTau << endl;
-		iiTau++;
+	if(exportSE){
+	  // Rcout << "a";
+	  if(diag && cif(iNewObs,0)<1){
+	    outSE.row(iNewObs).col(0) = sqrt(accu(pow(cumIF_tempo,2)));
+	  }else if(cif(iNewObs,iiTau)<1){
+	    outSE.row(iNewObs).col(iiTau) = sqrt(accu(pow(cumIF_tempo,2)));
+	  }
+	}
+	if(exportIF){
+	  // Rcout << "b";
+	  if(diag && cif(iNewObs,0)<1){
+	    outIF.slice(0).row(iNewObs) = cumIF_tempo.t();
+	  }else if(cif(iNewObs,iiTau)<1){
+	    outIF.slice(iiTau).row(iNewObs) = cumIF_tempo.t();
+	  }
+	}
+	if(exportIFsum){
+	  // Rcout << "c";
+	  if(diag && cif(iNewObs,0)<1){
+	    outIFsum.col(0) += cumIF_tempo;
+	  }else if(cif(iNewObs,iiTau)<1){
+	    outIFsum.col(iiTau) += cumIF_tempo;
+	  }
+	}
+	// Rcout << "increment: " << iiTau << " " << iNTau << endl;
+	iiTau++;
       }
       // Rcout << "-end " << endl;
       if(iiTau == iNTau){break;} 
@@ -568,26 +568,26 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
     // ** fill remaining columns with NA
     while(iiTau < iNTau){
       if(exportSE){
-		if(diag){
-		  outSE.row(iNewObs).col(0).fill(NA_REAL);
-		}else{
-		  outSE.row(iNewObs).col(iiTau).fill(NA_REAL);
-		}
+	if(diag){
+	  outSE.row(iNewObs).col(0).fill(NA_REAL);
+	}else{
+	  outSE.row(iNewObs).col(iiTau).fill(NA_REAL);
+	}
       }
       if(exportIF){
-		// Rcout << "b";
-		if(diag){
-		  outIF.slice(0).row(iNewObs).fill(NA_REAL);
-		}else{
-		  outIF.slice(iiTau).row(iNewObs).fill(NA_REAL);
-		}
+	// Rcout << "b";
+	if(diag){
+	  outIF.slice(0).row(iNewObs).fill(NA_REAL);
+	}else{
+	  outIF.slice(iiTau).row(iNewObs).fill(NA_REAL);
+	}
       }
       if(exportIFsum){
-		if(diag){
-		  outIFsum.col(0).fill(NA_REAL);
-		}else{
-		  outIFsum.col(iiTau).fill(NA_REAL);
-		}
+	if(diag){
+	  outIFsum.col(0).fill(NA_REAL);
+	}else{
+	  outIFsum.col(iiTau).fill(NA_REAL);
+	}
       }
       iiTau++;
     }
@@ -602,11 +602,9 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
    
   // ** export
   return(List::create(Named("se") = outSE,
-					  Named("iid") = outIF,
-					  Named("average.iid") = outIFsum));
+		      Named("iid") = outIF,
+		      Named("average.iid") = outIFsum));
 
 }
-
-
 
 

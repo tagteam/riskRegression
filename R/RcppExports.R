@@ -39,8 +39,8 @@ calcSeMinimalCox_cpp <- function(seqTau, newSurvival, hazard0, cumhazard0, newX,
     .Call(`_riskRegression_calcSeMinimalCox_cpp`, seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, exportSE, exportIF, exportIFmean, exportHazard, exportCumhazard, exportSurvival, debug)
 }
 
-calcAIFsurv_cpp <- function(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival) {
-    .Call(`_riskRegression_calcAIFsurv_cpp`, ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival)
+calcAIFsurv_cpp <- function(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, ls_indexStrataTime, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival) {
+    .Call(`_riskRegression_calcAIFsurv_cpp`, ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, ls_indexStrataTime, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival)
 }
 
 calculateDelongCovarianceFast <- function(Xs, Ys) {

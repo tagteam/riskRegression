@@ -95,7 +95,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcSeCif2_cpp
-List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<arma::mat>& ls_X, const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival, const arma::mat& cif, const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard, const NumericMatrix& eXb, int nJumpTime, const NumericVector& JumpMax, const NumericVector& tau, const arma::vec& tauIndex, int nTau, int nObs, int theCause, int nCause, bool hazardType, arma::vec nVar, int nNewObs, NumericMatrix strata, bool exportSE, bool exportIF, bool exportIFsum, bool diag);
+List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<arma::mat>& ls_X, const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival, const arma::mat& cif, const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard, const arma::mat& eXb, int nJumpTime, const NumericVector& JumpMax, const NumericVector& tau, const arma::vec& tauIndex, int nTau, int nObs, int theCause, int nCause, bool hazardType, arma::vec nVar, int nNewObs, arma::mat strata, bool exportSE, bool exportIF, bool exportIFsum, bool diag);
 RcppExport SEXP _riskRegression_calcSeCif2_cpp(SEXP ls_IFbetaSEXP, SEXP ls_XSEXP, SEXP ls_cumhazardSEXP, SEXP ls_hazardSEXP, SEXP survivalSEXP, SEXP cifSEXP, SEXP ls_IFcumhazardSEXP, SEXP ls_IFhazardSEXP, SEXP eXbSEXP, SEXP nJumpTimeSEXP, SEXP JumpMaxSEXP, SEXP tauSEXP, SEXP tauIndexSEXP, SEXP nTauSEXP, SEXP nObsSEXP, SEXP theCauseSEXP, SEXP nCauseSEXP, SEXP hazardTypeSEXP, SEXP nVarSEXP, SEXP nNewObsSEXP, SEXP strataSEXP, SEXP exportSESEXP, SEXP exportIFSEXP, SEXP exportIFsumSEXP, SEXP diagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -108,7 +108,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type cif(cifSEXP);
     Rcpp::traits::input_parameter< const std::vector< std::vector<arma::mat> >& >::type ls_IFcumhazard(ls_IFcumhazardSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type ls_IFhazard(ls_IFhazardSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type eXb(eXbSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< int >::type nJumpTime(nJumpTimeSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type JumpMax(JumpMaxSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type tau(tauSEXP);
@@ -120,7 +120,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type hazardType(hazardTypeSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type nVar(nVarSEXP);
     Rcpp::traits::input_parameter< int >::type nNewObs(nNewObsSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type strata(strataSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type strata(strataSEXP);
     Rcpp::traits::input_parameter< bool >::type exportSE(exportSESEXP);
     Rcpp::traits::input_parameter< bool >::type exportIF(exportIFSEXP);
     Rcpp::traits::input_parameter< bool >::type exportIFsum(exportIFsumSEXP);
@@ -173,8 +173,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcAIFsurv_cpp
-std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::mat>& ls_IFcumhazard, const arma::mat& IFbeta, const std::vector<arma::rowvec>& cumhazard0, const arma::mat& survival, const arma::colvec& eXb, const arma::mat& X, const NumericVector& prevStrata, const std::vector<arma::uvec>& ls_indexStrata, const std::vector<arma::mat>& factor, int nTimes, int nObs, int nStrata, int nVar, int diag, bool exportCumHazard, bool exportSurvival);
-RcppExport SEXP _riskRegression_calcAIFsurv_cpp(SEXP ls_IFcumhazardSEXP, SEXP IFbetaSEXP, SEXP cumhazard0SEXP, SEXP survivalSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP prevStrataSEXP, SEXP ls_indexStrataSEXP, SEXP factorSEXP, SEXP nTimesSEXP, SEXP nObsSEXP, SEXP nStrataSEXP, SEXP nVarSEXP, SEXP diagSEXP, SEXP exportCumHazardSEXP, SEXP exportSurvivalSEXP) {
+std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::mat>& ls_IFcumhazard, const arma::mat& IFbeta, const std::vector<arma::rowvec>& cumhazard0, const arma::mat& survival, const arma::colvec& eXb, const arma::mat& X, const NumericVector& prevStrata, const std::vector<arma::uvec>& ls_indexStrata, const std::vector<arma::uvec>& ls_indexStrataTime, const std::vector<arma::mat>& factor, int nTimes, int nObs, int nStrata, int nVar, int diag, bool exportCumHazard, bool exportSurvival);
+RcppExport SEXP _riskRegression_calcAIFsurv_cpp(SEXP ls_IFcumhazardSEXP, SEXP IFbetaSEXP, SEXP cumhazard0SEXP, SEXP survivalSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP prevStrataSEXP, SEXP ls_indexStrataSEXP, SEXP ls_indexStrataTimeSEXP, SEXP factorSEXP, SEXP nTimesSEXP, SEXP nObsSEXP, SEXP nStrataSEXP, SEXP nVarSEXP, SEXP diagSEXP, SEXP exportCumHazardSEXP, SEXP exportSurvivalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -186,6 +186,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type prevStrata(prevStrataSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::uvec>& >::type ls_indexStrata(ls_indexStrataSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::uvec>& >::type ls_indexStrataTime(ls_indexStrataTimeSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type factor(factorSEXP);
     Rcpp::traits::input_parameter< int >::type nTimes(nTimesSEXP);
     Rcpp::traits::input_parameter< int >::type nObs(nObsSEXP);
@@ -194,7 +195,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type diag(diagSEXP);
     Rcpp::traits::input_parameter< bool >::type exportCumHazard(exportCumHazardSEXP);
     Rcpp::traits::input_parameter< bool >::type exportSurvival(exportSurvivalSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcAIFsurv_cpp(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival));
+    rcpp_result_gen = Rcpp::wrap(calcAIFsurv_cpp(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, ls_indexStrataTime, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -552,7 +553,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_calcSeMinimalCSC_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCSC_cpp, 36},
     {"_riskRegression_calcSeCif2_cpp", (DL_FUNC) &_riskRegression_calcSeCif2_cpp, 25},
     {"_riskRegression_calcSeMinimalCox_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCox_cpp, 33},
-    {"_riskRegression_calcAIFsurv_cpp", (DL_FUNC) &_riskRegression_calcAIFsurv_cpp, 16},
+    {"_riskRegression_calcAIFsurv_cpp", (DL_FUNC) &_riskRegression_calcAIFsurv_cpp, 17},
     {"_riskRegression_calculateDelongCovarianceFast", (DL_FUNC) &_riskRegression_calculateDelongCovarianceFast, 2},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 7},

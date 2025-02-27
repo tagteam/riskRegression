@@ -234,6 +234,10 @@ predictCox <- function(object,
         nTimes <- 0
         times <- numeric(0)
     }else{
+        if(!is.numeric(times) && !is.integer(times)){
+            stop("Argument \'times\' should be a numeric vector. \n",
+                 "Provide class: ",class(times)[1],". \n")
+        }
         nTimes <- length(times)
     }
     needOrder <- (nTimes[1]>0 && is.unsorted(times))
@@ -244,7 +248,9 @@ predictCox <- function(object,
     }else{
         if (nTimes==0){
             times.sorted <- numeric(0)
-        } else{
+            order.times <- integer(0)
+            oorder.times <- integer(0)
+        }else{
             times.sorted <- times
             order.times <- 1:nTimes
             oorder.times <- 1:nTimes
@@ -394,14 +400,14 @@ predictCox <- function(object,
             stop("Incorrect names for argument \'store\': should \"data\" and \"iid\". \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
-        if("data" %in% names(store)){
+        if("data" %in% names(store) && !is.null(store[["data"]])){
             if(store[["data"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(data = \"full\") or store = c(data = \"minimal\").\n")
             }
             store.data <- store[["data"]]
         }
-        if("iid" %in% names(store)){
+        if("iid" %in% names(store) && !is.null(store[["iid"]])){
             if(store[["iid"]] %in% c("minimal","full") == FALSE){
                 stop("Element in argument \'store\' should take value \'minimal\' or \'full\'.\n",
                      "For instance store = c(iid = \"full\") or store = c(iid = \"minimal\").\n")
@@ -946,7 +952,7 @@ predictCox <- function(object,
 
     ## ** retrieve original patient profile from unique patient profiles
     if(!is.null(outCompress)){
-        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, iid = iid, average.iid = average.iid,
+        out <- decompressData(out, newdata = newdata, type = type, diag = outCompress$diag.save, times = times, se = se, confint = confint, band = band, iid = iid, average.iid = average.iid,
                               newdata.index = outCompress$newdata.index, times.sorted = times.sorted, needOrder = needOrder)
         newdata <- outCompress$newdata.save
     }

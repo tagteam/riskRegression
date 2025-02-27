@@ -150,23 +150,30 @@ iidCox.coxph <- function(object, newdata = NULL,
                  "each element being the vector of times for each strata \n")
         }
 
-        need.order <- FALSE
+        need.order <- vector(mode = "logical", length = nStrata)
         tau.oorder <- vector(mode = "list", length = nStrata)
         etimes.max <- vector(mode = "numeric", length = nStrata)
-        for(iStrata in 1:nStrata){
-            etimes.max[iStrata] <- attr(tau.hazard[[iStrata]],"etimes.max")
-            need.order <- need.order + is.unsorted(tau.hazard[[is.unsorted]])
-            tau.oorder[[iStrata]] <- order(order(tau.hazard[[iStrata]]))
-            tau.hazard[[iStrata]] <- sort(tau.hazard[[iStrata]])
-        }
-        need.order <- (need.order>0)
-    
-    }else if(!is.null(tau.hazard)){
-        etimes.max <- attr(tau.hazard,"etimes.max")
 
-        need.order <- is.unsorted(tau.hazard)
-        tau.oorder <- lapply(1:nStrata, function(iS){order(order(tau.hazard))})
-        tau.hazard <- sort(tau.hazard)
+        for(iStrata in 1:nStrata){ ## iStrata <- 1
+            etimes.max[iStrata] <- attr(tau.hazard[[iStrata]],"etimes.max")
+            need.order[iStrata] <- is.unsorted(tau.hazard[[is.unsorted]])  || any(duplicated(tau.hazard[[is.unsorted]]))
+            if(need.order){
+                Utau.hazard[[iStrata]] <- sort(unique(tau.hazard[[iStrata]]))
+            }else{
+                Utau.hazard[[iStrata]] <- tau.hazard[[iStrata]]
+            }
+            tau.oorder[[iStrata]] <- match(tau.hazard[[iStrata]],Utau.hazard[[iStrata]])
+        }
+    }else if(!is.null(tau.hazard)){
+        etimes.max <- attr(tau.hazard,"etimes.max")        
+
+        need.order <- is.unsorted(tau.hazard) || any(duplicated(tau.hazard))
+        if(need.order){
+            Utau.hazard <- sort(unique(tau.hazard))
+        }else{
+            Utau.hazard <- tau.hazard
+        }
+        tau.oorder <- match(tau.hazard,Utau.hazard)
     }else{
         etimes.max <- NULL        
         need.order <- FALSE
@@ -367,15 +374,17 @@ iidCox.coxph <- function(object, newdata = NULL,
             }
     
             ## tau.hazard
-            if(is.null(tau.hazard)){
+            if(is.list(tau.hazard)){
+                iTau.oorder <- tau.oorder[[iStrata]]
+                tau.hazard_strata <- Utau.hazard[[nStrata]]
+            }else if(!is.null(tau.hazard)){
+                iTau.oorder <- tau.oorder
+                tau.hazard_strata <- Utau.hazard
+            }else{
                 tau.hazard_strata <- unique(object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1])
                 if(!is.null(tau.max)){
                     tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
                 }
-            }else if(is.list(tau.hazard)){
-                tau.hazard_strata <- tau.hazard[[nStrata]]
-            }else{
-                tau.hazard_strata <- tau.hazard
             }
 
             ## E
@@ -385,34 +394,47 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{
                 Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
             }
-            new.time[285]
-            new.status[285]
-            new.indexJump[[iStrata]][285]
-            new.time[new.status==0] == timeStrata[new.indexJump[[iStrata]][new.status==0]+2]
+            
             ## IF
-            IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
-                                          IFbeta = out$IFbeta,
-                                          newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
-                                          S01 = Ecpp[[iStrata]]$S0,
-                                          E1 = Etempo,
-                                          time1 = timeStrata, lastTime1 = etimes.max[iStrata],
-                                          lambda0 = lambda0Strata,
-                                          p = nVar.lp, strata = iStrata,
-                                          minimalExport = (store.iid=="minimal"),
-                                          reverse = reverse)
+            if(length(timeStrata)==0){
+                ## no event in the strata
+                if(store.iid=="full"){
+                    IFlambda_res <- list(hazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)),
+                                         cumhazard = matrix(c(0,NA)[(tau.hazard_strata > etimes.max[iStrata])+1], byrow = TRUE, nrow = nObs, ncol = length(tau.hazard_strata)))
+                }else if(store.iid=="minimal"){
+                    IFlambda_res <- list(delta_iS0 = rep(0, nObs),
+                                         Elambda0 = matrix(0, nrow = nVar.lp, ncol = length(tau.hazard_strata)),
+                                         cumElambda0 = matrix(0, nrow = nVar.lp, ncol = length(tau.hazard_strata)),
+                                         eXb = rep(0, nObs),
+                                         lambda0_iS0 = rep(0, length(timeStrata)),
+                                         cumLambda0_iS0 = rep(0, length(timeStrata)),
+                                         time1 = timeStrata)
+                }
+            }else{
+                IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
+                                              IFbeta = out$IFbeta,
+                                              newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
+                                              S01 = Ecpp[[iStrata]]$S0,
+                                              E1 = Etempo,
+                                              time1 = timeStrata, lastTime1 = etimes.max[iStrata],
+                                              lambda0 = lambda0Strata,
+                                              p = nVar.lp, strata = iStrata,
+                                              minimalExport = (store.iid=="minimal"),
+                                              reverse = reverse)
+            }
             ## output
             if(length(tau.hazard_strata)==0){
                 tau.hazard_strata <- 0
             }
             if(need.order){
-                out$time[[iStrata]] <- tau.hazard_strata[tau.oorder[[iStrata]]]
+                out$time[[iStrata]] <- tau.hazard_strata[iTau.oorder]
             }else{
                 out$time[[iStrata]] <- tau.hazard_strata
             }
             if(store.iid=="minimal"){
                 if(need.order && nVar.lp>0){
-                    out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0[,tau.oorder[[iStrata]],drop=FALSE]
-                    out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0[,tau.oorder[[iStrata]],drop=FALSE]
+                    out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0[,iTau.oorder,drop=FALSE]
+                    out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0[,iTau.oorder,drop=FALSE]
                 }else{
                     out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0
                     out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0
@@ -428,8 +450,8 @@ iidCox.coxph <- function(object, newdata = NULL,
                     colnames(IFlambda_res$cumhazard) <- tau.hazard_strata
                 } 
                 if(need.order){
-                    out$IFhazard[[iStrata]] <- IFlambda_res$hazard[,tau.oorder[[iStrata]],drop=FALSE]
-                    out$IFcumhazard[[iStrata]] <- IFlambda_res$cumhazard[,tau.oorder[[iStrata]],drop=FALSE]
+                    out$IFhazard[[iStrata]] <- IFlambda_res$hazard[,iTau.oorder,drop=FALSE]
+                    out$IFcumhazard[[iStrata]] <- IFlambda_res$cumhazard[,iTau.oorder,drop=FALSE]
                 }else{
                     out$IFhazard[[iStrata]] <- IFlambda_res$hazard
                     out$IFcumhazard[[iStrata]] <- IFlambda_res$cumhazard
