@@ -142,7 +142,7 @@ interpretable on a percent scale.}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
 barplot, legend, addtable2plot, points (pseudo values), rug. See
-\code{\link{SmartControl}}.}
+\code{\link[prodlim]{SmartControl}}.}
 }
 \description{
 Plot Calibration curves for risk prediction models

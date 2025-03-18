@@ -60,7 +60,7 @@ using smart arguments. See examples.}
 \item{axes}{Logical. If \code{FALSE} then do not draw axes.}
 
 \item{\dots}{Used for transclusion of smart arguments for \code{plot},
-\code{axis}. See function \code{\link{SmartControl}} from prodlim.}
+\code{axis}. See function \code{\link[prodlim]{SmartControl}} from prodlim.}
 }
 \description{
 Plot time-varying effects from a risk regression model.

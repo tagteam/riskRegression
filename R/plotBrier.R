@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07)
 ## Version:
-## last-updated: May 30 2023 (08:07) 
+## last-updated: Mar  5 2025 (07:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 77
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -35,7 +35,7 @@
 #' @param conf.int Logical. If \code{TRUE} draw confidence shadows.
 #' @param legend Logical. If \code{TRUE} draw legend.
 #' @param ... Used for additional control of the subroutines: plot,
-#'     axis, lines, legend. See \code{\link{SmartControl}}.
+#'     axis, lines, legend. See \code{\link[prodlim]{SmartControl}}.
 ##' @examples
 ##' # survival
 ##' library(survival)

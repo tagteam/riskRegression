@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: Oct 15 2024 (11:03) 
-##           By: Brice Ozenne
-##     Update #: 176
+## Last-Updated: Mar  3 2025 (13:00) 
+##           By: Thomas Alexander Gerds
+##     Update #: 178
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,13 +19,10 @@
 #' @title Turn predictCox Object Into a \code{data.table}
 #' @description Turn predictCox object into a \code{data.table}.
 #' @name as.data.table.predictCox
-#' 
 #' @param x object obtained with function \code{predictCox}
 #' @param keep.rownames Not used.
 #' @param se [logical] Should standard errors/quantile for confidence bands be displayed?
 #' @param ... Not used.
-
-
 ## * as.data.table.predictCox (code)
 #' @rdname as.data.table.predictCox
 #' @export

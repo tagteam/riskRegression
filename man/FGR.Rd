@@ -8,7 +8,7 @@ FGR(formula, data, cause = 1, y = TRUE, ...)
 }
 \arguments{
 \item{formula}{A formula whose left hand side is a \code{Hist} object -- see
-\code{\link{Hist}}.  The right hand side specifies (a linear combination of)
+\code{\link[prodlim]{Hist}}.  The right hand side specifies (a linear combination of)
 the covariates. See examples below.}
 
 \item{data}{A data.frame in which all the variables of \code{formula} can be

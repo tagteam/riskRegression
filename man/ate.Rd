@@ -238,7 +238,7 @@ fit.CR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 ateFit2a <- ate(fit.CR, treatment = "X1", times = c(1,5,10), data = dt, 
                 cause = 1, se = TRUE, band = TRUE)
 summary(ateFit2a)
-as.data.table(ateFit2a)
+data.table::as.data.table(ateFit2a)
 
 #############################################
 #### Survival settings without censoring ####
@@ -316,8 +316,8 @@ ateRobust2 <- ate(event = m.event,
                  data = dt, times = c(5:10), 
                  cause = 1, se = TRUE)
 )
-as.data.table(ateRobust2, type = "meanRisk")
-as.data.table(ateRobust2, type = "diffRisk")
+data.table::as.data.table(ateRobust2, type = "meanRisk")
+data.table::as.data.table(ateRobust2, type = "diffRisk")
 
 ## reduce memory load by computing the integral term
 ## on only 100 observations at a time (only relevant when iid = FALSE)

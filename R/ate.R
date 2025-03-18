@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: feb 27 2025 (11:45) 
-##           By: Brice Ozenne
-##     Update #: 2369
+## last-updated: Apr 16 2025 (06:52) 
+##           By: Thomas Alexander Gerds
+##     Update #: 2574
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -221,7 +221,7 @@
 #' ateFit2a <- ate(fit.CR, treatment = "X1", times = c(1,5,10), data = dt, 
 #'                 cause = 1, se = TRUE, band = TRUE)
 #' summary(ateFit2a)
-#' as.data.table(ateFit2a)
+#' data.table::as.data.table(ateFit2a)
 #' 
 #' #############################################
 #' #### Survival settings without censoring ####
@@ -299,8 +299,8 @@
 #'                  data = dt, times = c(5:10), 
 #'                  cause = 1, se = TRUE)
 #' )
-#' as.data.table(ateRobust2, type = "meanRisk")
-#' as.data.table(ateRobust2, type = "diffRisk")
+#' data.table::as.data.table(ateRobust2, type = "meanRisk")
+#' data.table::as.data.table(ateRobust2, type = "diffRisk")
 #'
 #' ## reduce memory load by computing the integral term
 #' ## on only 100 observations at a time (only relevant when iid = FALSE)

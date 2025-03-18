@@ -53,7 +53,7 @@ which to compute predicted risk.}
 
 \item{\dots}{Used for transclusion of smart arguments for \code{plot},
 \code{lines}, \code{axis} and \code{background}. See function
-\code{\link{SmartControl}} from prodlim.}
+\code{\link[prodlim]{SmartControl}}.}
 }
 \description{
 Show predicted risk obtained by a risk prediction model as a function of
