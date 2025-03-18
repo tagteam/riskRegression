@@ -22,7 +22,7 @@
 #' using smart arguments. See examples.
 #' @param axes Logical. If \code{FALSE} then do not draw axes.
 #' @param \dots Used for transclusion of smart arguments for \code{plot},
-#' \code{axis}. See function \code{\link{SmartControl}} from prodlim.
+#' \code{axis}. See function \code{\link[prodlim]{SmartControl}} from prodlim.
 #' @author Thomas H. Scheike \email{ts@@biostat.ku.dk}
 #' 
 #' Thomas A. Gerds \email{tag@@biostat.ku.dk}

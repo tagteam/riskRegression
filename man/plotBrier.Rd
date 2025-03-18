@@ -62,7 +62,7 @@ plotBrier(
 \item{legend}{Logical. If \code{TRUE} draw legend.}
 
 \item{...}{Used for additional control of the subroutines: plot,
-axis, lines, legend. See \code{\link{SmartControl}}.}
+axis, lines, legend. See \code{\link[prodlim]{SmartControl}}.}
 }
 \description{
 Plot Brier score curves

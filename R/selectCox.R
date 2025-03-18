@@ -10,7 +10,7 @@
 #' @param formula A formula object with a \code{Surv} object on the left-hand
 #' side and all the variables on the right-hand side.
 #' @param data Name of an data frame containing all needed variables.
-#' @param rule The method for selecting variables. See \code{\link{fastbw}} for
+#' @param rule The method for selecting variables. See \code{\link[rms]{fastbw}} for
 #' details.
 #' @references Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
 #' Evaluating Random Forests for Survival Analysis Using Prediction Error

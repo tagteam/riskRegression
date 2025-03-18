@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jun 22 2024 (08:35) 
+## Last-Updated: Mar  5 2025 (07:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 249
+##     Update #: 250
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,7 @@
 ##' @param preclipse Value between 0 and 1 defining the preclipse area
 ##' @param preclipse.shade Logical. If \code{TRUE} shade the area of clinically meaningful change.
 ##' @param ... Used to control the subroutines: plot, axis, lines,
-##'     barplot, legend. See \code{\link{SmartControl}}.
+##'     barplot, legend. See \code{\link[prodlim]{SmartControl}}.
 ##' @return a nice graph
 ##' @examples
 ##' library(prodlim)

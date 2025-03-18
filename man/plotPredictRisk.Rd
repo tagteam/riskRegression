@@ -63,7 +63,7 @@ desired value. See also Details.}
 
 \item{percent}{Logical. If \code{TRUE} the y-axis is labeled in percent.}
 
-\item{\dots}{Parameters that are filtered by \code{\link{SmartControl}} and
+\item{\dots}{Parameters that are filtered by \code{\link[prodlim]{SmartControl}} and
 then passed to the functions: \code{\link{plot}}, \code{\link{axis}},
 \code{\link{legend}}.}
 }

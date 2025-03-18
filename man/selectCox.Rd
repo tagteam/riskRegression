@@ -12,7 +12,7 @@ side and all the variables on the right-hand side.}
 
 \item{data}{Name of an data frame containing all needed variables.}
 
-\item{rule}{The method for selecting variables. See \code{\link{fastbw}} for
+\item{rule}{The method for selecting variables. See \code{\link[rms]{fastbw}} for
 details.}
 }
 \description{

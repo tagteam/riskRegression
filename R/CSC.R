@@ -40,7 +40,7 @@
 #' competing risks: Interpretation, link functions, and prediction. Statistics
 #' in Medicine, 31(29):3921--3930, 2012.
 #'
-#' @seealso \code{\link{coxph}}
+#' @seealso \code{\link[survival]{coxph}}
 #' @keywords survival
 #' @examples
 #'

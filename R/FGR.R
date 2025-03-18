@@ -14,7 +14,7 @@
 #'
 #' @title Formula wrapper for crr from cmprsk 
 #' @param formula A formula whose left hand side is a \code{Hist} object -- see
-#' \code{\link{Hist}}.  The right hand side specifies (a linear combination of)
+#' \code{\link[prodlim]{Hist}}.  The right hand side specifies (a linear combination of)
 #' the covariates. See examples below.
 #' @param data A data.frame in which all the variables of \code{formula} can be
 #' interpreted.

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Jun  8 2023 (11:33) 
+## last-updated: Mar  5 2025 (07:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 185
+##     Update #: 186
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,7 @@
 #'     legend.
 #' @param add logical. If \code{1L} add lines to an existing plot.
 #' @param ... Used for additional control of the subroutines: plot,
-#'     axis, lines, legend, addtable2plot. See \code{\link{SmartControl}}.
+#'     axis, lines, legend, addtable2plot. See \code{\link[prodlim]{SmartControl}}.
 ##' @examples
 ##' ## binary
 ##' set.seed(18)

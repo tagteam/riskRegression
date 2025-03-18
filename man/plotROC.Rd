@@ -54,7 +54,7 @@ legend.}
 \item{add}{logical. If \code{1L} add lines to an existing plot.}
 
 \item{...}{Used for additional control of the subroutines: plot,
-axis, lines, legend, addtable2plot. See \code{\link{SmartControl}}.}
+axis, lines, legend, addtable2plot. See \code{\link[prodlim]{SmartControl}}.}
 }
 \description{
 Plot ROC curve

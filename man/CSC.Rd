@@ -151,7 +151,7 @@ competing risks: Interpretation, link functions, and prediction. Statistics
 in Medicine, 31(29):3921--3930, 2012.
 }
 \seealso{
-\code{\link{coxph}}
+\code{\link[survival]{coxph}}
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk} and Ulla B. Mogensen

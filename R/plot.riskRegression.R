@@ -38,7 +38,7 @@
 #' @param add Logical. If \code{TRUE} then add lines to an existing plot.
 #' @param \dots Used for transclusion of smart arguments for \code{plot},
 #' \code{lines}, \code{axis} and \code{background}. See function
-#' \code{\link{SmartControl}} from prodlim.
+#' \code{\link[prodlim]{SmartControl}}.
 #' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
 #' @keywords survival
 ##' @examples

@@ -35,7 +35,7 @@
 #' the form \code{legend.x=val} where x is the name of the argument and val the
 #' desired value. See also Details.
 #' @param percent Logical. If \code{TRUE} the y-axis is labeled in percent.
-#' @param \dots Parameters that are filtered by \code{\link{SmartControl}} and
+#' @param \dots Parameters that are filtered by \code{\link[prodlim]{SmartControl}} and
 #' then passed to the functions: \code{\link{plot}}, \code{\link{axis}},
 #' \code{\link{legend}}.
 #' @return The (invisible) object.

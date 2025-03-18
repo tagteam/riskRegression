@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct 23 2024 (11:01) 
+## last-updated: Mar  5 2025 (07:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 412
+##     Update #: 413
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,7 +91,7 @@
 ##' @param cex Default cex used for legend and labels.
 ##' @param ... Used to control the subroutines: plot, axis, lines,
 ##'     barplot, legend, addtable2plot, points (pseudo values), rug. See
-##'     \code{\link{SmartControl}}.
+##'     \code{\link[prodlim]{SmartControl}}.
 ##' @examples
 ##' library(prodlim)
 ##' # binary

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: sep 10 2024 (15:41) 
-##           By: Brice Ozenne
-##     Update #: 269
+## Last-Updated: Mar  5 2025 (07:07) 
+##           By: Thomas Alexander Gerds
+##     Update #: 270
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,7 @@
 #' the \code{confint} method needs to be applied on the object.
 #'
 #' @seealso
-#' \code{\link{as.data.table}} to extract the estimates in a \code{data.table} object.
+#' \code{\link[data.table]{as.data.table}} to extract the estimates in a \code{data.table} object.
 #' \code{\link{autoplot.ate}} for a graphical representation the standardized risks.
 #' \code{\link{confint.ate}} to compute p-values and adjusted p-values
 #' or perform statistical inference using a transformation.

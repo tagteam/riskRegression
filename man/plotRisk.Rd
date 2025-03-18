@@ -53,7 +53,7 @@ competing risk outcome (4 or more symbols: event, competing risk 1, ..., competi
 \item{preclipse.shade}{Logical. If \code{TRUE} shade the area of clinically meaningful change.}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
-barplot, legend. See \code{\link{SmartControl}}.}
+barplot, legend. See \code{\link[prodlim]{SmartControl}}.}
 }
 \value{
 a nice graph
