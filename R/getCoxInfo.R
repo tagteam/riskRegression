@@ -1057,7 +1057,7 @@ SurvResponseVar <- function(formula){
         ls.formula <- lapply(formula, SurvResponseVar)
         if(length(ls.formula)>1){
             test.identical <- sapply(ls.formula[-1], function(x){identical(ls.formula[[1]],x)})
-            if(test.identical){
+            if(all(test.identical)){
                 return(ls.formula[[1]])
             }else{
                 stop("Different left hand side in the formulae \n")
