@@ -1557,3 +1557,26 @@ test_that("double robust ate without censoring",{
 
 
 })
+
+
+## ** more than two causes
+set.seed(10)
+
+## generate data
+n <- 1000
+df <- sampleData(n, outcome="survival")
+df$time <- round(df$time,1)
+df$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 1), labels = paste0("T",1:2))
+
+## generate outcome with two competing risks (e.g. censuring = 0, event of interest = 1, death = 2, second competing risk = 3)
+df$event2 <- sample(c(0:3), 1000, replace=T)
+
+fit_cr <- CSC(list(Hist(time,event2)~X1+X2+X8,
+                Hist(time,event2)~X1+X2+X8,
+                Hist(time,event2)~X1+X2+X8),data=df)
+
+## ATE
+test_that("more than two causes",{
+    ate_res <- ate(fit_cr, data = df, treatment = "X1", times = 5)
+    expect_equal(ate_res$meanRisk$estimate, c(0.12673284, 0.10427665))
+})

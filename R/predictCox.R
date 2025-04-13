@@ -59,7 +59,7 @@
 #' A detailed explanation about the meaning of the argument \code{store = c(iid="full")} can be found
 #' in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 #' 
-#' The function is not compatible with time varying predictor variables.
+#' The function is not compatible with time varying predictor variables nor frailty.
 #' 
 #' The centered argument enables us to reproduce the results obtained with the \code{basehaz}
 #' function from the survival package but should not be modified by the user.
@@ -321,7 +321,7 @@ predictCox <- function(object,
     if(!is.null(object$weights) && !all(object$weights==1)){
         stop("predictCox does not know how to handle Cox models fitted with weights \n")
     }
-    if(!is.null(object$naive.var)){
+    if(!is.null(object$naive.var) || !is.null(object$frail)){
         stop("predictCox does not know how to handle frailty.") 
     }
     if(object.baseEstimator == "exact"){
