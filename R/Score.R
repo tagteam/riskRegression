@@ -1495,9 +1495,12 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     } else{
         output <- crossvalPerf
     }
-
     models <- mlevs
     names(models) <- mlabels
+    # label models in Sens, Spec, PPV, NPV 
+    if (length(output$AUC)>0 && length(output$AUC$cutpoints)>0){
+        output$AUC$cutpoints[,model:=factor(model,levels=mlevs,mlabels)]
+    }
     if (keep.vcov){
         lab.models <- mlabels
         if (null.model){
@@ -1533,7 +1536,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                             null.model=nm,
                             models=models,
                             cens.type=cens.type,
-                            censoringHandling=cens.method,
+                            cens.method=cens.method,
                             split.method=split.method,
                             metrics=metrics,
                             times=times,

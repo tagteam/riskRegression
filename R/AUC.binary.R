@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Jun 25 2024 (12:52) 
+## Last-Updated: Mar 26 2025 (19:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 38
+##     Update #: 64
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,95 +29,32 @@ AUC.binary <- function(DT,
                        ROC,
                        cutpoints,
                        ...){
-    PPV=NPV=Prisks=Prisks2=model=risk=riskRegression_event=FPR=TPR=riskRegression_ID=NULL
-    ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
-    delongtest <-  function(risk,
-                            score,
-                            dolist,
-                            response,
-                            cause,
-                            alpha,
-                            se.fit,
-                            keep.vcov) {
-        cov=lower=upper=p=AUC=se=lower=upper=NULL
-        if (keep.iid == TRUE){warning("Argument 'keep.iid' is ignored. This function does not explicitely calculate the estimated influence function for AUC with binary outcome.")}
-        auc <- score[["AUC"]]
-        nauc <- ncol(risk)
-        modelnames <- score[["model"]]
-        score <- data.table(model=colnames(risk),AUC=auc)
-        if (se.fit==1L){
-            Cases <- response == cause
-            #Controls <- response != cause
-            #riskcontrols <- as.matrix(risk[Controls,])
-            riskcontrols <- as.matrix(risk[!Cases,])
-            riskcases <- as.matrix(risk[Cases,])
-            # new method, uses a fast implementation of delongs covariance matrix
-            # Fast Implementation of DeLong’s Algorithm for Comparing the Areas Under Correlated Receiver Operating Characteristic Curves
-            # article can be found here:
-            # https://ieeexplore.ieee.org/document/6851192
-            S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
-            se.auc <- sqrt(diag(S))
-            score[,se:=se.auc]
-            score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
-            score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
-            setcolorder(score,c("model","AUC","se","lower","upper"))
-        }else{
-            setcolorder(score,c("model","AUC"))
-        }
-        names(auc) <- 1:nauc
-        if (length(dolist)>0){
-            ncomp <- length(dolist)
-            delta.AUC <- numeric(ncomp)
-            se <- numeric(ncomp)
-            model <- numeric(ncomp)
-            reference <- numeric(ncomp)
-            ctr <- 1
-            Qnorm <- qnorm(1 - alpha/2)
-            for (d in dolist){
-                i <- d[1]
-                for (j in d[-1]) {
-                    delta.AUC[ctr] <- auc[j]-auc[i]
-                    if (se.fit[[1]]){
-                        LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
-                        se[ctr] <- sqrt(LSL)
-                    }
-                    model[ctr] <- modelnames[j]
-                    reference[ctr] <- modelnames[i]
-                    ctr <- ctr + 1
-                }
-            }
-            deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
-            if (se.fit[[1]]){
-                deltaAUC[,se:=se]
-                deltaAUC[,lower:=delta.AUC-Qnorm*se]
-                deltaAUC[,upper:=delta.AUC+Qnorm*se]
-                deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
-            }
-            out <- list(score = score, contrasts = deltaAUC)
-        }else{
-            out <- list(score = score, contrasts = NULL)
-        }
-        ## should only be kept if se.fit is true
-        if (keep.vcov && se.fit[[1]]==TRUE) {
-            out <- c(out,list(vcov=S))
-        }
-        out
-    }
+    PPV=NPV=count_predicted_positive=count_predicted_negative=model=risk=riskRegression_event=FPR=TPR=riskRegression_ID=NULL
     auRoc.numeric <- function(X,D,breaks,ROC,cutpoints=NULL){
         if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
-        TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==1))
+        TPR <- c(prodlim::sindex(jump.times=X[D==1],
+                                 eval.times=breaks,
+                                 comp="greater",
+                                 strict=FALSE)/sum(D==1))
         FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==0))
         if (ROC && is.null(cutpoints)) {
             data.table(risk=breaks,TPR,FPR)
         }
         else if (!is.null(cutpoints)){
-            Prisks <- c(prodlim::sindex(jump.times=X,eval.times=breaks,comp="greater",strict=TRUE))
-            Prisks2 <- c(prodlim::sindex(jump.times=X,eval.times=breaks,comp="smaller",strict=FALSE))
-            PPV <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=TRUE))/Prisks
-            NPV <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="smaller",strict=FALSE))/Prisks2
-            Prisks <- Prisks/length(D)
-            Prisks2 <- Prisks2/length(D)
-            data.table(risk=breaks,TPR,FPR,PPV,NPV,Prisks,Prisks2)
+            # predicted positive: Marker >= cutoff
+            # predicted negative: Marker < cutoff
+            # if X = c(7,10,77) and breaks = 7 then 1 is predicted
+            count_predicted_positive <- prodlim::sindex(jump.times=X,eval.times=breaks,comp="greater",strict=FALSE)
+            count_predicted_negative <- prodlim::sindex(jump.times=X,eval.times=breaks,comp="smaller",strict=TRUE)
+            PPV <- prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/count_predicted_positive
+            # if no one is predicted positive then the positive predictive rate is 1
+            PPV[count_predicted_positive == 0] <- 1
+            NPV <- prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="smaller",strict=TRUE)/count_predicted_negative
+            # if no one is predicted negative then the negative predictive rate is 0
+            NPV[count_predicted_negative == 0] <- 1
+            prob_predicted_positive <- count_predicted_positive/length(D)
+            prob_predicted_negative <- count_predicted_negative/length(D)
+            data.table(risk=breaks,TPR,FPR,PPV,NPV,prob_predicted_positive,prob_predicted_negative)
         }
         else {
             0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
@@ -143,7 +80,11 @@ AUC.binary <- function(DT,
         score <- aucDT[,auRoc.factor(risk,riskRegression_event,ROC=ROC),by=list(model)]
     }
     else{
-        score <- aucDT[,auRoc.numeric(risk,riskRegression_event,breaks=breaks,ROC=ROC,cutpoints=cutpoints),by=list(model)]
+        score <- aucDT[,auRoc.numeric(X = risk,
+                                      D = riskRegression_event,
+                                      breaks=breaks,
+                                      ROC=ROC,
+                                      cutpoints=cutpoints),by=list(model)]
     }
     if (ROC==FALSE){
         setnames(score,"V1","AUC")
@@ -153,13 +94,17 @@ AUC.binary <- function(DT,
         ROC <- score
         if(!is.null(cutpoints)){
             temp.TPR.ic <- score[,{
-                temp <- pmin(prodlim::sindex(risk,cutpoints,comp = "greater"),length(risk))
-                data.table(TPR=TPR[temp],
-                           FPR=FPR[temp],
-                           PPV=PPV[temp],
-                           NPV=NPV[temp],
-                           Prisks=Prisks[temp],
-                           Prisks2=Prisks2[temp],
+                # find current cutpoint among the breaks 
+                position <- pmin(prodlim::sindex(jump.times = risk,
+                                                 eval.times = cutpoints,
+                                                 strict = FALSE,
+                                                 comp = "greater"),length(risk))
+                data.table(TPR=c(0,TPR)[1+position],
+                           FPR=c(0,FPR)[1+position],
+                           PPV=c(1,PPV)[1+position],
+                           NPV=c(0,NPV)[1+position],
+                           prob_predicted_positive=c(0,prob_predicted_positive)[1+position],
+                           prob_predicted_negative=c(1,prob_predicted_negative)[1+position],
                            cutpoints=cutpoints)
             },by=list(model)]
             results <- list()
@@ -171,23 +116,91 @@ AUC.binary <- function(DT,
                     meanY <- mean(riskRegression_event)
                     out <- list(cutpoint = cut,
                                 TPR = TPR[1], 
-                                SE.TPR = sd(riskRegression_event/meanY * ((risk > cut)-TPR))/sqrt(N), 
+                                se.TPR = sd(riskRegression_event/meanY * ((risk > cut)-TPR))/sqrt(N), 
                                 FPR = FPR[1], 
-                                SE.FPR = sd((1-riskRegression_event)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
+                                se.FPR = sd((1-riskRegression_event)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
                                 PPV = PPV[1],
-                                SE.PPV = sd((risk > cut)/Prisks[1] * (riskRegression_event - PPV))/sqrt(N),
+                                se.PPV = sd((risk > cut)/count_predicted_positive[1] * (riskRegression_event - PPV))/sqrt(N),
                                 NPV = NPV[1], 
-                                SE.NPV = sd((risk <= cut)/Prisks2[1] * ((1-riskRegression_event) - NPV))/sqrt(N))
+                                se.NPV = sd((risk <= cut)/count_predicted_negative[1] * ((1-riskRegression_event) - NPV))/sqrt(N))
                     out
                 }, by = list(model)]
             }
-            output <- list(score=AUC,ROC=ROC, cutpoints=do.call("rbind",results))
+            output <- list(score=AUC,
+                           ROC=ROC,
+                           cutpoints=do.call("rbind",results))
         }
         else {
             output <- list(score=AUC,ROC=ROC)
         }
     }
     if (length(dolist)>0 || (se.fit[[1]]==1L)){
+        ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
+        delongtest <-  function(risk,score,dolist,response,cause,alpha,se.fit,keep.vcov) {
+            cov=lower=upper=p=AUC=se=lower=upper=NULL
+            if (keep.iid == TRUE){warning("Argument 'keep.iid' is ignored. This function does not explicitely calculate the estimated influence function for AUC with binary outcome.")}
+            auc <- score[["AUC"]]
+            nauc <- ncol(risk)
+            modelnames <- score[["model"]]
+            score <- data.table(model=colnames(risk),AUC=auc)
+            if (se.fit==1L){
+                Cases <- response == cause
+                #Controls <- response != cause
+                #riskcontrols <- as.matrix(risk[Controls,])
+                riskcontrols <- as.matrix(risk[!Cases,])
+                riskcases <- as.matrix(risk[Cases,])
+                # new method, uses a fast implementation of delongs covariance matrix
+                # Fast Implementation of DeLong’s Algorithm for Comparing the Areas Under Correlated Receiver Operating Characteristic Curves
+                # article can be found here:
+                # https://ieeexplore.ieee.org/document/6851192
+                S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
+                se.auc <- sqrt(diag(S))
+                score[,se:=se.auc]
+                score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
+                score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
+                setcolorder(score,c("model","AUC","se","lower","upper"))
+            }else{
+                setcolorder(score,c("model","AUC"))
+            }
+            names(auc) <- 1:nauc
+            if (length(dolist)>0){
+                ncomp <- length(dolist)
+                delta.AUC <- numeric(ncomp)
+                se <- numeric(ncomp)
+                model <- numeric(ncomp)
+                reference <- numeric(ncomp)
+                ctr <- 1
+                Qnorm <- qnorm(1 - alpha/2)
+                for (d in dolist){
+                    i <- d[1]
+                    for (j in d[-1]) {
+                        delta.AUC[ctr] <- auc[j]-auc[i]
+                        if (se.fit[[1]]){
+                            LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
+                            se[ctr] <- sqrt(LSL)
+                        }
+                        model[ctr] <- modelnames[j]
+                        reference[ctr] <- modelnames[i]
+                        ctr <- ctr + 1
+                    }
+                }
+                deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
+                if (se.fit[[1]]){
+                    deltaAUC[,se:=se]
+                    deltaAUC[,lower:=delta.AUC-Qnorm*se]
+                    deltaAUC[,upper:=delta.AUC+Qnorm*se]
+                    deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
+                }
+                out <- list(score = score, contrasts = deltaAUC)
+            }else{
+                out <- list(score = score, contrasts = NULL)
+            }
+            ## should only be kept if se.fit is true
+            if (keep.vcov && se.fit[[1]]==TRUE) {
+                out <- c(out,list(vcov=S))
+            }
+            out
+        }
         xRisk <- data.table::dcast(aucDT[],riskRegression_ID~model,value.var="risk")[,-1,with=FALSE]
         delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
