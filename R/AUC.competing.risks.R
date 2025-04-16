@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Dec  6 2024 (13:29) 
+## Last-Updated: Mar 26 2025 (11:03) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 52
+##     Update #: 53
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -93,7 +93,7 @@ AUC.competing.risks <- function(DT,
                     if (se.fit){
                         IC0.TPR <- ipcwCases*N*((risk > cutpoints[i])-TPRi)/den_TPR
                         IC0.FPR <- (ipcwControls1+ipcwControls2)*N*((risk > cutpoints[i])-FPRi)/(1-den_TPR)
-                        SE.TPR <- sd(getInfluenceCurve.Brier(t = times,
+                        se.TPR <- sd(getInfluenceCurve.Brier(t = times,
                                                              time = riskRegression_time[ordered],
                                                              IC0 = IC0.TPR[ordered],
                                                              residuals = IC0.TPR[ordered],
@@ -102,7 +102,7 @@ AUC.competing.risks <- function(DT,
                                                              nth.times = nth.times,
                                                              conservative = conservative,
                                                              event = riskRegression_event[ordered]))/sqrt(N)
-                        SE.FPR <- sd(getInfluenceCurve.Brier(t = times,
+                        se.FPR <- sd(getInfluenceCurve.Brier(t = times,
                                                              time = riskRegression_time[ordered],
                                                              IC0 = IC0.FPR[ordered],
                                                              residuals = IC0.FPR[ordered],
@@ -113,18 +113,18 @@ AUC.competing.risks <- function(DT,
                                                              event = riskRegression_event[ordered]))/sqrt(N)
                     }
                     else {
-                        SE.TPR <- SE.FPR <- NA
+                        se.TPR <- se.FPR <- NA
                     }
                 }
                 else {
                     TPRi <- FPRi <- 0
-                    SE.TPR <- SE.FPR <- NA
+                    se.TPR <- se.FPR <- NA
                 }
                 if (den_PPV > 0){
                     PPV <- (TPRi*den_TPR)/den_PPV
                     if (se.fit){
                         IC0.PPV <- (risk > cutpoints[i])/den_PPV*(((ipcwCases+ipcwControls2)*N)*(1*(riskRegression_event==1)-1*(riskRegression_event!=0)*PPV)-ipcwControls1*N*PPV) #OBS, check other causes, paul's implementation
-                        SE.PPV <- sd(getInfluenceCurve.Brier(t = times,
+                        se.PPV <- sd(getInfluenceCurve.Brier(t = times,
                                                              time = riskRegression_time[ordered],
                                                              IC0 = IC0.PPV[ordered],
                                                              residuals = IC0.PPV[ordered],
@@ -135,17 +135,17 @@ AUC.competing.risks <- function(DT,
                                                              event = riskRegression_event[ordered]))/sqrt(N)
                     }
                     else {
-                        SE.PPV <- NA
+                        se.PPV <- NA
                     }
                 }
                 else {
-                    PPV <- SE.PPV <- NA
+                    PPV <- se.PPV <- NA
                 }
                 if (den_NPV > 0){
                     NPV <- ((1-FPRi)*den_FPR)/den_NPV
                     if (se.fit){
                         IC0.NPV <- (risk <= cutpoints[i])/den_NPV*(((ipcwCases+ipcwControls2)*N)*(1*(riskRegression_event!=1 & riskRegression_event!=0)-1*(riskRegression_event!=0)*NPV)+ipcwControls1*N*(1-NPV)) #OBS, check other causes, paul's implementation
-                        SE.NPV <- sd(getInfluenceCurve.Brier(t = times,
+                        se.NPV <- sd(getInfluenceCurve.Brier(t = times,
                                                              time = riskRegression_time[ordered],
                                                              IC0 = IC0.NPV[ordered],
                                                              residuals = IC0.NPV[ordered],
@@ -156,21 +156,21 @@ AUC.competing.risks <- function(DT,
                                                              event = riskRegression_event[ordered]))/sqrt(N)
                     }
                     else {
-                        SE.NPV <- NA
+                        se.NPV <- NA
                     }
                 }
                 else {
-                    NPV <- SE.NPV <- NA
+                    NPV <- se.NPV <- NA
                 }
                 res[[i]] <- data.table(risk = cutpoints[i],
                                        TPR=TPRi,
-                                       SE.TPR=SE.TPR,
+                                       se.TPR=se.TPR,
                                        FPR=FPRi,
-                                       SE.FPR=SE.FPR,
+                                       se.FPR=se.FPR,
                                        PPV=PPV,
-                                       SE.PPV=SE.PPV,
+                                       se.PPV=se.PPV,
                                        NPV=NPV,
-                                       SE.NPV=SE.NPV)
+                                       se.NPV=se.NPV)
             }
             do.call("rbind",res)
         }

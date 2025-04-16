@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Nov  4 2019 (09:07) 
 ## Version: 
-## Last-Updated: Jun 25 2020 (13:42) 
+## Last-Updated: Mar 26 2025 (07:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 20
+##     Update #: 21
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@ print.IPA <- function(x,digits=2,...){
     X[,Brier:=sprintf(fmt=fmt,100*Brier)]
     X[,IPA:=sprintf(fmt=fmt,100*IPA)]
     if (match("IPA.drop",colnames(X),nomatch=0)) X[,IPA.drop:=sprintf(fmt=fmt,100*IPA.drop)]
-    print(X,...)
+    print(X[],...)
     message("\nNOTE: Values are multiplied by 100 and given in %.")
     message("NOTE: The higher IPA the better.")
     message("NOTE: IPA.drop = IPA(Full model) - IPA. The higher the drop\nthe more important is the variable for the full model.")
