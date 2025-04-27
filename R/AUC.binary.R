@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Mar 26 2025 (19:49) 
+## Last-Updated: Apr 16 2025 (07:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 64
+##     Update #: 65
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,7 @@ AUC.binary <- function(DT,
                        ROC,
                        cutpoints,
                        ...){
-    PPV=NPV=count_predicted_positive=count_predicted_negative=model=risk=riskRegression_event=FPR=TPR=riskRegression_ID=NULL
+    prob_predicted_positive = prob_predicted_negative = PPV=NPV=count_predicted_positive=count_predicted_negative=model=risk=riskRegression_event=FPR=TPR=riskRegression_ID=NULL
     auRoc.numeric <- function(X,D,breaks,ROC,cutpoints=NULL){
         if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
         TPR <- c(prodlim::sindex(jump.times=X[D==1],

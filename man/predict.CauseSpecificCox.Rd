@@ -82,10 +82,7 @@ See the section "Construction of the confidence intervals" in (Ozenne et al., 20
 A detailed explanation about the meaning of the argument \code{store = c(iid="full")} can be found
 in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 
-Note: for Cox regression models with time varying
-    covariates it does not make sense to use this function, because
-    the predicted risk has to be a measurable function of the data
-    available at the time origin.
+The function is not compatible with time varying predictor variables nor frailty.
 
 The iid decomposition is output using an array containing the value of the influence
 of each subject used to fit the object (dim 1),
