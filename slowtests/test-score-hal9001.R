@@ -11,7 +11,12 @@ test_that("Score is working with hal for survival data",{
   cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainCR.surv,x=TRUE)
   cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.surv,x=TRUE)
   x<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
-           formula=Surv(time,event)~X1+X2,data=testCR.surv,se.fit=1L,times=c(4),cens.model="Hal9001",conservative = TRUE)
+           formula=Surv(time,event)~X1+X2,
+           data=testCR.surv,
+           se.fit=1L,
+           times=c(4,5),
+           cens.model="Hal9001",
+           conservative = TRUE)
   expect_output(print(x))
 })
 

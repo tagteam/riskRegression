@@ -104,7 +104,7 @@ The survival is computed using the exponential approximation (equation 3).
 A detailed explanation about the meaning of the argument \code{store = c(iid="full")} can be found
 in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 
-The function is not compatible with time varying predictor variables.
+The function is not compatible with time varying predictor variables nor frailty.
 
 The centered argument enables us to reproduce the results obtained with the \code{basehaz}
 function from the survival package but should not be modified by the user.
