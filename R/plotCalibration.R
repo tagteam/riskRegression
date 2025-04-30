@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Mar  5 2025 (07:06) 
+## last-updated: Apr 29 2025 (08:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 413
+##     Update #: 414
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -391,7 +391,9 @@ plotCalibration <- function(x,
                        groups <- q
                    }
                    xgroups <- (groups[-(length(groups))]+groups[-1])/2
-                   pcut <- cut(p,groups,include.lowest=TRUE)
+                   pcut <- cut(x = p,
+                               breaks = sort(unique(groups)),
+                               include.lowest=TRUE)
                    ## if (x$cens.type=="rightCensored"){
                    if (x$response.type=="binary"){
                        plotFrame=data.frame(Pred=tapply(p,pcut,mean),

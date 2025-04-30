@@ -140,9 +140,8 @@ CSC <- function(formula,
                 cause,
                 surv.type="hazard",
                 fitter="coxph",
-                ## strip.environment
                 ...){
-    fitter <- match.arg(fitter,c("coxph","cph","phreg"))
+    fitter <- match.arg(fitter,c("coxph","cph","phreg", "penalized"))
     # {{{ type
     surv.type <- match.arg(surv.type,c("hazard","survival"))
     # }}}
@@ -251,10 +250,10 @@ CSC <- function(formula,
         ## check whether right hand side of formula includes ~.
         allvars <- all.vars(formula[[x]])
         if (any(grepl("^\\.$",allvars))){
-          formulaXX <- as.formula(paste0(survresponse,"~."))
+            formulaXX <- as.formula(paste0(survresponse,"~."))
         }
         else {
-          formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
+            formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
         }
         # previous
         # formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
@@ -269,6 +268,8 @@ CSC <- function(formula,
             fit <- do.call("cph",c(args,list(surv=TRUE,x=TRUE,y=TRUE),extra.args))
         } else if(fitter=="phreg") {
             fit <- do.call("phreg",c(args,extra.args))
+        } else if(fitter=="penalized"){
+            fit <- do.call("coxnet", c(args, extra.args))
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)

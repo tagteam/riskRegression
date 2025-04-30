@@ -273,7 +273,9 @@ predictCox <- function(object,
 
     ## linear predictor
     ## if we predict the hazard for newdata then there is no need to center the covariates
-    object.modelFrame[,c("eXb") := exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))]
+    set(object.modelFrame,
+        j = "eXb",
+        value = exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})))
     ## add linear predictor and remove useless columns
     rm.name <- setdiff(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num"))
     if(length(rm.name)>0){
@@ -477,7 +479,6 @@ predictCox <- function(object,
                            Efron = (object.baseEstimator == "efron"),
                            reverse = reverse)
     ## }
-
     ## *** evaluate at all jump times    
     if(product.limit){        
         if(length(times.sorted)==0){
@@ -597,7 +598,6 @@ predictCox <- function(object,
     ## *** reformat newdata (compute linear predictor and strata)
     new.n <- NROW(newdata)
     newdata <- data.table::as.data.table(newdata)
-
     Xb <- coxLP(object, data = newdata, center = FALSE)
     if ("lp" %in% type){
         out$lp <- cbind(Xb)

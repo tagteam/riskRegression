@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: Apr 27 2025 (07:33) 
+## Last-Updated: Apr 29 2025 (06:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2
+##     Update #: 14
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -185,6 +185,30 @@ coxLP.prodlim <- function(object, data, center){
     return(Xb)
 }
 
+
+## ** coxLP.coxnet
+#' @rdname coxLP
+#' @method coxLP coxnet
+#' @export
+coxLP.coxnet <- function(object, data, center = FALSE){
+    if(is.null(data)){
+        if(object$cv){
+            return(as.numeric(predict(object$glmnet.fit, s = object$lambda.min, newx = object$design)))
+        } else{
+            return(as.numeric(predict(object, s = object$lambda, newx = object$design)))
+        }
+    } else{
+        newdata <- prodlim::EventHistory.frame(formula(delete.response(terms(object$formula))),
+                                               data,
+                                               response = FALSE,
+                                               specials = NULL)$design
+        if(object$cv){
+            return(as.numeric(predict(object$glmnet.fit, s = object$lambda.min, newx = newdata)))
+        } else{
+            return(as.numeric(predict(object, s = object$lambda, newx = newdata)))
+        }
+    }
+}
 
 ######################################################################
 ### coxLP.R ends here

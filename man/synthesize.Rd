@@ -14,6 +14,7 @@ synthesize(object, data, ...)
   recursive = FALSE,
   max.levels = 10,
   verbose = FALSE,
+  return_code = FALSE,
   ...
 )
 
@@ -24,6 +25,7 @@ synthesize(object, data, ...)
   logtrans = NULL,
   verbose = FALSE,
   fix.names = FALSE,
+  return_code = FALSE,
   ...
 )
 }
@@ -40,6 +42,8 @@ synthesize(object, data, ...)
 variables with less than 10 unique values in data are treated as categorical.}
 
 \item{verbose}{Logical. If \code{TRUE} then more messages and warnings are provided.}
+
+\item{return_code}{Logical. If \code{TRUE} return the R-code instead of the lava object.}
 
 \item{logtrans}{Vector of covariate names that should be log-transformed. This is primarily for internal use.}
 
@@ -69,7 +73,7 @@ library(lava)
 data(pbc)
 pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
 pbc$logbili <- log(pbc$bili)
-v_synt <- synthesize(object=Surv(time,status)~sex+age+logbili,data=pbc)
+v_synt <- synthesize(object=Hist(time,status)~sex+age+logbili,data=pbc)
 d <- simsynth(v_synt,1000)
 fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
@@ -126,5 +130,5 @@ cbind(coef(fit_sim),coef(fit_real))
 lvm
 }
 \author{
-Thomas A. Gerds <tag@biostat.ku.dk>
+Johan Sebastian Ohlendorff <johan.ohlendorff@sund.ku.dk>  and Thomas A. Gerds <tag@biostat.ku.dk>
 }

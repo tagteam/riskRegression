@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Apr 16 2025 (09:50) 
+## last-updated: Apr 29 2025 (06:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 579
+##     Update #: 598
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -144,7 +144,7 @@
 #'
 #' @export
 predictRisk <- function(object,newdata,...){
-    UseMethod("predictRisk",object)
+    UseMethod(generic = "predictRisk",object = object)
 }
 
 ## * predictRisk.default
@@ -1354,7 +1354,6 @@ predictRisk.Hal9001 <- function(object,
                                 cause,
                                 ...){
     stopifnot(object$family=="cox")
-    # convert covariates to dummy variables
     newdata$dummy.time=rep(1,NROW(newdata))
     newdata$dummy.event=rep(1,NROW(newdata))
     rhs <- as.formula(delete.response(object$terms))
@@ -1367,26 +1366,75 @@ predictRisk.Hal9001 <- function(object,
     newdata$dummy.event = NULL
     # blank Cox object obtained with riskRegression:::coxModelFrame
     info <- object$surv_info
-    hal_pred <- predict(object$fit,new_data=EHF$design)
+    hal_pred <- as.numeric(predict(object$fit,new_data=EHF$design))
     L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
                                       stoptimes = info$stop,
                                       status = info$status,
-                                      eXb = hal_pred,
+                                      eXb = info$eXb,
                                       strata = 1,
                                       nPatients = NROW(info$stop),
                                       nStrata = 1,
                                       emaxtimes = max(info$stop),
-                                      predtimes = sort(unique(info$stop)),
+                                      predtimes = times, 
                                       cause = 1,
                                       Efron = TRUE,
                                       reverse = FALSE)
     hal_Surv <- exp(-hal_pred%o%L0$cumhazard)
-    where <- sindex(jump.times=unique(info$stop),eval.times=times)
-    p <- cbind(0,1-hal_Surv)[,1+where]
+    p <- 1-hal_Surv
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
     }
     p
+}
+
+
+## * predictRisk.coxnet
+##' @rdname predictRisk
+##' @method predictRisk coxnet
+##' @export
+predictRisk.coxnet <- function(object,
+                              newdata,
+                              times,
+                              product.limit = FALSE, #currently no method for product limit
+                              diag = FALSE,
+                              iid = FALSE,
+                              average.iid = FALSE,
+                              ...){
+  dots <- list(...)
+  type <- dots$type ## hidden argument for ate
+  store.iid <- dots$store ## hidden argument for ate
+  outPred <- predictCox(object=object,
+                        newdata=newdata,
+                        times=times,
+                        iid = iid,
+                        diag = diag,
+                        average.iid = average.iid,
+                        product.limit = product.limit,
+                        type="survival")
+  if(identical(type,"survival")){
+      out <- outPred$survival
+  }else{
+      out <- 1-outPred$survival
+  }
+  if(iid){
+      if(identical(type,"survival")){
+          attr(out,"iid") <- outPred$survival.iid
+      }else{
+          attr(out,"iid") <- -outPred$survival.iid
+      }
+  }
+  if(average.iid){
+      if(identical(type,"survival")){
+          attr(out,"average.iid") <- outPred$survival.average.iid
+      }else{
+          if(is.list(outPred$survival.average.iid)){
+              attr(out,"average.iid") <- lapply(outPred$survival.average.iid, function(iIID){-iIID})
+          }else{
+              attr(out,"average.iid") <- -outPred$survival.average.iid
+          }
+      }
+  }
+  return(out)
 }
 
 ## * predictRisk.GLMnet

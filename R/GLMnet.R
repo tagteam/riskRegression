@@ -3,9 +3,10 @@
 #' @description Fit GLMnet models via a formula and a data set for use with \code{\link{predictRisk}}.
 #' @name GLMnet
 #'
-#' @param formula A formula.
+#' @param formula Formula where the left hand side specifies the event
+#' history and the right hand side the linear predictor. 
 #' @param data The data on which to fit the model. 
-#' @param lambda The tuning parameters for GLMnet. If set to NULL, then it the parameters are chosen for you.
+#' @param lambda A hyperparameter passed to glmnet. If set to NULL, then the parameters are chosen for you.
 #' @param cv Whether to use cross-validation or not. Default is TRUE.
 #' @param alpha The elasticnet mixing parameter. See the ?glmnet for more details.
 #' @param nfolds Number of folds for cross-validation. Default is 10.

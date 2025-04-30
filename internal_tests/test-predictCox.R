@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: mar  7 2023 (18:31) 
-##           By: Brice Ozenne
-##     Update #: 177
+## last-updated: Apr 28 2025 (09:12) 
+##           By: Thomas Alexander Gerds
+##     Update #: 178
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1089,12 +1089,6 @@ m.coxph <- coxph(Surv(time, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
 newdata <- d
 
-## system.time(
-##     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, store.iid = "minimal", se = TRUE, iid = FALSE)
-## )
-## system.time(
-##     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, store.iid = "full", se = TRUE, iid = FALSE)
-## )
 
 test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
