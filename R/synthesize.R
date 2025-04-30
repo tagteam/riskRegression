@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Apr 27 2025 (07:09) 
+## Last-Updated: Apr 29 2025 (13:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 126
+##     Update #: 137
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -101,7 +101,7 @@
 ##' @author Johan Sebastian Ohlendorff <johan.ohlendorff@@sund.ku.dk>  and Thomas A. Gerds <tag@@biostat.ku.dk> 
 synthesize <- function(object, data,...){
   requireNamespace("lava")
-  UseMethod("synthesize",object=object)
+  UseMethod(generic = "synthesize",object=object)
 }
 
 ##' @export synthesize.formula
@@ -113,7 +113,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
                                recursive=FALSE,
                                max.levels=10,
                                verbose=FALSE,
-                               return_code,
+                               return_code = FALSE,
                                ...){
   requireNamespace("lava",quietly=TRUE)
   
@@ -237,7 +237,7 @@ synthesize.lvm <- function(object,
                            logtrans = NULL,
                            verbose=FALSE,
                            fix.names = FALSE,
-                           return_code,
+                           return_code = FALSE,
                            ...){
   from.formula <- length(attr(object,"from.formula"))>0
   if (from.formula && verbose){
@@ -375,7 +375,18 @@ synthesize.lvm <- function(object,
             cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i])
         }
         if (return_code){
-            simulation_code <- c(simulation_code,list(paste0("sim_model <- lava::categorical(sim_model,",paste0("~", var),",","labels=",levels(data[[var]]),",","K=",num_cat,",","p=",cat_probs,")")))
+            simulation_code <- c(simulation_code,list(paste0("sim_model <- lava::categorical(sim_model,",
+                                                             paste0("~", var),
+                                                             ",",
+                                                             "labels=c('",
+                                                             paste0(levels(data[[var]]),collapse = "','"),
+                                                             "'),",
+                                                             "K=",
+                                                             num_cat,
+                                                             ",",
+                                                             "p=",
+                                                             paste0(cat_probs,collapse = ","),
+                                                             ")")))
         }else{
             sim_model <- lava::categorical(sim_model,var_formula,labels=levels(data[[var]]),K=num_cat,p=cat_probs)
         }
@@ -413,7 +424,14 @@ synthesize.lvm <- function(object,
               formula <- as.formula(paste0(var, lvl,"~",var))
               # updates the formula in a local environment; otherwise the lvl will be tied to the last value of lvl in the for loop
               if (return_code){
-                  simulation_code <- c(simulation_code,list(paste0("lava::transform(sim_model, ",var,lvl,"~",var,") <- function(x){1*(x==l)}")))
+                  simulation_code <- c(simulation_code,list(paste0("lava::transform(sim_model, ",
+                                                                   var,
+                                                                   lvl,
+                                                                   "~",
+                                                                   var,
+                                                                   ") <- function(x){1*(c(x)=='",
+                                                                   l,
+                                                                   "')}")))
               }else{
                   sim_model <- local({
                       l <- lvl
@@ -553,7 +571,9 @@ synthesize.lvm <- function(object,
       }
   }
   if (return_code){
-      cat(paste(simulation_code,collapse = "\n"),"\n")
+      ## cat(paste(simulation_code,collapse = "\n"),"\n")
+      res <- paste(simulation_code,collapse = "\n")
+      res
   }else{
       res <- list(lava.object = sim_model,labels = labels,categories = categorical.vars)
       class(res) <- c("synth",class(res))

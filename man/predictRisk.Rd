@@ -40,6 +40,7 @@
 \alias{predictRisk.penfitS3}
 \alias{predictRisk.SuperPredictor}
 \alias{predictRisk.Hal9001}
+\alias{predictRisk.coxnet}
 \alias{predictRisk.GLMnet}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
@@ -164,6 +165,17 @@ predictRisk(object, newdata, ...)
 \method{predictRisk}{flexsurvreg}(object, newdata, times, ...)
 
 \method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{coxnet}(
+  object,
+  newdata,
+  times,
+  product.limit = FALSE,
+  diag = FALSE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
 
 \method{predictRisk}{GLMnet}(object, newdata, times = NA, ...)
 

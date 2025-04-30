@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:30) 
 ## Version: 
-## Last-Updated: Apr 27 2025 (07:30) 
+## Last-Updated: Apr 29 2025 (06:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 3
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -59,8 +59,13 @@ coxBaseEstimator.prodlim <- function(object){
     }
 }
 
-# }}}
-
+## ** coxBaseEstimator.coxnet
+#' @rdname coxBaseEstimator
+#' @method coxBaseEstimator coxnet
+#' @export
+coxBaseEstimator.coxnet <- function(object){
+  return("breslow")
+}
 
 
 ######################################################################

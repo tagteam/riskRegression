@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:33) 
 ## Version: 
-## Last-Updated: Apr 27 2025 (07:33) 
+## Last-Updated: Apr 29 2025 (06:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 4
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -125,7 +125,7 @@ coxModelFrame.phreg <- function(object, center = FALSE){
     name.old <- names(dt)
     name.new <- gsub("entry","start",gsub("time","stop",name.old))
     setnames(dt, old = name.old, new = name.new)
-  
+
     ## ** add x
     if(center){
         M.X <- rowCenter_cpp(object$X, center = coxCenter(object))
@@ -196,6 +196,30 @@ coxModelFrame.prodlim <- function(object, center = FALSE){
     }   
     return(dt)
 }
+
+
+## ** coxModelFrame.coxnet
+#' @rdname coxModelFrame
+#' @method coxModelFrame coxnet
+#' @export
+coxModelFrame.coxnet <- function(object,center = FALSE){
+    # FIXME: argument center not used? 
+    default.start <- 0
+    if("start" %in% colnames(object$y)){
+        dt <- data.table(start = object$y[, "start"], stop = object$y[, "stop"], status = object$y[, "status"])
+    } else{
+        dt <- data.table(start = default.start, stop = object$y[, "time"], status = object$y[, "status"])
+    }
+    dt <- cbind(dt, object$design)
+    if("strata" %in% names(attributes(object$y))){
+        dt$strata <- attributes(object$y)$strata
+    } else{
+        dt[, strata := as.factor(1)]
+    }
+    dt
+}
+
+
 
 ######################################################################
 ### coxModel.Frame.R ends here

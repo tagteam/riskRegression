@@ -24,7 +24,6 @@ prepareData/
 ^examples$
 ^simulation$
 ^slowtests$
-
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$

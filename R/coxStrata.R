@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:35) 
 ## Version: 
-## Last-Updated: Apr 27 2025 (07:36) 
+## Last-Updated: Apr 29 2025 (06:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 3
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -145,6 +145,33 @@ coxStrata.prodlim <- function(object, data, sterms, strata.vars, strata.levels){
     
   }
     return(strata)
+}
+
+## ** coxStrata.coxnet
+#' @rdname coxStrata
+#' @method coxStrata coxnet
+#' @export
+coxStrata.coxnet <- function(object, data, sterms, strata.vars, strata.levels){
+  
+  if(length(strata.vars)==0){ ## no strata variables
+    
+    n <- if(is.null(data)) coxN(object) else NROW(data)
+    strata <- as.factor(rep("1", n))
+    
+  }else{  ## strata variables
+    
+    if(is.null(data)){ ## training dataset
+      strata <- object$strata
+    }else { ## new dataset
+      strata <- prodlim::model.design(sterms,data=data,xlev=strata.levels,specialsFactor=TRUE)$strata[[1]]
+      if (any(unique(strata) %in% strata.levels == FALSE)){
+        stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
+      }
+      strata <- factor(strata, levels = strata.levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
+    }
+    
+  }
+  return(strata)
 }
 
 ######################################################################
