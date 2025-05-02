@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Apr 29 2025 (06:51) 
+## last-updated: Apr 30 2025 (06:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 598
+##     Update #: 599
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1521,7 +1521,6 @@ predictRisk.GLMnet <- function(object,newdata,times=NA,...) {
                                           cause = 1,
                                           Efron = TRUE,
                                           reverse = FALSE)$cumhazard
-        ## if (any(is.na(L0))) browser()
         coxnetSurv <- exp(-coxnet_pred%o%L0)
         where <- sindex(jump.times=unique(info$stop),eval.times=times)
         p <- cbind(0,1-coxnetSurv)[,1+where]

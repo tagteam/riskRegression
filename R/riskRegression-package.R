@@ -94,6 +94,7 @@ NULL
 #' @importFrom prodlim Hist dimColor prodlim
 #' @importFrom foreach "%dopar%" foreach "%do%"
 #' @importFrom cmprsk predict.crr
+#' @importFrom glmnet glmnet cv.glmnet
 #' @importFrom timereg comp.risk Event
 #' @importFrom prodlim Hist jackknife prodlim sindex
 #' @importFrom grDevices col2rgb gray
