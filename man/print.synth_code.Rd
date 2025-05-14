@@ -2,10 +2,19 @@
 % Please edit documentation in R/print.synth_code.R
 \name{print.synth_code}
 \alias{print.synth_code}
-\title{method print synth_code}
+\title{Print synthesized code}
 \usage{
-\method{print}{synth_code}(x, ...)
+\method{print}{synth_code}(x, digits, ...)
+}
+\arguments{
+\item{x}{Object obtained with \code{synthesize}}
+
+\item{digits}{Number of digits. Not used.}
+
+\item{...}{Not used.
+
+method print synth_code}
 }
 \description{
-method print synth_code
+Print method for synthesized code
 }

@@ -10,7 +10,6 @@ ate(
   censor = NULL,
   data,
   data.index = NULL,
-  formula = NULL,
   estimator = NULL,
   strata = NULL,
   contrasts = NULL,
@@ -45,8 +44,6 @@ based on the outcome model}
 
 \item{data.index}{[numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
 Only necessary for the standard errors when computing the Average Treatment Effects on a subset of the data set.}
-
-\item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 
 \item{estimator}{[character] The type of estimator used to compute the average treatment effect. 
 Can be \code{"G-formula"}, \code{"IPTW"}, or \code{"AIPTW"}.

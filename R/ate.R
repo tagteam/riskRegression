@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: May 14 2025 (16:00) 
+## last-updated: May 14 2025 (16:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2579
+##     Update #: 2580
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -515,16 +515,16 @@ ate <- function(event,
         }
         data.contrasts <- data[data[[var.group]] %in% contrasts]
 
-        ## do not use [,,by=...] because there can be confusion between the argument times and a column named times when present in the data.table
+        ## do not use [,,by=...] because there can be confusion between the argument times
+        # and a column named times when present in the data.table
         data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
             iM <- do.call(rbind,lapply(times, function(t){c(times = t, pc = sum(iDF[[eventVar.time]]>=t))}))
             return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
         }))
-    }
     attr(out$eval.times,"n.at.risk") <- dcast(data.timeContrasts,
                                               value.var = "pc",
                                               formula = as.formula(paste0(var.group,"~times")))
-    
+    }    
     attr(out$eval.times,"n.censored") <- n.censor
     class(out) <- c("ate")
 
