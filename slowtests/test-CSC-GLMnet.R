@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 28 2025 (09:31) 
 ## Version: 
-## Last-Updated: May 14 2025 (15:33) 
+## Last-Updated: May 14 2025 (17:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -49,6 +49,7 @@ test_that("penalized Cox models",{
               data = test,
               summary = "risk",
               times = 3)
+    predictRisk(l,newdata = test,times = 3)
     ## plotRisk(x,times = 3)
     ## plotRisk(x,times = 3,models = c("lasso","elnet"))
     x

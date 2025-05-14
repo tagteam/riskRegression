@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: May  9 2025 (06:17) 
+## Last-Updated: May 14 2025 (17:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 31
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -193,9 +193,9 @@ coxLP.prodlim <- function(object, data, center){
 coxLP.GLMnet <- function(object, data, center = FALSE){
     if(is.null(data)){
         if(inherits(object$fit,"cv.glmnet")){
-            return(as.numeric(predict(object$fit$glmnet.fit, s = object$fit$lambda.min, newx = object$x)))
+            return(as.numeric(predict(object$fit$glmnet.fit, s = object$selected.lambda, newx = object$x)))
         } else{
-            return(as.numeric(predict(object$fit, s = object$lambda, newx = object$x)))
+            return(as.numeric(predict(object$fit, s = object$selected.lambda, newx = object$x)))
         }
     } else{
         ## ff <- stats::formula(stats::delete.response(prodlim::strip.terms(object$terms,specials = c("unpenalized","strata"),arguments = NULL)))
@@ -214,9 +214,9 @@ coxLP.GLMnet <- function(object, data, center = FALSE){
             newX <- newdata$design
         }
         if(inherits(object$fit,"cv.glmnet")){
-            return(as.numeric(predict(object$fit$glmnet.fit, s = object$fit$lambda.min, newx = newX)))
+            return(as.numeric(predict(object$fit$glmnet.fit, s = object$selected.lambda, newx = newX)))
         } else{
-            return(as.numeric(predict(object$fit, s = object$lambda, newx = newX)))
+            return(as.numeric(predict(object$fit, s = object$selected.lambda, newx = newX)))
         }
     }
 }
