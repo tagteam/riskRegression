@@ -1,100 +1,125 @@
-#' @title Fitting GLMnet for use with predictRisk
+#' @title Formula interface for glmnet 
 #'
-#' @description Fit GLMnet models via a formula and a data set for use with \code{\link{predictRisk}}.
+#' @description Fit glmnet models via a formula and a data set for use with \code{\link{predictRisk}}.
 #' @name GLMnet
 #'
-#' @param formula Formula where the left hand side specifies the event
-#' history and the right hand side the linear predictor. 
-#' @param data The data on which to fit the model. 
-#' @param lambda A hyperparameter passed to glmnet. If set to NULL, then the parameters are chosen for you.
+#' @param formula Formula where the left hand side specifies either a single variable (continuous, binary or categorical),
+#' or as a survival outcome (time, event), and the right hand side specifies the linear predictor.
+#' Survival outcome can either be specified via \link[survival]{Surv} or via \link[prodlim]{Hist}.
+#' Variables on the right hand side of the formula can be marked as \code{unpenalized}, see examples.
+#' #' For survival outcome, a penalized Cox regression model is fitted. For this the formula may specify variables for which the baseline hazard function should be stratified, see examples. 
+#' @param data The data used to fit the model.
+#' @param lambda A hyperparameter passed to glmnet. If set to NULL, then lambda is chosen by cross-validation,
+#' via the function \link[glmnet]{cv.glmnet}
+#' @param alpha The elasticnet mixing parameter, with 0<=alpha<= 1. \code{alpha =1} is the lasso penalty, and \code{alpha=0} the ridge penalty.
 #' @param cv Whether to use cross-validation or not. Default is TRUE.
-#' @param alpha The elasticnet mixing parameter. 
-#' @param nfolds Number of folds for cross-validation. Default is 10.
-#' @param type.measure loss to use for cross-validation. Default is deviance.
-#' @param family passed to \code{glmnet}. Defaults for binary outcome to \code{"binomial"} and for survival to \code{"cox"}.
-#' @param \dots Additional arguments that are passed on to the glmnet.
+#' @param nfolds Passed on to \link[glmnet]{cv.glmnet}. Number of folds for cross-validation. The default is 10.
+#' @param type.measure Passed on to \link[glmnet]{cv.glmnet}. Loss to use for cross-validation. Default is deviance.
+#' @param selector On of \code{'min'}, \code{'1se'}, \code{'undersmooth'} where the first two are described in the help page of \link[glmnet]{cv.glmnet}
+#'                      and the latter is the smallest lambda value where the model could fit. Default is \code{'min'}.
+#'        When \code{'undersmooth'} is specified no cross-validation is performed. 
+#' @param family Passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}. For binary outcome the default is \code{"binomial"} and for survival \code{"cox"}.
+#' @param \dots Additional arguments that are passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.
+#' @return A glmnet object enhanced with the call, the terms to create the design matrix, and in the survival case
+#' with the Breslow estimate of the baseline hazard function. 
+#' @seealso \link[glmnet]{glmnet}
+#' @examples
+#' library(survival)
+#' set.seed(8)
+#' d <- sampleData(77,outcome="survival")
+#' test <- sampleData(5,outcome="survival")
+#' f0 <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d,lambda=0)
+#' f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
+#' f
+#' f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
+#' r <- predictRisk(f,newdata=test,times=1)
+#' r1 <- predictRisk(f1,newdata=test,times=1)
+#' cbind(r,r1)
 #' @export
 GLMnet <- function(formula,
                    data,
                    lambda=NULL,
-                   cv=TRUE,
                    alpha = 1,
+                   cv=TRUE,
                    nfolds = 10,
                    type.measure = "deviance",
+                   selector = "min",
                    family,
                    ...){
     requireNamespace(c("glmnet","prodlim"))
-    tt <- all.vars(update(formula,".~1"))
-    if (length(tt) != 1){
+    response_variable_names <- all.vars(update(formula,".~1"))
+    selector <- match.arg(selector,c("undersmooth","min","1se"))
+    # disable cross-validation when there is nothing to choose from or
+    # when the choice does not require a criterion
+    if (length(lambda) == 1 || selector == "undersmooth") cv <- FALSE
+    if (length(lambda) == 1) selector <- "prespecified"
+    if (length(response_variable_names) != 1){
+        response <- prodlim::EventHistory.frame(formula = formula,
+                                                data = data,
+                                                unspecialsDesign = TRUE,
+                                                specialsDesign = TRUE,
+                                                stripSpecials = c("unpenalized","strata"),
+                                                specials = c("strata","unpenalized"))
+        Y <- response$event.history
         if (missing(family)) family <- "cox"
-        strata.num = start = status = NULL
-        EHF = prodlim::EventHistory.frame(formula,data,
-                                          unspecialsDesign = TRUE,
-                                          specials = NULL)
-        stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
-        # blank Cox object needed for predictions
-        data = data.frame(cbind(EHF$event.history,EHF$design))
-        bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
-        bl_obj <- coxModelFrame(bl_cph)[]
-        bl_obj[,strata.num:=0]
-        bl_obj[,order := 1:.N]
-        data.table::setorder(bl_obj, strata.num,stop,start,-status)
-        ## save this for calculating Breslow estimator when doing predictions
-        sorted_x_train = EHF$design[bl_obj[,order],]
-        design <- EHF$design[bl_obj$order,]
-        if (!cv){
-            fit <- glmnet::glmnet(x=EHF$design,
-                                  y=EHF$event.history,
-                                  lambda=lambda,
-                                  alpha= alpha,
-                                  family=family,
-                                  ...)
+        if (attr(Y,"model")[[1]] != "survival"){
+            stop("This function works only for survival models without competing risks.\nFor competing risks use riskRegression::CSC.")
         }
-        else {
-            fit <- glmnet::cv.glmnet(x=EHF$design,
-                                     y=EHF$event.history,
-                                     lambda=lambda,
-                                     nfolds=nfolds,
-                                     type.measure = type.measure,
-                                     alpha=alpha,
-                                     family=family,
-                                     ...)
-            lambda <- fit$lambda
+        if(length(response$strata)>0){
+            # FIXME: can strata be based on multiple variables?
+            attr(Y,"strata") <- response$strata
+            class(Y) <- c("stratifySurv",class(Y))
+        }
+    }else{
+        response <- Publish::specialFrame(formula = formula,
+                                          data = data,
+                                          specialsDesign = TRUE,
+                                          unspecialsDesign = TRUE,
+                                          stripSpecials = "unpenalized",
+                                          specials = "unpenalized")
+        Y <- response$response
+        if (length(unique(Y)) != 2) stop("The outcome must be binary or survival.")
+        if (missing(family)) family <- "binomial"
+    }
+    glmnet_args <- list(...)
+    if ("penalty.factor" %in% names(glmnet_args)){
+        penalty.factor <- glmnet_args$penalty
+        X <- response$design
+    }else{
+        if (NCOL(response$unpenalized)>0){
+            penalty.factor <- c(rep(1,NCOL(response$design)),rep(0,NCOL(response$unpenalized)))
+            X <- cbind(response$design,response$unpenalized)
+        }else{
+            X <- response$design
+            penalty.factor <- rep(1,NCOL(response$design))
         }
     }
-    else {
-        if (missing(family)) family <- "binomial"
-        sorted_x_train=bl_obj=terms=design = NULL
-        y  <- data[[tt[1]]]
-        x <- model.matrix(formula, data=data)
-        if (!cv){
-            fit <- glmnet::glmnet(x=x,
-                                  y=y,
-                                  lambda=lambda,
-                                  alpha=alpha,
-                                  family=family,
-                                  ...)
+    if (!cv){
+        fit <- glmnet::glmnet(x=X,y=Y,lambda=lambda,alpha= alpha,penalty.factor = penalty.factor,family=family,...)
+        if (selector == "prespecified"){
+            selected.lambda <- lambda
+            selected.beta <- fit$beta
+        }else{
+            # undersmoothing
+            selected.lambda <- fit$lambda[length(fit$lambda)]
+            selected.beta <- fit$beta[,match(selected.lambda,fit$lambda,nomatch = NCOL(fit$beta)),drop = FALSE]
         }
-        else {
-            fit <- glmnet::cv.glmnet(x=x,
-                                     y=y,
-                                     lambda=lambda,
-                                     nfolds=nfolds,
-                                     type.measure =type.measure,
-                                     alpha=alpha,
-                                     family=family,
-                                     ...)
-            lambda <- fit$lambda
-        }
+    } else {
+        # forcing cv
+        fit <- glmnet::cv.glmnet(x=X,y=Y,lambda=lambda,nfolds=nfolds,type.measure = type.measure,alpha=alpha,penalty.factor = penalty.factor,family=family,...)
+        selected.lambda <- fit$glmnet.fit[[paste0("lambda.",selector)]]
+        selected.beta <- fit$glmnet.fit$beta[,fit$index[,"Lambda"][[selector]],drop = FALSE]
     }
     out <- list(fit = fit,
-                surv_info = bl_obj,
-                design = design,
+                y = Y,
+                x = X,
                 call = match.call(),
-                terms = terms(formula),
-                sorted_x_train=sorted_x_train,
+                terms = terms(formula,specials = c("strata","unpenalized")),
                 cv=cv,
-                lambda = lambda)
-    class(out) = "GLMnet"
+                selector = selector,
+                penalty.factor = penalty.factor,
+                selected.lambda = selected.lambda,
+                selected.beta = selected.beta)
+    class(out) <- "GLMnet"
     out
 }

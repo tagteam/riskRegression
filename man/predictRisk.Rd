@@ -40,8 +40,8 @@
 \alias{predictRisk.penfitS3}
 \alias{predictRisk.SuperPredictor}
 \alias{predictRisk.Hal9001}
-\alias{predictRisk.coxnet}
 \alias{predictRisk.GLMnet}
+\alias{predictRisk.GLMnet2}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
 \alias{predictRisk.CoxConfidential}
@@ -166,7 +166,7 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
 
-\method{predictRisk}{coxnet}(
+\method{predictRisk}{GLMnet}(
   object,
   newdata,
   times,
@@ -177,7 +177,7 @@ predictRisk(object, newdata, ...)
   ...
 )
 
-\method{predictRisk}{GLMnet}(object, newdata, times = NA, ...)
+\method{predictRisk}{GLMnet2}(object, newdata, times = NA, ...)
 
 \method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 

@@ -6,7 +6,7 @@
 \alias{coxModelFrame.cph}
 \alias{coxModelFrame.phreg}
 \alias{coxModelFrame.prodlim}
-\alias{coxModelFrame.coxnet}
+\alias{coxModelFrame.GLMnet}
 \title{Extract the design matrix used to train a Cox model}
 \usage{
 coxModelFrame(object, center)
@@ -19,7 +19,7 @@ coxModelFrame(object, center)
 
 \method{coxModelFrame}{prodlim}(object, center = FALSE)
 
-\method{coxModelFrame}{coxnet}(object, center = FALSE)
+\method{coxModelFrame}{GLMnet}(object, center = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

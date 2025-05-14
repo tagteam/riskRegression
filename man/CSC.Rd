@@ -25,10 +25,11 @@ regression models for all causes.  If \code{"survival"} fit one
 cause-specific Cox regression model for the cause of interest and
 also a Cox regression model for event-free survival.}
 
-\item{fitter}{Routine to fit the Cox regression models.
-If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
+\item{fitter}{Character string specifying the routine to fit the Cox regression models. Available are
+\code{"coxph"} for \link[survival]{coxph}, \code{"coxph"} for \link[rms]{cph},
+\code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.}
 
-\item{...}{Arguments given to \code{fitter}, e.g., \code{coxph}.}
+\item{...}{Arguments given to the function defined by argument \code{fitter}.}
 }
 \value{
 \item{models }{a list with the fitted (cause-specific) Cox
@@ -55,6 +56,19 @@ data(Melanoma)
 fit1 <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
             data=Melanoma)
 print(fit1)
+
+\dontrun{
+library(rms)
+fit1a <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
+            data=Melanoma,fitter="cph")
+print(fit1a)
+}
+\dontrun{
+library(glmnet)
+fit1b <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
+            data=Melanoma,fitter="glmnet")
+print(fit1b)
+}
 \dontrun{
 library(Publish)
 publish(fit1)

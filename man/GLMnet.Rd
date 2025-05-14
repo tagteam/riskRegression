@@ -2,14 +2,14 @@
 % Please edit documentation in R/GLMnet.R
 \name{GLMnet}
 \alias{GLMnet}
-\title{Fitting GLMnet for use with predictRisk}
+\title{Formula interface for glmnet}
 \usage{
 GLMnet(
   formula,
   data,
   lambda = NULL,
-  cv = TRUE,
   alpha = 1,
+  cv = TRUE,
   nfolds = 10,
   type.measure = "deviance",
   family,
@@ -17,24 +17,48 @@ GLMnet(
 )
 }
 \arguments{
-\item{formula}{A formula.}
+\item{formula}{Formula where the left hand side specifies either a single variable (continuous, binary or categorical),
+or as a survival outcome (time, event), and the right hand side specifies the linear predictor.
+Survival outcome can either be specified via \link[survival]{Surv} or via \link[prodlim]{Hist}.
+Variables on the right hand side of the formula can be marked as \code{unpenalized}, see examples.
+#' For survival outcome, a penalized Cox regression model is fitted. For this the formula may specify variables for which the baseline hazard function should be stratified, see examples.}
 
-\item{data}{The data on which to fit the model.}
+\item{data}{The data used to fit the model.}
 
-\item{lambda}{The tuning parameters for GLMnet. If set to NULL, then it the parameters are chosen for you.}
+\item{lambda}{A hyperparameter passed to glmnet. If set to NULL, then lambda is chosen by cross-validation,
+via the function \link[glmnet]{cv.glmnet}}
+
+\item{alpha}{The elasticnet mixing parameter, with 0<=alpha<= 1. \code{alpha =1} is the lasso penalty, and \code{alpha=0} the ridge penalty.}
 
 \item{cv}{Whether to use cross-validation or not. Default is TRUE.}
 
-\item{alpha}{The elasticnet mixing parameter. See the ?glmnet for more details.}
+\item{nfolds}{Passed on to \link[glmnet]{cv.glmnet}. Number of folds for cross-validation. The default is 10.}
 
-\item{nfolds}{Number of folds for cross-validation. Default is 10.}
+\item{type.measure}{Passed on to \link[glmnet]{cv.glmnet}. Loss to use for cross-validation. Default is deviance.}
 
-\item{type.measure}{loss to use for cross-validation. Default is deviance.}
+\item{family}{Passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}. For binary outcome the default is \code{"binomial"} and for survival \code{"cox"}.}
 
-\item{family}{passed to \code{glmnet}. Defaults for binary outcome to \code{"binomial"} and for survival to \code{"cox"}.}
-
-\item{\dots}{Additional arguments that are passed on to the glmnet.}
+\item{\dots}{Additional arguments that are passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.}
+}
+\value{
+A glmnet object enhanced with the call, the terms to create the design matrix, and in the survival case
+with the Breslow estimate of the baseline hazard function.
 }
 \description{
-Fit GLMnet models via a formula and a data set for use with \code{\link{predictRisk}}.
+Fit glmnet models via a formula and a data set for use with \code{\link{predictRisk}}.
+}
+\examples{
+library(survival)
+set.seed(8)
+d <- sampleData(77,outcome="survival")
+test <- sampleData(5,outcome="survival")
+f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
+f
+f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
+r <- predictRisk(f,newdata=test,times=1)
+r1 <- predictRisk(f1,newdata=test,times=1)
+cbind(r,r1)
+}
+\seealso{
+\link[glmnet]{glmnet}
 }

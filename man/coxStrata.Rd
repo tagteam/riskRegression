@@ -6,7 +6,7 @@
 \alias{coxStrata.coxph}
 \alias{coxStrata.phreg}
 \alias{coxStrata.prodlim}
-\alias{coxStrata.coxnet}
+\alias{coxStrata.GLMnet}
 \title{Define the strata for a new dataset}
 \usage{
 coxStrata(object, data, sterms, strata.vars, strata.levels)
@@ -19,7 +19,7 @@ coxStrata(object, data, sterms, strata.vars, strata.levels)
 
 \method{coxStrata}{prodlim}(object, data, sterms, strata.vars, strata.levels)
 
-\method{coxStrata}{coxnet}(object, data, sterms, strata.vars, strata.levels)
+\method{coxStrata}{GLMnet}(object, data, sterms, strata.vars, strata.levels)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

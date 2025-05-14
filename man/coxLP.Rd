@@ -6,7 +6,7 @@
 \alias{coxLP.coxph}
 \alias{coxLP.phreg}
 \alias{coxLP.prodlim}
-\alias{coxLP.coxnet}
+\alias{coxLP.GLMnet}
 \title{Compute the linear predictor of a Cox model}
 \usage{
 coxLP(object, data, center)
@@ -19,7 +19,7 @@ coxLP(object, data, center)
 
 \method{coxLP}{prodlim}(object, data, center)
 
-\method{coxLP}{coxnet}(object, data, center = FALSE)
+\method{coxLP}{GLMnet}(object, data, center = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

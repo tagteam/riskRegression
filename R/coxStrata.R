@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:35) 
 ## Version: 
-## Last-Updated: Apr 29 2025 (06:51) 
+## Last-Updated: May  8 2025 (13:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 3
+##     Update #: 4
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -147,11 +147,11 @@ coxStrata.prodlim <- function(object, data, sterms, strata.vars, strata.levels){
     return(strata)
 }
 
-## ** coxStrata.coxnet
+## ** coxStrata.GLMnet
 #' @rdname coxStrata
-#' @method coxStrata coxnet
+#' @method coxStrata GLMnet
 #' @export
-coxStrata.coxnet <- function(object, data, sterms, strata.vars, strata.levels){
+coxStrata.GLMnet <- function(object, data, sterms, strata.vars, strata.levels){
   
   if(length(strata.vars)==0){ ## no strata variables
     

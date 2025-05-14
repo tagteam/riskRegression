@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: Apr 29 2025 (06:51) 
+## Last-Updated: May  9 2025 (06:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 14
+##     Update #: 31
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -186,26 +186,37 @@ coxLP.prodlim <- function(object, data, center){
 }
 
 
-## ** coxLP.coxnet
+## ** coxLP.GLMnet
 #' @rdname coxLP
-#' @method coxLP coxnet
+#' @method coxLP GLMnet
 #' @export
-coxLP.coxnet <- function(object, data, center = FALSE){
+coxLP.GLMnet <- function(object, data, center = FALSE){
     if(is.null(data)){
-        if(object$cv){
-            return(as.numeric(predict(object$glmnet.fit, s = object$lambda.min, newx = object$design)))
+        if(inherits(object$fit,"cv.glmnet")){
+            return(as.numeric(predict(object$fit$glmnet.fit, s = object$fit$lambda.min, newx = object$x)))
         } else{
-            return(as.numeric(predict(object, s = object$lambda, newx = object$design)))
+            return(as.numeric(predict(object$fit, s = object$lambda, newx = object$x)))
         }
     } else{
-        newdata <- prodlim::EventHistory.frame(formula(delete.response(terms(object$formula))),
-                                               data,
-                                               response = FALSE,
-                                               specials = NULL)$design
-        if(object$cv){
-            return(as.numeric(predict(object$glmnet.fit, s = object$lambda.min, newx = newdata)))
+        ## ff <- stats::formula(stats::delete.response(prodlim::strip.terms(object$terms,specials = c("unpenalized","strata"),arguments = NULL)))
+        ff <- stats::formula(stats::delete.response(object$terms))
+        newdata <- Publish::specialFrame(formula = ff,
+                                data = data,
+                                strip.specials = c("strata","unpenalized"),
+                                strip.arguments = NULL,
+                                specials = c("strata","unpenalized"),
+                                unspecials.design = TRUE,
+                                specials.design = TRUE,
+                                response = FALSE)
+        if (NCOL(newdata$unpenalized)>0){
+            newX <- cbind(newdata$design,newdata$unpenalized)
+        }else{
+            newX <- newdata$design
+        }
+        if(inherits(object$fit,"cv.glmnet")){
+            return(as.numeric(predict(object$fit$glmnet.fit, s = object$fit$lambda.min, newx = newX)))
         } else{
-            return(as.numeric(predict(object, s = object$lambda, newx = newdata)))
+            return(as.numeric(predict(object$fit, s = object$lambda, newx = newX)))
         }
     }
 }

@@ -9,7 +9,7 @@
 \alias{coxN.CauseSpecificCox}
 \alias{coxN.glm}
 \alias{coxN.prodlim}
-\alias{coxN.coxnet}
+\alias{coxN.GLMnet}
 \title{Extract the number of observations from a Cox model}
 \usage{
 coxN(object)
@@ -28,7 +28,7 @@ coxN(object)
 
 \method{coxN}{prodlim}(object)
 
-\method{coxN}{coxnet}(object)
+\method{coxN}{GLMnet}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

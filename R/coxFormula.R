@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:31) 
 ## Version: 
-## Last-Updated: Apr 29 2025 (06:51) 
+## Last-Updated: May  8 2025 (13:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,12 +79,12 @@ coxFormula.prodlim <- function(object){
     return(stats::formula(object))
 }
 
-## ** coxFormula.coxnet
+## ** coxFormula.GLMnet
 #' @rdname coxFormula
-#' @method coxFormula coxnet
+#' @method coxFormula GLMnet
 #' @export
-coxFormula.coxnet <- function(object){
-    return(object$formula)
+coxFormula.GLMnet <- function(object){
+    return(stats::formula(object$terms))
 }
 
 ######################################################################
