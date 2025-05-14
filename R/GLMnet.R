@@ -28,13 +28,23 @@
 #' set.seed(8)
 #' d <- sampleData(77,outcome="survival")
 #' test <- sampleData(5,outcome="survival")
+#'
+#' # penalized linear regression
+#' h <- GLMnet(X8~X2+X1,data=d)
+#'
+#' # penalized logistic regression
+#' g <- GLMnet(X1~X2+X8,data=d)
+#' 
+#' # penalized Cox regression
+#' 
 #' f0 <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d,lambda=0)
 #' f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
 #' f
+#' predictCox(f,newdata=test,times=5,product.limit=TRUE)
+#' 
 #' f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
-#' r <- predictRisk(f,newdata=test,times=1)
-#' r1 <- predictRisk(f1,newdata=test,times=1)
-#' cbind(r,r1)
+#' predictRisk(f,newdata=test,times=1)
+#' predictRisk(f1,newdata=test,times=1)
 #' @export
 GLMnet <- function(formula,
                    data,
@@ -73,13 +83,18 @@ GLMnet <- function(formula,
     }else{
         response <- Publish::specialFrame(formula = formula,
                                           data = data,
-                                          specialsDesign = TRUE,
-                                          unspecialsDesign = TRUE,
-                                          stripSpecials = "unpenalized",
+                                          specials.design = TRUE,
+                                          unspecials.design = TRUE,
+                                          strip.specials = "unpenalized",
                                           specials = "unpenalized")
-        Y <- response$response
-        if (length(unique(Y)) != 2) stop("The outcome must be binary or survival.")
-        if (missing(family)) family <- "binomial"
+        Y <- unlist(response$response)
+        if (missing(family)){
+            if (length(unique(Y)) == 2){
+                family <- "binomial"
+            } else{
+                family <- "gaussian"
+            }
+        }
     }
     glmnet_args <- list(...)
     if ("penalty.factor" %in% names(glmnet_args)){
@@ -95,7 +110,13 @@ GLMnet <- function(formula,
         }
     }
     if (!cv){
-        fit <- glmnet::glmnet(x=X,y=Y,lambda=lambda,alpha= alpha,penalty.factor = penalty.factor,family=family,...)
+        fit <- glmnet::glmnet(x=X,
+                              y=Y,
+                              lambda=lambda,
+                              alpha= alpha,
+                              penalty.factor = penalty.factor,
+                              family=family,
+                              ...)
         if (selector == "prespecified"){
             selected.lambda <- lambda
             selected.beta <- fit$beta
@@ -106,8 +127,16 @@ GLMnet <- function(formula,
         }
     } else {
         # forcing cv
-        fit <- glmnet::cv.glmnet(x=X,y=Y,lambda=lambda,nfolds=nfolds,type.measure = type.measure,alpha=alpha,penalty.factor = penalty.factor,family=family,...)
-        selected.lambda <- fit$glmnet.fit[[paste0("lambda.",selector)]]
+        fit <- glmnet::cv.glmnet(x=X,
+                                 y=Y,
+                                 lambda=lambda,
+                                 nfolds=nfolds,
+                                 type.measure = type.measure,
+                                 alpha=alpha,
+                                 penalty.factor = penalty.factor,
+                                 family=family,
+                                 ...)
+        selected.lambda <- fit[[paste0("lambda.",selector)]]
         selected.beta <- fit$glmnet.fit$beta[,fit$index[,"Lambda"][[selector]],drop = FALSE]
     }
     out <- list(fit = fit,

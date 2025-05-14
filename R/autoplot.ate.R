@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Oct 21 2024 (17:37) 
-##           By: Brice Ozenne
-##     Update #: 192
+## last-updated: May 14 2025 (15:31) 
+##           By: Thomas Alexander Gerds
+##     Update #: 193
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -172,9 +172,6 @@ autoplot.ate <- function(object,
     dataL[,row := as.numeric(as.factor(.SD[[name.treatment]]))]
     if(ci){
         setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
-    }
-    if(attr(object$estimator,"TD")){
-        dataL$time <- dataL$time + dataL$landmark
     }
     if(first.derivative && ci){
         attr(first.derivative,"vcov") <- attr(object[[type]],"vcov")[[estimator]]

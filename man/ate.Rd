@@ -17,7 +17,6 @@ ate(
   allContrasts = NULL,
   times,
   cause = NA,
-  landmark = NULL,
   se = TRUE,
   iid = (B == 0) && (se || band),
   known.nuisance = FALSE,
@@ -65,10 +64,6 @@ Incompatible with treatment. Experimental.}
 \item{times}{[numeric vector] Time points at which to evaluate average treatment effects.}
 
 \item{cause}{[integer/character] the cause of interest.}
-
-\item{landmark}{for models with time-dependent covariates the landmark time(s) of evaluation.
-In this case, argument \code{time} may only be one value and for the prediction of risks
-it is assumed that that the covariates do not change between landmark and landmark+time.}
 
 \item{se}{[logical] If \code{TRUE} compute and add the standard errors to the output.}
 
@@ -343,58 +338,6 @@ ateRobustFast <- ate(event = mRound.event, treatment = m.treatment,
 coef(ateRobustFast) - coef(ateRobust) ## inaccuracy
 }
 
-###################################
-#### time-dependent covariates ####
-###################################
-
-\dontrun{
-#### example 1 (survival)
-## data management: split trajectories
-vet2 <- survSplit(Surv(time, status) ~., data = veteran,
-                  cut=c(60, 120), episode ="timegroup")
-
-## fit Cox model
-fit.TD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
-               data= vet2, x = TRUE)
-
-## run ATE with bootstrap for uncertainty quantification
-set.seed(16)
-resVet <- ate(fit.TD, treatment = "celltype", times = 5, data = vet2,
-              formula=Hist(entry=tstart,time=time,event=status)~1,
-              landmark = c(0,30,60,90), B = 50)
-summary(resVet)
-
-## for reference
-fit.Ref <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
-               data= veteran, x = TRUE)
-ateRef <- ate(fit.Ref, treatment = "celltype", times = c(5,35), data = veteran)
-## exactly the same when landmark = 0
-confint(ateRef)$meanRisk[1] 
-confint(resVet)$meanRisk[1]
-## very different with landmark != 0
-## since one condition on being alive at the landmark time
-confint(ateRef)$meanRisk[2] 
-suppressWarnings(confint(resVet)$meanRisk[2])
-}
-
-\dontrun{
-#### example 2 (competing risks)
-## generate data 
-set.seed(137)
-d <- sampleDataTD(127)
-d[,status:=1*(event==1)]
-d[,X3:=as.factor(X3)]
-## fit cause specific Cox model
-cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
-## run ATE
-set.seed(16)
-resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
-        data = d, treatment = "X3", contrasts = NULL,
-        times=.5,verbose=1,
-        landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
-        band = FALSE, mc.cores=1)
-resTD
-}
 }
 \references{
 Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas

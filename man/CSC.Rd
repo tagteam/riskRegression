@@ -65,7 +65,11 @@ print(fit1a)
 }
 \dontrun{
 library(glmnet)
-fit1b <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
+# lasso
+fit1b <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
+            data=Melanoma,fitter="glmnet")
+# rigde regression
+fit1c <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
             data=Melanoma,fitter="glmnet")
 print(fit1b)
 }

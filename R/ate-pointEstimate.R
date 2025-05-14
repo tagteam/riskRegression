@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (16:56) 
-##           By: Brice Ozenne
-##     Update #: 1131
+## Last-Updated: May 14 2025 (15:29) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1132
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,7 +26,6 @@ ATE_TI <- function(object.event,
                    contrasts,
                    allContrasts,
                    times,
-                   landmark,
                    cause,
                    level.censoring,
                    levels,
@@ -418,70 +417,14 @@ ATE_TI <- function(object.event,
     }
 
     ## ** Compute risk comparisons
-    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = FALSE, allContrasts = allContrasts)
+    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, allContrasts = allContrasts)
     
     ## ** Export
     return(out)            
 }
 
-## * ATE_TD: compute average risk for time dependent covariates (using G-formula)
-ATE_TD <- function(object.event,
-                   mydata,
-                   formula,
-                   treatment,
-                   contrasts,
-                   allContrasts,
-                   times,
-                   landmark,
-                   cause,
-                   n.contrasts,
-                   levels,
-                   ...){
-
-    n.contrasts <- length(contrasts)
-
-    response <- eval(formula[[2]],envir=mydata)
-    time <- response[,"time"]
-    entry <- response[,"entry"]
-    if(inherits(x=object.event,what="coxph")){
-        riskhandler <- "predictRisk.coxphTD"
-    }else{
-        riskhandler <- "predictRisk.CSCTD"
-    }
-    ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-    out <- list(meanRisk = NULL,
-                diffRisk = NULL,
-                ratioRisk = NULL,
-                store = NULL)
-    out$meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
-        data.i <- mydata
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        data.table::rbindlist(lapply(landmark,function(lm){
-            atrisk <- (entry <= lm & time >= lm)
-            risk.i <- colMeans(do.call(riskhandler,
-                                       args = list(object.event,
-                                                   newdata = data.i[atrisk,],
-                                                   times = times,
-                                                   cause = cause,
-                                                   landmark=lm,
-                                                   ...)))
-            data.table::data.table(estimator = "GFORMULA",
-                                   treatment=contrasts[[i]],
-                                   time=times,
-                                   landmark=lm,
-                                   estimate=risk.i)
-        }))
-    }))
-
-    ## ** Compute risk comparisons
-    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = TRUE, allContrasts = allContrasts)
-
-    ## ** Export
-    return(out)
-}
-
 ## * ATE_COMPARISONS: compute average risk for time dependent covariates (using G-formula)
-ATE_COMPARISONS <- function(data, TD, allContrasts){
+ATE_COMPARISONS <- function(data, allContrasts){
     ## duplicate
     dataA <- copy(data)
     setnames(dataA, old = c("treatment","estimate"), new = c("A","estimate.A"))
@@ -490,7 +433,7 @@ ATE_COMPARISONS <- function(data, TD, allContrasts){
 
     ## perform all pairwise combinations
     mdata <- do.call(rbind,apply(allContrasts, 2, function(iC){ merge(dataA[iC[1],.SD, on = "A"],dataB[iC[2],.SD, on = "B"],
-                                                                      by = c("estimator","time",if(TD){"landmark"}))
+                                                                      by = c("estimator","time"))
     })) ## iC <- c("T0","T1")
 
     ## re-order by estimator

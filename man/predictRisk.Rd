@@ -33,8 +33,6 @@
 \alias{predictRisk.formula}
 \alias{predictRisk.BinaryTree}
 \alias{predictRisk.comprisk}
-\alias{predictRisk.coxphTD}
-\alias{predictRisk.CSCTD}
 \alias{predictRisk.coxph.penal}
 \alias{predictRisk.ranger}
 \alias{predictRisk.penfitS3}
@@ -99,10 +97,6 @@ predictRisk(object, newdata, ...)
   ...
 )
 
-\method{predictRisk}{coxphTD}(object, newdata, times, landmark, ...)
-
-\method{predictRisk}{CSCTD}(object, newdata, times, cause, landmark, ...)
-
 \method{predictRisk}{coxph.penal}(object, newdata, times, ...)
 
 \method{predictRisk}{cph}(
@@ -166,16 +160,7 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
 
-\method{predictRisk}{GLMnet}(
-  object,
-  newdata,
-  times,
-  product.limit = FALSE,
-  diag = FALSE,
-  iid = FALSE,
-  average.iid = FALSE,
-  ...
-)
+\method{predictRisk}{GLMnet}(object, newdata, times, product.limit = FALSE, diag = FALSE, ...)
 
 \method{predictRisk}{GLMnet2}(object, newdata, times = NA, ...)
 
@@ -217,8 +202,6 @@ Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
 \item{diag}{when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
 otherwise it is only computed for the i-th observation at the i-th time.}
-
-\item{landmark}{The starting time for the computation of the cumulative risk.}
 
 \item{truncate}{If \code{TRUE} truncates the predicted risks to be in the range [0, 1]. For now only implemented for the Cause Specific Cox model.}
 }

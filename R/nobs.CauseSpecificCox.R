@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 21 2020 (11:10) 
 ## Version: 
-## Last-Updated: Jun 13 2024 (19:54) 
-##           By: Brice Ozenne
-##     Update #: 13
+## Last-Updated: May 14 2025 (08:52) 
+##           By: Thomas Alexander Gerds
+##     Update #: 16
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,7 +15,8 @@
 ## 
 ### Code:
 
-#' @export
+##' @method nobs CauseSpecificCox 
+##' @export
 nobs.CauseSpecificCox <- function(object,...){
     return(NROW(object$response))
 }
@@ -27,6 +28,7 @@ nobs.coxph <- function(object,...){
 nobs.phreg <- function(object,...){
     return(NROW(object$time))
 }
+
 
 ##----------------------------------------------------------------------
 ### nobs.R ends here

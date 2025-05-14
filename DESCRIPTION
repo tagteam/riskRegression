@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2025.04.27
+Version: 2025.05.13
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Johan Sebastian", "Ohlendorff", role = "aut"),
@@ -34,6 +34,7 @@ Imports:
     Rcpp,
     rms (>= 5.1.3),
     stats,
+    glmnet,
     survival (>= 2.44.1),
     timereg (>= 1.9.3)
 LinkingTo: Rcpp, RcppArmadillo
@@ -41,7 +42,6 @@ Suggests:
     boot,
     smcfcs,
     casebase,
-    glmnet,
     gbm,
     flexsurv, 
     grpreg,

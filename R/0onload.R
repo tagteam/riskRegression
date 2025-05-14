@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 14 2018 (17:36) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (09:50) 
-##           By: Brice Ozenne
-##     Update #: 48
+## Last-Updated: May 14 2025 (15:30) 
+##           By: Thomas Alexander Gerds
+##     Update #: 49
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,8 @@
 ## adapted from the lava package https://github.com/kkholst/lava
 riskRegression.env <- new.env()
 assign("options",
-       list(method.predictRisk = paste0("predictRisk.",c("ARR", "BinaryTree", "CauseSpecificCox", "Cforest", "cox.aalen", "coxph", "coxph.penal", "coxphTD", "cph", "CSCTD", "Ctree", "default", "double", "factor", "FGR", "flexsurvreg", "formula", "gbm", "glm", "hal9001", "integer", "lrm", "matrix", "multinom", "numeric", "penfitS3", "prodlim", "psm", "randomForest", "ranger", "rfsrc", "riskRegression", "rpart", "selectCox", "singleEventCB", "SmcFcs", "SuperPredictor", "survfit", "wglm", "aalen"))),
+       list(method.predictRisk = paste0("predictRisk.",
+                                        c("ARR","BinaryTree","CauseSpecificCox","Cforest","cox.aalen","coxph","coxph.penal","cph","Ctree","default","double","factor","FGR","flexsurvreg","formula","gbm","glm","hal9001","integer","lrm","matrix","multinom","numeric","penfitS3","prodlim","psm","randomForest","ranger","rfsrc","riskRegression","rpart","selectCox","singleEventCB","SmcFcs","SuperPredictor","survfit","wglm","aalen"))),
        envir = riskRegression.env)
 
 ## cat(paste("c(\"",paste(gsub("predictRiskIID.","",as.character(utils::methods("predictRiskIID")), fixed=TRUE),collapse = "\", \""),"\")\n",sep=""))

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 14 2025 (08:49) 
 ## Version: 
-## Last-Updated: May 14 2025 (08:49) 
+## Last-Updated: May 14 2025 (15:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 2
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,7 +28,6 @@ ate_checkArgs <- function(call,
                           allContrasts,
                           times,
                           cause,
-                          landmark,
                           se,
                           iid,
                           data.index,
@@ -230,9 +229,6 @@ ate_checkArgs <- function(call,
 
     ## ** functional delta method
     if(B==0 && (se|band|iid)){
-        if(!is.null(landmark)){
-            stop("Calculation of the standard errors via the functional delta method not implemented for time dependent covariates \n")
-        }
         if(length(unique(stats::na.omit(n.obs[-1])))>1){
             stop("Arguments \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' must be fitted using the same number of observations \n")
         }
@@ -307,9 +303,6 @@ ate_checkArgs <- function(call,
         if(length(strata) != 1){
             stop("Argument strata should have length 1. \n")
         }
-        if(attr(estimator,"TD")){
-            stop("Landmark analysis is not available when argument strata is specified. \n")
-        }
     }
     
     ## ** event time
@@ -340,17 +333,6 @@ ate_checkArgs <- function(call,
         }
     }
 
-    ## ** time dependent covariances
-    if (attr(estimator,"TD")){
-        if (missing(formula))
-            stop("Need formula to do landmark analysis.")
-        if (missing(landmark))
-            stop("Need landmark time(s) to do landmark analysis.")
-        if(length(times)!=1){
-            stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
-        }
-    }
-    
     ## ** iid.nuisance    
     if((return.iid.nuisance == FALSE) & (iid == TRUE) & (attr(estimator, "augmented") == FALSE)){
         warning("Ignoring the uncertainty associated with the estimation of the nuisance parameters may lead to inconsistent standard errors. \n",
