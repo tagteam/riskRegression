@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:34) 
 ## Version: 
-## Last-Updated: Apr 29 2025 (06:51) 
+## Last-Updated: May  8 2025 (14:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 3
+##     Update #: 5
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -86,16 +86,16 @@ coxN.prodlim <- function(object){
   return(NROW(object$model.response))
 }
 
-## ** coxN.coxnet
+## ** coxN.GLMnet
 #' @rdname coxN
-#' @method coxN coxnet
+#' @method coxN GLMnet
 #' @export
-coxN.coxnet <- function(object){
-  if(object$cv){
-    return(object$glmnet.fit$nobs)
-  } else{
-    return(object$nobs)
-  }
+coxN.GLMnet <- function(object){
+    if(object$cv){
+        return(object$fit$glmnet.fit$nobs)
+    } else{
+        return(object$fit$nobs)
+    }
 }
 
 

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:34) 
 ## Version: 
-## Last-Updated: Apr 29 2025 (06:51) 
+## Last-Updated: May  8 2025 (13:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 5
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -65,11 +65,11 @@ coxSpecial.prodlim <- function(object){
     return(NULL)
 }
 
-## ** coxSpecial.coxnet
+## ** coxSpecial.GLMnet
 #' @rdname coxSpecial
-#' @method coxSpecial coxnet
+#' @method coxSpecial GLMnet
 #' @export
-coxSpecial.coxnet <- function(object){
+coxSpecial.GLMnet <- function(object){
   return(list(strata = object$strata))
 }
 

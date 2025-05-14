@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Apr 30 2025 (06:26) 
+## last-updated: May  8 2025 (13:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 599
+##     Update #: 603
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1388,60 +1388,60 @@ predictRisk.Hal9001 <- function(object,
 }
 
 
-## * predictRisk.coxnet
-##' @rdname predictRisk
-##' @method predictRisk coxnet
-##' @export
-predictRisk.coxnet <- function(object,
-                              newdata,
-                              times,
-                              product.limit = FALSE, #currently no method for product limit
-                              diag = FALSE,
-                              iid = FALSE,
-                              average.iid = FALSE,
-                              ...){
-  dots <- list(...)
-  type <- dots$type ## hidden argument for ate
-  store.iid <- dots$store ## hidden argument for ate
-  outPred <- predictCox(object=object,
-                        newdata=newdata,
-                        times=times,
-                        iid = iid,
-                        diag = diag,
-                        average.iid = average.iid,
-                        product.limit = product.limit,
-                        type="survival")
-  if(identical(type,"survival")){
-      out <- outPred$survival
-  }else{
-      out <- 1-outPred$survival
-  }
-  if(iid){
-      if(identical(type,"survival")){
-          attr(out,"iid") <- outPred$survival.iid
-      }else{
-          attr(out,"iid") <- -outPred$survival.iid
-      }
-  }
-  if(average.iid){
-      if(identical(type,"survival")){
-          attr(out,"average.iid") <- outPred$survival.average.iid
-      }else{
-          if(is.list(outPred$survival.average.iid)){
-              attr(out,"average.iid") <- lapply(outPred$survival.average.iid, function(iIID){-iIID})
-          }else{
-              attr(out,"average.iid") <- -outPred$survival.average.iid
-          }
-      }
-  }
-  return(out)
-}
-
 ## * predictRisk.GLMnet
 ##' @rdname predictRisk
 ##' @method predictRisk GLMnet
 ##' @export
-predictRisk.GLMnet <- function(object,newdata,times=NA,...) {
+predictRisk.GLMnet <- function(object,
+                               newdata,
+                               times,
+                               product.limit = FALSE, #currently no method for product limit
+                               diag = FALSE,
+                               iid = FALSE,
+                               average.iid = FALSE,
+                               ...){
+    dots <- list(...)
+    type <- dots$type ## hidden argument for ate
+    store.iid <- dots$store ## hidden argument for ate
+    outPred <- predictCox(object=object,
+                          newdata=newdata,
+                          times=times,
+                          iid = iid,
+                          diag = diag,
+                          average.iid = average.iid,
+                          product.limit = product.limit,
+                          type="survival")
+    if(identical(type,"survival")){
+        out <- outPred$survival
+    }else{
+        out <- 1-outPred$survival
+    }
+    if(iid){
+        if(identical(type,"survival")){
+            attr(out,"iid") <- outPred$survival.iid
+        }else{
+            attr(out,"iid") <- -outPred$survival.iid
+        }
+    }
+    if(average.iid){
+        if(identical(type,"survival")){
+            attr(out,"average.iid") <- outPred$survival.average.iid
+        }else{
+            if(is.list(outPred$survival.average.iid)){
+                attr(out,"average.iid") <- lapply(outPred$survival.average.iid, function(iIID){-iIID})
+            }else{
+                attr(out,"average.iid") <- -outPred$survival.average.iid
+            }
+        }
+    }
+    return(out)
+}
+
+## * predictRisk.GLMnet2
+##' @rdname predictRisk
+##' @method predictRisk GLMnet2
+##' @export
+predictRisk.GLMnet2 <- function(object,newdata,times=NA,...) {
     args <- list(...)
     # check if user has supplied a lambda value
     slambda <- args$lambda
@@ -1487,12 +1487,12 @@ predictRisk.GLMnet <- function(object,newdata,times=NA,...) {
         newdata$dummy.event = NULL
         # blank Cox object obtained with riskRegression:::coxModelFrame
         if (pos.lambda == 0 && object$cv){
-            coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s="lambda.min")))
+            GLMnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s="lambda.min")))
             lambda <- object$fit$lambda.min ## is needed for train_eXb
         }
         else if (pos.lambda == 0 && !object$cv){
             if (length(object$lambda) == 1){
-                coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=object$lambda)))
+                GLMnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=object$lambda)))
                 lambda <- object$lambda
             }
             else {
@@ -1500,7 +1500,7 @@ predictRisk.GLMnet <- function(object,newdata,times=NA,...) {
             }
         } else {
             if (all((pos.lambda)>0)){
-                coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=slambda)))
+                GLMnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=slambda)))
                 lambda <- slambda
             }
             else {
@@ -1521,9 +1521,9 @@ predictRisk.GLMnet <- function(object,newdata,times=NA,...) {
                                           cause = 1,
                                           Efron = TRUE,
                                           reverse = FALSE)$cumhazard
-        coxnetSurv <- exp(-coxnet_pred%o%L0)
+        GLMnetSurv <- exp(-GLMnet_pred%o%L0)
         where <- sindex(jump.times=unique(info$stop),eval.times=times)
-        p <- cbind(0,1-coxnetSurv)[,1+where]
+        p <- cbind(0,1-GLMnetSurv)[,1+where]
     }
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))

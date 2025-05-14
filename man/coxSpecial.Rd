@@ -6,7 +6,7 @@
 \alias{coxSpecial.cph}
 \alias{coxSpecial.phreg}
 \alias{coxSpecial.prodlim}
-\alias{coxSpecial.coxnet}
+\alias{coxSpecial.GLMnet}
 \title{Special characters in Cox model}
 \usage{
 coxSpecial(object)
@@ -19,7 +19,7 @@ coxSpecial(object)
 
 \method{coxSpecial}{prodlim}(object)
 
-\method{coxSpecial}{coxnet}(object)
+\method{coxSpecial}{GLMnet}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

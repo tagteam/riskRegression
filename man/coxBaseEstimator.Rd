@@ -5,7 +5,7 @@
 \alias{coxBaseEstimator.coxph}
 \alias{coxBaseEstimator.phreg}
 \alias{coxBaseEstimator.prodlim}
-\alias{coxBaseEstimator.coxnet}
+\alias{coxBaseEstimator.GLMnet}
 \title{Extract the type of estimator for the baseline hazard}
 \usage{
 coxBaseEstimator(object)
@@ -16,7 +16,7 @@ coxBaseEstimator(object)
 
 \method{coxBaseEstimator}{prodlim}(object)
 
-\method{coxBaseEstimator}{coxnet}(object)
+\method{coxBaseEstimator}{GLMnet}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

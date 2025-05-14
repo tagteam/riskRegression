@@ -19,9 +19,10 @@
 #' regression models for all causes.  If \code{"survival"} fit one
 #' cause-specific Cox regression model for the cause of interest and
 #' also a Cox regression model for event-free survival.
-#' @param fitter Routine to fit the Cox regression models.
-#' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
-#' @param ... Arguments given to \code{fitter}, e.g., \code{coxph}.
+#' @param fitter Character string specifying the routine to fit the Cox regression models. Available are
+#' \code{"coxph"} for \link[survival]{coxph}, \code{"coxph"} for \link[rms]{cph},
+#' \code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.
+#' @param ... Arguments given to the function defined by argument \code{fitter}.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
 #' regression objects} \item{response }{the event history response }
 #' \item{eventTimes }{the sorted (unique) event times } \item{surv.type }{the
@@ -52,11 +53,24 @@
 ##' fit1 <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
 ##'             data=Melanoma)
 ##' print(fit1)
+##'
+##' \dontrun{
+##' library(rms)
+##' fit1a <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
+##'             data=Melanoma,fitter="cph")
+##' print(fit1a)
+##' }
+##' \dontrun{
+##' library(glmnet)
+##' fit1b <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
+##'             data=Melanoma,fitter="glmnet")
+##' print(fit1b)
+##' }
 ##' \dontrun{
 ##' library(Publish)
 ##' publish(fit1)
 ##' }
-##'
+##' 
 ##' ## model hazard of all cause mortality instead of hazard of type 2
 ##' fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
 ##'              data=Melanoma,
@@ -141,7 +155,7 @@ CSC <- function(formula,
                 surv.type="hazard",
                 fitter="coxph",
                 ...){
-    fitter <- match.arg(fitter,c("coxph","cph","phreg", "penalized"))
+    fitter <- match.arg(fitter,c("coxph","cph","phreg", "glmnet"))
     # {{{ type
     surv.type <- match.arg(surv.type,c("hazard","survival"))
     # }}}
@@ -268,8 +282,8 @@ CSC <- function(formula,
             fit <- do.call("cph",c(args,list(surv=TRUE,x=TRUE,y=TRUE),extra.args))
         } else if(fitter=="phreg") {
             fit <- do.call("phreg",c(args,extra.args))
-        } else if(fitter=="penalized"){
-            fit <- do.call("coxnet", c(args, extra.args))
+        } else if(fitter=="glmnet"){
+            fit <- do.call("GLMnet", c(args, extra.args))
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)

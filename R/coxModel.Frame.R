@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:33) 
 ## Version: 
-## Last-Updated: Apr 29 2025 (06:51) 
+## Last-Updated: May  8 2025 (13:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 5
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -198,19 +198,17 @@ coxModelFrame.prodlim <- function(object, center = FALSE){
 }
 
 
-## ** coxModelFrame.coxnet
+## ** coxModelFrame.GLMnet
 #' @rdname coxModelFrame
-#' @method coxModelFrame coxnet
+#' @method coxModelFrame GLMnet
 #' @export
-coxModelFrame.coxnet <- function(object,center = FALSE){
+coxModelFrame.GLMnet <- function(object,center = FALSE){
     # FIXME: argument center not used? 
     default.start <- 0
-    if("start" %in% colnames(object$y)){
-        dt <- data.table(start = object$y[, "start"], stop = object$y[, "stop"], status = object$y[, "status"])
-    } else{
-        dt <- data.table(start = default.start, stop = object$y[, "time"], status = object$y[, "status"])
-    }
-    dt <- cbind(dt, object$design)
+    dt <- data.table(start = default.start,
+                     stop = object$y[, "time"],
+                     status = object$y[, "status"])
+    dt <- cbind(dt, object$X)
     if("strata" %in% names(attributes(object$y))){
         dt$strata <- attributes(object$y)$strata
     } else{
