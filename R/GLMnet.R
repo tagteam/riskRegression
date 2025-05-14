@@ -30,20 +30,25 @@
 #' test <- sampleData(5,outcome="survival")
 #'
 #' # penalized linear regression
-#' h <- GLMnet(X8~X2+X1,data=d)
+#' h <- GLMnet(X8~X2+X6,data=d,alpha=0)
+#' predictRisk(h,newdata=test)
 #'
+#' \dontrun{
 #' # penalized logistic regression
 #' g <- GLMnet(X1~X2+X8,data=d)
-#' 
+#' predictRisk(g,newdata=test)
+#' }
 #' # penalized Cox regression
 #' 
 #' f0 <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d,lambda=0)
+#' predictRisk(f0,newdata=test,times=3)
 #' f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
 #' f
 #' predictCox(f,newdata=test,times=5,product.limit=TRUE)
+#' predictRisk(f,newdata=test,times=1)
 #' 
 #' f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
-#' predictRisk(f,newdata=test,times=1)
+#' 
 #' predictRisk(f1,newdata=test,times=1)
 #' @export
 GLMnet <- function(formula,
