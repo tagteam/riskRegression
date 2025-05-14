@@ -880,8 +880,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             NT <-  length(times)
             if (NT==0)
                 stop("No evaluation time before maximal end of followup.")
-        }
-        else{
+        } else{
             stop("Landmark updating not yet implemented.")
         }
     } else{

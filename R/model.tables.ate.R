@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Oct 16 2024 (11:48) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (09:58) 
-##           By: Brice Ozenne
-##     Update #: 21
+## Last-Updated: May 14 2025 (15:31) 
+##           By: Thomas Alexander Gerds
+##     Update #: 22
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -105,7 +105,6 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
         object.reduce$boot$t <- x$boot$t[,c(subset.meanRisk,NROW(x$meanRisk)+subset.diffRisk,NROW(x$meanRisk)+NROW(x$diffRisk)+subset.ratioRisk),drop=FALSE]
     }
     object.reduce$estimator <- estimator ## side effect: drop attributes but they are not used by confintIID.ate
-    attr(object.reduce$estimator,"TD") <- attr(x$estimator,"TD")
     object.reduce$eval.times <- times
     object.reduce$contrasts <- contrasts
     object.reduce$allContrasts <- utils::combn(contrasts, m = 2)

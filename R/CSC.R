@@ -45,27 +45,31 @@
 #' @keywords survival
 #' @examples
 #'
-##' library(prodlim)
-##' library(survival)
-##' data(Melanoma)
-##' ## fit two cause-specific Cox models
-##' ## different formula for the two causes
-##' fit1 <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
-##'             data=Melanoma)
-##' print(fit1)
-##'
-##' \dontrun{
-##' library(rms)
-##' fit1a <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
-##'             data=Melanoma,fitter="cph")
-##' print(fit1a)
-##' }
-##' \dontrun{
-##' library(glmnet)
-##' fit1b <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
-##'             data=Melanoma,fitter="glmnet")
-##' print(fit1b)
-##' }
+#' library(prodlim)
+#' library(survival)
+#' data(Melanoma)
+#' ## fit two cause-specific Cox models
+#' ## different formula for the two causes
+#' fit1 <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
+#'             data=Melanoma)
+#' print(fit1)
+#'
+#' \dontrun{
+#' library(rms)
+#' fit1a <- CSC(list(Hist(time,status)~sex+rcs(age,3),Hist(time,status)~invasion+epicel+log(thick)),
+#'             data=Melanoma,fitter="cph")
+#' print(fit1a)
+#' }
+#' \dontrun{
+#' library(glmnet)
+#' # lasso
+#' fit1b <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
+#'             data=Melanoma,fitter="glmnet")
+#' # rigde regression
+#' fit1c <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
+#'             data=Melanoma,fitter="glmnet")
+#' print(fit1b)
+#' }
 ##' \dontrun{
 ##' library(Publish)
 ##' publish(fit1)

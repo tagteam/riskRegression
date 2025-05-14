@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 14 2025 (08:49) 
 ## Version: 
-## Last-Updated: May 14 2025 (08:49) 
+## Last-Updated: May 14 2025 (15:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 3
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,8 +19,6 @@
 ate_initArgs <- function(object.event,
                          object.treatment,
                          object.censor,
-                         landmark,
-                         formula = NULL,
                          estimator,
                          mydata, ## instead of data to avoid confusion between the function data and the dataset when running the bootstrap
                          data.index,
@@ -274,27 +272,12 @@ ate_initArgs <- function(object.event,
         if(is.null(product.limit)){product.limit <- FALSE}
     }
 
-    ## presence of time dependent covariates
-    TD <- switch(class(object.event)[[1]],
-                 "coxph"=(attr(object.event$y,"type")=="counting"),
-                 "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")[1]=="counting"),
-                 FALSE)
-    if(TD){
-        fct.pointEstimate <- ATE_TD
-    }else{
-        landmark <- NULL
-        formula <- NULL
-        fct.pointEstimate <- ATE_TI
-    }
+    fct.pointEstimate <- ATE_TI
 
     ## estimator
     if(is.null(estimator)){
         if(!is.null(model.event) && is.null(model.treatment)){
-            if(TD){
-                estimator <- "GFORMULATD"
-            }else{
-                estimator <- "GFORMULA"
-            }
+            estimator <- "GFORMULA"
         }else if(is.null(model.event) && !is.null(model.treatment)){
             if(any(n.censor>0)){
                 estimator <- "IPTW,IPCW"
@@ -333,29 +316,19 @@ ate_initArgs <- function(object.event,
         if(any(estimator == "G-FORMULA")){
             estimator[estimator == "G-FORMULA"] <- "GFORMULA"
         }
-        if(any(estimator == "G-FORMULATD")){
-            estimator[estimator == "G-FORMULATD"] <- "GFORMULA"
-        }
     }
 
     ## which terms are used by the estimator
     estimator.output <- unname(sapply(estimator, switch,
                                       "GFORMULA" = "GFORMULA",
-                                      "GFORMULATD" = "GFORMULA",
                                       "IPTW" = "IPTW",
                                       "IPTW,IPCW" = "IPTW",
                                       "AIPTW" = "AIPTW",
                                       "AIPTW,AIPCW" = "AIPTW"
                                       ))
 
-    if(TD){
-        attr(estimator.output,"TD") <- TRUE
-    }else{
-        attr(estimator.output,"TD") <- FALSE
-    }
-
     ## term 1: F_1(\tau|A=a,W) or F_1(\tau|A=a,W) (1-1(A=a)/Prob[A=a|W])
-    if(any(estimator %in% c("GFORMULA","GFORMULATD","AIPTW","AIPTW,AIPCW"))){
+    if(any(estimator %in% c("GFORMULA","AIPTW","AIPTW,AIPCW"))){
         attr(estimator.output,"GFORMULA") <- TRUE
     }else{
         attr(estimator.output,"GFORMULA") <- FALSE
@@ -389,7 +362,7 @@ ate_initArgs <- function(object.event,
     }
 
     ## which estimates should be output?
-    if(any(estimator %in% c("GFORMULA","GFORMULATD"))){
+    if(any(estimator %in% c("GFORMULA"))){
         attr(estimator.output,"export.GFORMULA") <- TRUE
     }else{
         attr(estimator.output,"export.GFORMULA") <- FALSE
@@ -464,7 +437,6 @@ ate_initArgs <- function(object.event,
                 handler = handler,
                 estimator = estimator.output,
                 formula = formula,
-                landmark = landmark,
                 fct.pointEstimate = fct.pointEstimate,
                 n.obs = n.obs,
                 n.censor = n.censor,

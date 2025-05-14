@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Oct 17 2024 (12:22) 
-##           By: Brice Ozenne
-##     Update #: 1020
+## Last-Updated: May 14 2025 (15:30) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1021
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -419,11 +419,6 @@ confintBoot.ate <- function(object, estimator, out, seed){
     col.diffRisk <- c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper")
     col.ratioRisk <- c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper")
         
-    if(attr(object$estimator,"TD")){
-        col.meanRisk <- c(col.meanRisk[1:2], "landmark", col.meanRisk[-(1:2)])
-        col.diffRisk <- c(col.diffRisk[1:2], "landmark", col.diffRisk[-(1:2)])
-        col.ratioRisk <- c(col.ratioRisk[1:2], "landmark", col.ratioRisk[-(1:2)])
-    }
     if(p.value){
         col.diffRisk <- c(col.diffRisk, "p.value")
         col.ratioRisk <- c(col.ratioRisk, "p.value")

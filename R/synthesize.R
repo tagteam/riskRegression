@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: May 14 2025 (06:45) 
+## Last-Updated: May 14 2025 (06:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 152
+##     Update #: 153
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -53,7 +53,18 @@
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##'
-##' synthesize(object=Hist(time,status)~sex+age+logbili,data=pbc,return_code=TRUE)
+##' # return the simulation code instead of the object 
+##' synthesize(object=Hist(time,status)~logbili+age+sex,data=pbc,return_code=TRUE)
+##' # recursive
+##' synthesize(object=Hist(time,status)~logbili+age+sex,
+##'              data=pbc,
+##'       return_code=TRUE,
+##'         recursive=TRUE)
+##'
+##' synthesize(object=logbili~age+sex,
+##'              data=pbc,
+##'       return_code=TRUE,
+##'         recursive=TRUE)
 ##'
 ##' u <- lvm()
 ##' distribution(u,~sex) <- binomial.lvm()

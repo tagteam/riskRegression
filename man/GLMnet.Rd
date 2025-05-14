@@ -12,6 +12,7 @@ GLMnet(
   cv = TRUE,
   nfolds = 10,
   type.measure = "deviance",
+  selector = "min",
   family,
   ...
 )
@@ -36,6 +37,10 @@ via the function \link[glmnet]{cv.glmnet}}
 
 \item{type.measure}{Passed on to \link[glmnet]{cv.glmnet}. Loss to use for cross-validation. Default is deviance.}
 
+\item{selector}{On of \code{'min'}, \code{'1se'}, \code{'undersmooth'} where the first two are described in the help page of \link[glmnet]{cv.glmnet}
+              and the latter is the smallest lambda value where the model could fit. Default is \code{'min'}.
+When \code{'undersmooth'} is specified no cross-validation is performed.}
+
 \item{family}{Passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}. For binary outcome the default is \code{"binomial"} and for survival \code{"cox"}.}
 
 \item{\dots}{Additional arguments that are passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.}
@@ -52,12 +57,23 @@ library(survival)
 set.seed(8)
 d <- sampleData(77,outcome="survival")
 test <- sampleData(5,outcome="survival")
+
+# penalized linear regression
+h <- GLMnet(X8~X2+X1,data=d)
+
+# penalized logistic regression
+g <- GLMnet(X1~X2+X8,data=d)
+
+# penalized Cox regression
+
+f0 <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d,lambda=0)
 f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
 f
+predictCox(f,newdata=test,times=5,product.limit=TRUE)
+
 f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
-r <- predictRisk(f,newdata=test,times=1)
-r1 <- predictRisk(f1,newdata=test,times=1)
-cbind(r,r1)
+predictRisk(f,newdata=test,times=1)
+predictRisk(f1,newdata=test,times=1)
 }
 \seealso{
 \link[glmnet]{glmnet}

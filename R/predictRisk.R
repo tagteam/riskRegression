@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: May  8 2025 (13:52) 
+## last-updated: May 14 2025 (15:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 603
+##     Update #: 619
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -50,7 +50,6 @@
 #' @param average.iid Should the average iid decomposition be output using an attribute?
 #' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
-#' @param landmark The starting time for the computation of the cumulative risk.
 #' @param truncate If \code{TRUE} truncates the predicted risks to be in the range [0, 1]. For now only implemented for the Cause Specific Cox model. 
 #' @param \dots Additional arguments that are passed on to the current method.
 #'
@@ -572,7 +571,6 @@ predictRisk.coxph <- function(object,
                               ...){
     dots <- list(...)
     type <- dots$type ## hidden argument for ate
-
     outPred <- predictCox(object=object,
                           newdata=newdata,
                           times=times,
@@ -609,73 +607,6 @@ predictRisk.coxph <- function(object,
     }
 
     return(out)
-}
-
-## * predictRisk.coxphTD
-##' @export
-##' @rdname predictRisk
-##' @method predictRisk coxphTD
-predictRisk.coxphTD <- function(object,newdata,times,landmark,...){
-    stopifnot(attr(object$y,"type")=="counting")
-    bh <- survival::basehaz(object,centered=TRUE)
-    Lambda0 <- bh[,1]
-    etimes <- bh[,2]
-    lp <- predict(object,newdata=newdata,type="lp")
-    p <- do.call("cbind",lapply(times,function(ttt){
-        index <- prodlim::sindex(eval.times=c(landmark,landmark+ttt),jump.times=etimes)
-        Lambda0.diff <- c(0,Lambda0)[1+index[2]] - c(0,Lambda0)[1+index[1]]
-        1-exp(-Lambda0.diff * exp(lp))
-    }))
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    }
-    return(p)
-}
-
-
-## * predictRisk.CSCTD
-##' @export
-##' @rdname predictRisk
-##' @method predictRisk CSCTD
-predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
-    stopifnot(attr(object$models[[1]]$y,"type")=="counting")
-    if (missing(cause)) cause <- object$theCause
-    else{
-        ## cause <- prodlim::checkCauses(cause,object$response)
-        cause <- unique(cause)
-        if (!is.character(cause)) cause <- as.character(cause)
-        fitted.causes <- prodlim::getStates(object$response)
-        if (!(all(cause %in% fitted.causes))){
-            stop(paste0("Cannot find requested cause(s) in object\n\n",
-                        "Requested cause(s): ",
-                        paste0(cause,collapse=", "),
-                        "\n Available causes: ",
-                        paste(fitted.causes,collapse=", "),"\n"))
-        }
-    }
-    causes <- object$causes
-    index.cause <- which(causes == cause)
-    bh <- lapply(1:length(object$models),function(m){
-        survival::basehaz(object$models[[m]],centered=TRUE)
-    })
-    lp <- lapply(1:length(object$models),function(m){
-        predict(object$models[[m]],
-                newdata=newdata,
-                type="lp")
-    })
-    p <- do.call("cbind",lapply(times,function(ttt){
-        hazard <- lapply(1:length(object$models),function(m){
-            index <- sindex(eval.times=c(landmark,landmark+ttt),jump.times=bh[[m]][,2])
-            bh.m <- bh[[m]][,1]
-            exp(lp[[m]])*(c(0,bh.m)[1+index[2]] - c(0,bh.m)[1+index[1]])
-        })
-        surv <- exp(- Reduce("+",hazard))
-        surv*hazard[[index.cause]]
-    }))
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    }
-    return(p)
 }
 
 
@@ -1395,46 +1326,27 @@ predictRisk.Hal9001 <- function(object,
 predictRisk.GLMnet <- function(object,
                                newdata,
                                times,
-                               product.limit = FALSE, #currently no method for product limit
+                               product.limit = FALSE,
                                diag = FALSE,
-                               iid = FALSE,
-                               average.iid = FALSE,
                                ...){
+    has_survival <- inherits(object$fit,"coxnet")
     dots <- list(...)
     type <- dots$type ## hidden argument for ate
-    store.iid <- dots$store ## hidden argument for ate
-    outPred <- predictCox(object=object,
-                          newdata=newdata,
-                          times=times,
-                          iid = iid,
-                          diag = diag,
-                          average.iid = average.iid,
-                          product.limit = product.limit,
-                          type="survival")
-    if(identical(type,"survival")){
-        out <- outPred$survival
-    }else{
-        out <- 1-outPred$survival
-    }
-    if(iid){
+    if (has_survival){
+        pred <- 1-predictCox(object=object,
+                             newdata=newdata,
+                             times=times,
+                             iid = FALSE,
+                             confint = FALSE,
+                             diag = diag,
+                             average.iid = FALSE,
+                             product.limit = product.limit,
+                             type="survival")$survival
         if(identical(type,"survival")){
-            attr(out,"iid") <- outPred$survival.iid
-        }else{
-            attr(out,"iid") <- -outPred$survival.iid
+            pred <- 1-pred
         }
+        pred
     }
-    if(average.iid){
-        if(identical(type,"survival")){
-            attr(out,"average.iid") <- outPred$survival.average.iid
-        }else{
-            if(is.list(outPred$survival.average.iid)){
-                attr(out,"average.iid") <- lapply(outPred$survival.average.iid, function(iIID){-iIID})
-            }else{
-                attr(out,"average.iid") <- -outPred$survival.average.iid
-            }
-        }
-    }
-    return(out)
 }
 
 ## * predictRisk.GLMnet2
@@ -1634,8 +1546,6 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
     ## }
     ## p
 ## }
-#----------------------------------------------------------------------
-### predictRisk.R ends here
 
 ## * predictRisk.wglm
 #' @rdname predictRisk
@@ -1785,5 +1695,8 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
         attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
     }
     return(out)
-
 }
+
+#----------------------------------------------------------------------
+### predictRisk.R ends here
+

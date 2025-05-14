@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 28 2025 (09:31) 
 ## Version: 
-## Last-Updated: May 14 2025 (08:53) 
+## Last-Updated: May 14 2025 (15:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 11
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,8 +25,8 @@ test_that("unpenalized Cox models",{
              alpha = 0,lambda = 0)
     u <- CSC(list(Hist(time,event)~X1+X6+X7+X8,Hist(time,event)~X1+X6+X9),data=d,fitter = "glmnet",
              alpha = 0)
-    ate(a,treatment = "X1",data = d,times = 5)
-    ate(b,treatment = "X1",data = d,times = 5)
+    v = ate(a,treatment = "X1",data = d,times = 5)
+    w = ate(b,treatment = "X1",data = d,times = 5)
     expect_equal(as.numeric(coef(a$models[[1]])),as.numeric(b$models[[1]]$selected.beta),tolerance = 0.001)
     expect_true(all(abs(as.numeric(u$models[[1]]$selected.beta))<abs(as.numeric(b$models[[1]]$selected.beta))))
     x

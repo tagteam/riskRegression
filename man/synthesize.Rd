@@ -74,11 +74,25 @@ data(pbc)
 pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
 pbc$logbili <- log(pbc$bili)
 v_synt <- synthesize(object=Hist(time,status)~sex+age+logbili,data=pbc)
-d <- simsynth(v_synt,1000)
+set.seed(8)
+d <- simsynth(v_synt,38)
 fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
 # compare estimated log-hazard ratios between simulated and real data
 cbind(coef(fit_sim),coef(fit_real))
+
+# return the simulation code instead of the object 
+synthesize(object=Hist(time,status)~logbili+age+sex,data=pbc,return_code=TRUE)
+# recursive
+synthesize(object=Hist(time,status)~logbili+age+sex,
+             data=pbc,
+      return_code=TRUE,
+        recursive=TRUE)
+
+synthesize(object=logbili~age+sex,
+             data=pbc,
+      return_code=TRUE,
+        recursive=TRUE)
 
 u <- lvm()
 distribution(u,~sex) <- binomial.lvm()

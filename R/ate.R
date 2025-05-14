@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Apr 16 2025 (06:52) 
+## last-updated: May 14 2025 (16:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2574
+##     Update #: 2579
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,6 @@
 #' based on the outcome model
 #' @param data.index [numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
 #' Only necessary for the standard errors when computing the Average Treatment Effects on a subset of the data set. 
-#' @param formula For analyses with time-dependent covariates, the response formula. See examples.
 #' @param contrasts [character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.
 #' @param allContrasts [2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
 #' @param strata [character] Strata variable on which to compute the average risk.
@@ -41,9 +40,6 @@
 #' 
 #' @param times [numeric vector] Time points at which to evaluate average treatment effects.
 #' @param cause [integer/character] the cause of interest.
-#' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
-#'        In this case, argument \code{time} may only be one value and for the prediction of risks
-#'        it is assumed that that the covariates do not change between landmark and landmark+time.
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
 #' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
@@ -326,59 +322,6 @@
 #' coef(ateRobustFast) - coef(ateRobust) ## inaccuracy
 #' }
 #' 
-#' ###################################
-#' #### time-dependent covariates ####
-#' ###################################
-#'
-#' \dontrun{
-#' #### example 1 (survival)
-#' ## data management: split trajectories
-#' vet2 <- survSplit(Surv(time, status) ~., data = veteran,
-#'                   cut=c(60, 120), episode ="timegroup")
-#' 
-#' ## fit Cox model
-#' fit.TD <- coxph(Surv(tstart, time, status) ~ celltype + karno + age + trt,
-#'                data= vet2, x = TRUE)
-#'
-#' ## run ATE with bootstrap for uncertainty quantification
-#' set.seed(16)
-#' resVet <- ate(fit.TD, treatment = "celltype", times = 5, data = vet2,
-#'               formula=Hist(entry=tstart,time=time,event=status)~1,
-#'               landmark = c(0,30,60,90), B = 50)
-#' summary(resVet)
-#'
-#' ## for reference
-#' fit.Ref <- coxph(Surv(time, status) ~ celltype + karno + age + trt,
-#'                data= veteran, x = TRUE)
-#' ateRef <- ate(fit.Ref, treatment = "celltype", times = c(5,35), data = veteran)
-#' ## exactly the same when landmark = 0
-#' confint(ateRef)$meanRisk[1] 
-#' confint(resVet)$meanRisk[1]
-#' ## very different with landmark != 0
-#' ## since one condition on being alive at the landmark time
-#' confint(ateRef)$meanRisk[2] 
-#' suppressWarnings(confint(resVet)$meanRisk[2])
-#' }
-#' 
-#' \dontrun{
-#' #### example 2 (competing risks)
-#' ## generate data 
-#' set.seed(137)
-#' d <- sampleDataTD(127)
-#' d[,status:=1*(event==1)]
-#' d[,X3:=as.factor(X3)]
-#' ## fit cause specific Cox model
-#' cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
-#' ## run ATE
-#' set.seed(16)
-#' resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
-#'         data = d, treatment = "X3", contrasts = NULL,
-#'         times=.5,verbose=1,
-#'         landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
-#'         band = FALSE, mc.cores=1)
-#' resTD
-#' }
-
 ## * ate (code)
 #' @rdname ate
 #' @export
@@ -387,14 +330,12 @@ ate <- function(event,
                 censor = NULL,
                 data,
                 data.index = NULL,
-                formula = NULL,
                 estimator = NULL,
                 strata = NULL,
                 contrasts = NULL,
                 allContrasts = NULL,
                 times,
                 cause = NA,
-                landmark = NULL,
                 se = TRUE,
                 iid = (B == 0) && (se || band),
                 known.nuisance = FALSE,
@@ -436,8 +377,6 @@ ate <- function(event,
     init <- ate_initArgs(object.event = event,
                          object.treatment = treatment,
                          object.censor = censor,
-                         formula = formula,
-                         landmark = landmark,
                          mydata = data,
                          data.index = data.index,
                          estimator = estimator,
@@ -453,8 +392,6 @@ ate <- function(event,
     data.index <- init$data.index
     times <- init$times
     handler <- init$handler
-    formula <- init$formula
-    landmark <- init$landmark
     treatment <- init$treatment
     cause <- init$cause
     estimator <- init$estimator
@@ -487,14 +424,12 @@ ate <- function(event,
                            object.censor = object.censor,
                            object.treatment = object.treatment,
                            mydata = data,
-                           formula = formula,
                            treatment = treatment,
                            strata = strata,
                            contrasts = contrasts,
                            allContrasts = allContrasts,
                            times = times,
                            cause = cause,
-                           landmark = landmark,
                            se = se,
                            iid = iid,
                            data.index = data.index,
@@ -580,25 +515,15 @@ ate <- function(event,
         }
         data.contrasts <- data[data[[var.group]] %in% contrasts]
 
-        if(attr(estimator,"TD")){
-            grid.timeLand <- expand.grid(times = times, landmark = landmark)
-            grid.timeLand$name <- paste0(grid.timeLand$time,"+",grid.timeLand$landmark)
-            grid.timeLand$value <- grid.timeLand$time + grid.timeLand$landmark
-            
-            ## do not use [,,by=...] because there can be confusion between the argument times and a column named times when present in the data.table
-            data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
-                iM <- do.call(rbind,lapply(1:NROW(grid.timeLand), function(iG){c(times = grid.timeLand$name[iG], pc = sum(iDF[[eventVar.time]]>=grid.timeLand$value[iG]))}))
-                return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
-            }))
-        }else{
-            ## do not use [,,by=...] because there can be confusion between the argument times and a column named times when present in the data.table
-            data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
-                iM <- do.call(rbind,lapply(times, function(t){c(times = t, pc = sum(iDF[[eventVar.time]]>=t))}))
-                return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
-            }))
-        }
-        attr(out$eval.times,"n.at.risk") <- dcast(data.timeContrasts, value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
+        ## do not use [,,by=...] because there can be confusion between the argument times and a column named times when present in the data.table
+        data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
+            iM <- do.call(rbind,lapply(times, function(t){c(times = t, pc = sum(iDF[[eventVar.time]]>=t))}))
+            return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
+        }))
     }
+    attr(out$eval.times,"n.at.risk") <- dcast(data.timeContrasts,
+                                              value.var = "pc",
+                                              formula = as.formula(paste0(var.group,"~times")))
     
     attr(out$eval.times,"n.censored") <- n.censor
     class(out) <- c("ate")
@@ -644,7 +569,6 @@ ate <- function(event,
                                  levels=levels,
                                  times=times,
                                  cause=cause,
-                                 landmark=landmark,
                                  n.censor = n.censor,
                                  level.censoring = level.censoring,
                                  estimator = estimator,
@@ -658,9 +582,6 @@ ate <- function(event,
                                  store = store,
                                  verbose = verbose),
                             dots[names(dots) %in% "store" == FALSE])
-    if (attr(estimator,"TD")){       
-        args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
-    }
     ## note: system.time() seems to slow down the execution of the function, this is why Sys.time is used instead.
     tps1 <- Sys.time()
 
@@ -677,14 +598,9 @@ ate <- function(event,
 
     ## ** Confidence intervals
     if(se || band || iid){
-        if (attr(estimator,"TD")){
-            key1 <- c("treatment","landmark")
-            key2 <- c("treatment.A","treatment.B","landmark")
-        }
-        else{
-            key1 <- c("treatment","time")
-            key2 <- c("treatment.A","treatment.B","time")
-        }
+        
+        key1 <- c("treatment","time")
+        key2 <- c("treatment.A","treatment.B","time")
 
         if(B>0){
                                         # {{{ Bootstrap
@@ -695,9 +611,9 @@ ate <- function(event,
                 cat("                            (expected time: ",round(as.numeric(out$computation.time$point)*B/mc.cores,2)," seconds)\n", sep = "")
             }
 
-            name.estimate <- c(paste("mean",out$meanRisk$estimator,out$meanRisk$time,out$meanRisk$landmark,out$meanRisk$treatment,sep="."),
-                               paste("difference",out$diffRisk$estimator,out$diffRisk$time,out$diffRisk$landmark,out$diffRisk$A,out$diffRisk$B,sep="."),
-                               paste("ratio",out$ratioRisk$estimator,out$ratioRisk$time,out$ratioRisk$landmark,out$ratioRisk$A,out$ratioRisk$B,sep="."))
+            name.estimate <- c(paste("mean",out$meanRisk$estimator,out$meanRisk$time,out$meanRisk$treatment,sep="."),
+                               paste("difference",out$diffRisk$estimator,out$diffRisk$time,out$diffRisk$A,out$diffRisk$B,sep="."),
+                               paste("ratio",out$ratioRisk$estimator,out$ratioRisk$time,out$ratioRisk$A,out$ratioRisk$B,sep="."))
             estimate <- setNames(c(out$meanRisk$estimate,out$diffRisk$estimate,out$ratioRisk$estimate), name.estimate)#
 
             ## run
@@ -799,831 +715,6 @@ ate <- function(event,
     ## ** export
     return(out)
 
-}
-
-## * ate_initArgs
-ate_initArgs <- function(object.event,
-                         object.treatment,
-                         object.censor,
-                         landmark,
-                         formula = NULL,
-                         estimator,
-                         mydata, ## instead of data to avoid confusion between the function data and the dataset when running the bootstrap
-                         data.index,
-                         cause,
-                         times,
-                         handler,
-                         product.limit,
-                         store){
-
-
-    ## ** user-defined arguments
-    ## handler
-    handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
-    ## data.index
-    if(is.null(data.index)){data.index <- 1:NROW(mydata)}
-
-    ## ** fit a regression model when the user specifies a formula
-    ## Event
-    if(missing(object.event) || is.null(object.event)){
-        formula.event <- NULL
-        model.event <- NULL
-    }else if(inherits(object.event,"formula")){ ## formula
-        formula.event <- object.event
-        if(any(grepl("Hist(",object.event, fixed = TRUE))){
-            model.event <- do.call(CSC, args = list(formula = object.event, data = mydata))
-        }else if(any(grepl("Surv(",object.event, fixed = TRUE))){
-            model.event <- do.call(survival::coxph, args = list(formula = object.event, data = mydata, x = TRUE, y = TRUE))
-        }else{
-            model.event <- do.call(stats::glm, args = list(formula = object.event, data = mydata, family = stats::binomial(link = "logit")))
-        }
-    }else if(is.list(object.event) && all(sapply(object.event, function(iE){inherits(iE,"formula")}))){   ## list of formula
-        formula.event <- object.event
-        model.event <- CSC(object.event, data = mydata)
-    }else if(inherits(object.event,"glm") || inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
-        formula.event <- stats::formula(object.event)
-        model.event <- object.event
-    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")  || inherits(object.event,"prodlim")){ ## Cox
-        formula.event <- coxFormula(object.event)
-        model.event <- object.event
-    }else if(is.character(object.event)){ ## character (time,event) i.e. no model
-        formula.event <- NULL
-        model.event <- NULL
-    }else{
-        message("Unknown event model. \n",
-                "Recognized event models: stats::glm, riskRegression::wglm, survival::coxph, rms::cph, mets::phreg, prodlim::prodlim, riskRegression::wglm. \n")
-        formula.event <- stats::formula(object.event)
-        model.event <- object.event
-    }
-
-    ## Treatment
-    if(missing(object.treatment) || is.null(object.treatment)){
-        formula.treatment <- NULL
-        model.treatment <- NULL
-    }else if(inherits(object.treatment,"formula")){
-        model.treatment <- do.call(stats::glm, args = list(formula = object.treatment, data = mydata, family = stats::binomial(link = "logit")))        
-        formula.treatment <- object.treatment
-    }else if(inherits(object.treatment,"glm") || inherits(object.treatment,"nnet")){
-        formula.treatment <- stats::formula(object.treatment)
-        model.treatment <- object.treatment
-    }else if(is.character(object.treatment)){
-        formula.treatment <- NULL
-        model.treatment <- NULL
-    }else{
-        message("Unknown treatment model: \"",paste(class(object.treatment), collapse="\", \""),"\". \n",
-                "Recognized treatment models: stats::glm, nnet::multinom. \n")
-        formula.treatment <- stats::formula(object.treatment)
-        model.treatment <- object.treatment
-    }
-
-    ## Censoring
-    if(missing(object.censor) || is.null(object.censor)){
-        if(inherits(object.event,"wglm") && any(object.event$n.censor>0)){
-            formula.censor <- coxFormula(object.event$model.censor)
-            model.censor <- object.event$model.censor
-        }else{
-            formula.censor <- NULL
-            model.censor <- NULL
-        }
-    }else if(inherits(object.censor,"formula")){
-        formula.censor <- object.censor
-        model.censor <- do.call(survival::coxph, args = list(formula = object.censor, data = mydata, x = TRUE, y = TRUE))
-    }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg") || inherits(object.censor,"prodlim")){
-        formula.censor <- coxFormula(object.censor)
-        model.censor <- object.censor
-    }else if(is.character(object.censor)){
-        formula.censor <- NULL
-        model.censor <- NULL
-    }else{
-        message("Unknown censoring model. \n",
-                "Recognized censoring models: survival::coxph, rms::cph, mets::phreg, prodlim::prodlim. \n")
-        formula.censor <- stats::formula(object.censor)
-        model.censor <- object.censor
-    }
-
-    ## ** times
-    if(missing(times) && ((inherits(model.event,"glm") || inherits(model.event,"multinom")) || (inherits(model.treatment,"glm") && is.null(model.event) && is.null(model.censor)))){
-        times <- NA
-    }
-    
-    ## ** identify event, treatment and censoring variables
-    if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg") || inherits(model.censor,"prodlim")){
-        censoringMF <- coxModelFrame(model.censor)
-        test.censor <- censoringMF$status == 1
-        n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
-        info.censor <- SurvResponseVar(coxFormula(model.censor))
-        censorVar.status <- info.censor$status
-        censorVar.time <- info.censor$time
-        if(inherits(model.censor,"prodlim")){
-            level.censoring <- attr(model.censor$model.response,"cens.code")
-            if(is.numeric(mydata[[censorVar.status]])){
-                level.censoring <- as.numeric(level.censoring)
-            }
-            ## Not reliable due to re-ordering and reverse arguments
-            ## unique(mydata[[censorVar.status]][model.censor$model.response[,"status"]==1])
-        }else{
-            mydata.censor <- try(eval(model.censor$call$data), silent = TRUE)
-            if(!inherits(mydata.censor, "try-error") && (inherits(mydata.censor,"list") || inherits(mydata.censor,"data.frame"))){
-                level.censoring <- unique(mydata.censor[[censorVar.status]][model.censor$y[,2]==1])
-            }else if(is.numeric(mydata[[censorVar.status]])){
-                level.censoring <- 0
-            }else if(is.character(mydata[[censorVar.status]])){
-                level.censoring <- sort(unique(mydata[[censorVar.status]]))[1]
-            }else if(is.factor(mydata[[censorVar.status]])){
-                level.censoring <- levels(mydata[[censorVar.status]])[1]
-            }            
-        }
-    }else{ ## G-formula or IPTW (no censoring)
-        censorVar.status <- NA
-        censorVar.time <- NA
-                
-        if(inherits(model.event,"CauseSpecificCox")){
-            test.censor <- model.event$response[,"status"] == 0        
-            n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] < t))})
-            level.censoring <- attr(model.event$response,"cens.code")
-        }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg") || inherits(model.event,"prodlim")){ 
-            censoringMF <- coxModelFrame(model.event)
-            test.censor <- censoringMF$status == 0
-            n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop < t))})
-            level.censoring <- 0
-        }else if(inherits(model.event,"wglm")){
-            n.censor <- object.event$n.censor
-            level.censoring <- setdiff(unique(object.event$data[[object.event$var.outcome]]), object.event$causes)
-        }else{
-            n.censor <- rep(0,length(times))
-        }
-        if(all(n.censor==0)){level.censoring <- NA}
-    }
-
-    ## treatment
-    if(missing(object.treatment) || is.null(object.treatment)){
-        treatment <- NULL
-    }else if(!is.null(formula.treatment)){
-        treatment <- all.vars(formula.treatment)[1]
-    }else if(is.character(object.treatment)){
-        treatment <- object.treatment
-    }
-
-    ## event
-    if(inherits(model.event,"CauseSpecificCox")){
-        responseVar <- SurvResponseVar(formula.event)
-        eventVar.time <- responseVar$time
-        eventVar.status <- responseVar$status
-        if(is.na(cause)){
-            cause <- model.event$theCause
-        }
-        if(is.null(product.limit)){product.limit <- TRUE}
-        level.states <- model.event$cause
-    }else if(inherits(model.event,"prodlim")){
-        responseVar <- SurvResponseVar(formula.event)
-        eventVar.time <- responseVar$time
-        eventVar.status <- responseVar$status
-        level.states <- attr(model.event$model.response,"state")
-        if(is.numeric(mydata[[eventVar.status]])){
-            level.states <- as.numeric(level.states)
-        }
-        if(is.na(cause)){ ## handle Hist(time,event > 0) ~ ...
-            cause <- level.states[1]
-        }
-        if(is.null(product.limit)){product.limit <- TRUE}
-    }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){
-        responseVar <- SurvResponseVar(formula.event)
-        eventVar.time <- responseVar$time
-        eventVar.status <- responseVar$status
-
-        if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
-            if(any(model.event$y[,NCOL(model.event$y)]==1)){
-                modeldata <- try(eval(model.event$call$data), silent = TRUE)
-                if(inherits(x=modeldata,what="try-error")){
-                    if(NROW(mydata)==NROW(model.event$y)){
-                        cause <- unique(mydata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
-                    }else{
-                        stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
-                             "Number of rows differs between the input data and the model frame (object$y). \n")
-                    }                    
-                }else{
-                    if(NROW(modeldata)==NROW(model.event$y)){
-                        cause <- unique(modeldata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
-                    }else{
-                        stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
-                             "Number of rows differs between the training data (",deparse(model.event$call$data),") and the model frame (object$y), possibly due to missing values. \n")
-                    }
-                }
-            }
-        }
-        if(is.null(product.limit)){product.limit <- FALSE}
-        level.states <- 1
-    }else if(inherits(model.event,"glm") || inherits(model.event,"multinom")){
-        eventVar.time <- as.character(NA)
-        eventVar.status <- all.vars(formula.event)[1]
-        if(is.na(cause)){ ## handle I(Y > 0) ~ ...
-            if(inherits(model.event,"glm")){
-                cause <- unique(stats::model.frame(model.event)[[eventVar.status]][model.event$y==1])
-            }else if(inherits(model.event,"multinom")){
-                stop("Argument \'cause\' should be specified for \"multinom\" objects. \n")
-            }
-        }
-        if(is.null(product.limit)){product.limit <- FALSE}
-        level.states <- unique(mydata[[eventVar.status]])
-    }else if(inherits(object.event,"wglm")){
-        eventVar.time <- object.event$var.time
-        eventVar.status <- object.event$var.outcome
-        if(is.na(cause)){ ## handle I(Y > 0) ~ ...
-            cause <- object.event$theCause
-        }
-        level.states <- object.event$causes
-        if(is.null(product.limit)){product.limit <- (length(level.states)>1)}
-    }else{ ## no outcome model
-        if(identical(names(object.event),c("time","status"))){
-            eventVar.time <- object.event[1]
-            eventVar.status <- object.event[2]
-        }else if(identical(names(object.event),c("status","time"))){
-            eventVar.status <- object.event[1]
-            eventVar.time <- object.event[2]
-        }else if(length(object.event)==2){            
-            eventVar.time <- object.event[1]
-            eventVar.status <- object.event[2]
-        }else if(length(object.event)==1){
-            eventVar.time <- NA
-            eventVar.status <- object.event[1]
-            if(is.na(cause)){
-                if(any(mydata[[eventVar.status]] %in% 0:2 == FALSE)){
-                    stop("The event variable must be an integer variable taking value 0, 1, or 2. \n")
-                }
-                cause <- 1
-            }
-        }
-        level.states <- setdiff(unique(mydata[[eventVar.status]]), level.censoring)
-        if(is.na(cause)){
-            cause <- sort(level.states)[1]
-        }
-        if(is.null(product.limit)){product.limit <- FALSE}
-    }
-
-    ## presence of time dependent covariates
-    TD <- switch(class(object.event)[[1]],
-                 "coxph"=(attr(object.event$y,"type")=="counting"),
-                 "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")[1]=="counting"),
-                 FALSE)
-    if(TD){
-        fct.pointEstimate <- ATE_TD
-    }else{
-        landmark <- NULL
-        formula <- NULL
-        fct.pointEstimate <- ATE_TI
-    }
-
-    ## estimator
-    if(is.null(estimator)){
-        if(!is.null(model.event) && is.null(model.treatment)){
-            if(TD){
-                estimator <- "GFORMULATD"
-            }else{
-                estimator <- "GFORMULA"
-            }
-        }else if(is.null(model.event) && !is.null(model.treatment)){
-            if(any(n.censor>0)){
-                estimator <- "IPTW,IPCW"
-            }else{
-                estimator <- "IPTW"
-            }
-        }else if(!is.null(model.event) && !is.null(model.treatment)){
-            if(any(n.censor>0)){
-                estimator <- "AIPTW,AIPCW"
-            }else{
-                estimator <- "AIPTW"
-            }
-        }else{
-            estimator <- NA
-        }
-        test.monotone <- FALSE
-    }else{
-        estimator <- toupper(estimator)
-
-        ## should montonicity constraint be enforced on estimators based on IPW
-        mestimator <- estimator
-        estimator <- gsub("MONOTONE","",estimator)
-        
-        index.westimator <- which(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW"))
-        if(length(index.westimator)>0){
-            test.monotone <- unique(grepl(pattern = "MONOTONE",mestimator[index.westimator]))
-        }else{
-            test.monotone <- FALSE
-        }
-        if(any(estimator == "IPTW") && any(n.censor>0)){
-            estimator[estimator == "IPTW"] <- "IPTW,IPCW"
-        }
-        if(any(estimator == "AIPTW") && any(n.censor>0)){
-            estimator[estimator == "AIPTW"] <- "AIPTW,AIPCW"
-        }
-        if(any(estimator == "G-FORMULA")){
-            estimator[estimator == "G-FORMULA"] <- "GFORMULA"
-        }
-        if(any(estimator == "G-FORMULATD")){
-            estimator[estimator == "G-FORMULATD"] <- "GFORMULA"
-        }
-    }
-
-    ## which terms are used by the estimator
-    estimator.output <- unname(sapply(estimator, switch,
-                                      "GFORMULA" = "GFORMULA",
-                                      "GFORMULATD" = "GFORMULA",
-                                      "IPTW" = "IPTW",
-                                      "IPTW,IPCW" = "IPTW",
-                                      "AIPTW" = "AIPTW",
-                                      "AIPTW,AIPCW" = "AIPTW"
-                                      ))
-
-    if(TD){
-        attr(estimator.output,"TD") <- TRUE
-    }else{
-        attr(estimator.output,"TD") <- FALSE
-    }
-
-    ## term 1: F_1(\tau|A=a,W) or F_1(\tau|A=a,W) (1-1(A=a)/Prob[A=a|W])
-    if(any(estimator %in% c("GFORMULA","GFORMULATD","AIPTW","AIPTW,AIPCW"))){
-        attr(estimator.output,"GFORMULA") <- TRUE
-    }else{
-        attr(estimator.output,"GFORMULA") <- FALSE
-    }
-
-    ## term 2 (treatment): 1(A=a)Y(tau)/Prob[A=a|W] or 1(A=a)Y(tau)/Prob[A=a|W] 1(\Delta!=0)/Prob[\Delta!=0]
-    if(any(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW"))){
-        attr(estimator.output,"IPTW") <- TRUE
-    }else{
-        attr(estimator.output,"IPTW") <- FALSE
-    }
-
-    ## term 2 (censoring): 1(A=a)Y(tau)/Prob[A=a|W] 1(\Delta!=0)/Prob[\Delta!=0]
-    if(any(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW"))){
-        attr(estimator.output,"IPCW") <- TRUE
-    }else{
-        attr(estimator.output,"IPCW") <- FALSE
-    }
-
-    ## term 3: 1(A=a)Y(tau) \int () dM
-    if(any(estimator %in% c("AIPTW,AIPCW"))){
-        attr(estimator.output,"integral") <- !inherits(object.event,"wglm")
-    }else{
-        attr(estimator.output,"integral") <- FALSE
-    }
-
-    if(any(estimator %in% c("AIPTW","AIPTW,AIPCW"))){
-        attr(estimator.output,"augmented") <- TRUE
-    }else{
-        attr(estimator.output,"augmented") <- FALSE
-    }
-
-    ## which estimates should be output?
-    if(any(estimator %in% c("GFORMULA","GFORMULATD"))){
-        attr(estimator.output,"export.GFORMULA") <- TRUE
-    }else{
-        attr(estimator.output,"export.GFORMULA") <- FALSE
-    }
-    if(any(estimator %in% c("IPTW","IPTW,IPCW"))){
-        attr(estimator.output,"export.IPTW") <- TRUE
-    }else{
-        attr(estimator.output,"export.IPTW") <- FALSE
-    }
-    if(any(estimator %in% c("AIPTW","AIPTW,AIPCW"))){
-        attr(estimator.output,"export.AIPTW") <- TRUE
-    }else{
-        attr(estimator.output,"export.AIPTW") <- FALSE
-    }
-    attr(estimator.output,"full") <- estimator
-    if(!attr(estimator.output,"integral") && any(estimator == "AIPTW,AIPCW")){
-        attr(estimator.output,"full")[attr(estimator.output,"full")=="AIPTW,AIPCW"] <- "AIPTW,IPCW"
-    }else{
-        
-    }
-    attr(estimator.output,"monotone") <- test.monotone
-
-    ## ** sample size
-    n.obs <- c(data = NROW(mydata),
-               model.event = if(!is.null(model.event)){coxN(model.event)}else{NA},
-               model.treatment = if(!is.null(model.treatment)){stats::nobs(model.treatment)}else{NA},
-               model.censor = if(!is.null(model.censor)){coxN(model.censor)}else{NA}
-               )
-
-    ## ** store
-    store.data <- NULL
-    store.iid <- "full"
-    store.size.split <- NULL
-    if(!is.null(store)){
-        if(length(store) > 2){
-            stop("Argument \'store\' should contain at most two elements. \n",
-                 "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
-        }
-        if(is.null(names(store)) || any(names(store) %in% c("data","iid", "size.split") == FALSE)){
-            stop("Incorrect names for argument \'store\': should be \"data\", \"iid\", \"size.split\". \n",
-                 "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
-        }
-        if("data" %in% names(store) && !is.null(store[["data"]])){
-            if(store[["data"]] %in% c("minimal","full") == FALSE){
-                stop("Element \"data\" in argument \'store\' should take value \'minimal\' or \'full\'.\n",
-                     "For instance store = c(data = \"full\") or store = c(data = \"minimal\").\n")
-            }
-            store.data <- store[["data"]]
-        }
-        if("iid" %in% names(store) && !is.null(store[["iid"]])){
-            if(store[["iid"]] %in% c("minimal","full") == FALSE){
-                stop("Element \"iid\" in argument \'store\' should take value \'minimal\' or \'full\'.\n",
-                     "For instance store = c(iid = \"full\") or store = c(iid = \"minimal\").\n")
-            }
-            store.iid <- store[["iid"]]
-        }
-        if("size.split" %in% names(store)){
-            if(!is.numeric(store[["size.split"]]) || store[["size.split"]] < 0 || (store[["size.split"]] %% 1>0)){
-                stop("Element \"size.split\" in argument \'store\' should be a positive integer.\n")
-            }
-            store.size.split <- store[["size.split"]]
-        }
-        
-    }
-    store <- list(data = store.data, iid = store.iid, size.split = store.size.split)
-
-    ## ** output
-    return(list(object.event = model.event,
-                object.treatment = model.treatment,
-                object.censor = model.censor,
-                times = times,
-                handler = handler,
-                estimator = estimator.output,
-                formula = formula,
-                landmark = landmark,
-                fct.pointEstimate = fct.pointEstimate,
-                n.obs = n.obs,
-                n.censor = n.censor,
-                treatment = treatment,
-                cause = cause,
-                level.censoring = level.censoring,
-                level.states = level.states,
-                eventVar.time = eventVar.time,
-                eventVar.status = eventVar.status,
-                censorVar.time = censorVar.time,
-                censorVar.status = censorVar.status,
-                product.limit = product.limit,
-                data.index = data.index,
-                store = store
-                ))
-}
-
-## * ate_checkArgs
-ate_checkArgs <- function(call,
-                          object.event,
-                          object.treatment,
-                          object.censor,
-                          mydata,
-                          formula,
-                          treatment,
-                          strata,
-                          contrasts,
-                          allContrasts,
-                          times,
-                          cause,
-                          landmark,
-                          se,
-                          iid,
-                          data.index,
-                          return.iid.nuisance,
-                          band,
-                          B,
-                          confint,
-                          seed,
-                          handler,
-                          mc.cores,
-                          cl,
-                          verbose,
-                          n.censor,
-                          level.censoring,
-                          level.states,
-                          estimator,
-                          eventVar.time,
-                          eventVar.status,
-                          censorVar.time,
-                          censorVar.status,
-                          n.obs){
-
-    options <- riskRegression.options()
-
-    ## ** times
-    if(inherits(object.event,"glm") && length(times)!=1){
-        stop("Argument \'times\' has no effect when using a glm object \n",
-             "It should be set to NA \n")        
-    }
-
-    ## ** status
-    if(eventVar.status %in% names(mydata) == FALSE){
-        stop("The data set does not seem to have a variable called \'",eventVar.status,"\' (argument: event[2]). \n")
-    }
-    if(inherits(object.event,"glm") && is.na(cause)){
-        stop("Argument \'cause\' should not be specified when using a glm model in argument \'event\'")
-    }
-    if(length(cause)>1 || is.na(cause)){
-        if(!is.null(object.event$na.action)){
-            stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
-                 "Likely due to missing data in the dataset used to fit the survival model. \n")
-        }else{
-            stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
-                 "Please specify the argument \'cause\'. \n")
-        }
-    }
-    if(cause %in% mydata[[eventVar.status]] == FALSE){
-        stop("Value of the argument \'cause\' not found in column \"",eventVar.status,"\" \n")
-    }
-
-    ## ** estimator
-    if(any(is.na(estimator))){
-        stop("No model for the outcome/treatment/censoring has been specified. Cannot estimate the average treatment effect. \n")
-    }
-    
-    valid.estimator <- c("GFORMULA","IPTW,IPCW","IPTW","AIPTW,AIPCW","AIPTW")
-    if(any(estimator %in% valid.estimator == FALSE)){
-        stop("Incorrect value(s) for argument \'estimator\': \"",paste(estimator[estimator %in% valid.estimator == FALSE], collapse = "\" \""),"\"\n",
-             "Valid values: \"G-formula\", \"IPTW\", \"AIPTW\" \n")
-    }
-    if(attr(estimator,"GFORMULA")){
-        if(is.null(object.event)){
-            stop("Using a G-formula/AIPTW estimator requires to specify a model for the outcome (argument \'event\') \n")
-        }
-    }
-    if(attr(estimator,"IPTW")){
-        if(is.null(object.treatment)){
-            stop("Using a ITPW/AIPTW estimator requires to specify a model for the treatment allocation (argument \'treatment\') \n")
-        }
-    }
-    if(attr(estimator,"IPCW")){
-        if(is.null(object.censor)){
-            stop("Using a ITPW/AIPTW estimator requires to specify a model for the censoring mechanism (argument \'censor\') in presence of right-censoring \n")
-        }
-    }
-    if(length(attr(estimator,"monotone"))>1){
-        stop("monotonicity constrain should be request for all or none of the IPW estimators \n")
-    }
-    
-    ## ** object.event
-    if(!is.null(object.event)){
-        ## look for all function in riskRegression
-        ## unclass(lsf.str(envir = asNamespace("riskRegression"), all = T))
-        vec.candidateMethods <- paste("predictRisk",class(object.event),sep=".")
-        for(iCandidate in vec.candidateMethods){
-            test <- try(is.function(eval(parse(text=iCandidate))), silent = TRUE)            
-            if(!inherits(test, "try-error") && test==TRUE){candidateMethods <- iCandidate; break}
-        }
-        if (inherits(test, "try-error") || test==FALSE){
-            stop(paste("Could not find predictRisk S3-method for ",paste(class(object.event),collapse=", "),sep=""))
-        }
-        if((inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")) && (cause %in% object.event$causes == FALSE)){
-            stop("Argument \'cause\' does not match one of the available causes: ",paste(object.event$causes,collapse=" "),"\n")
-        }
-        if(inherits(object.event,"wglm") && (cause != object.event$theCause)){
-            stop("Argument \'cause\' does not match the one of \'object.event\' \n",
-                 "Consider re-fitting the model with appropriate cause.")
-        }
-        if(any(is.na(level.censoring)) && any(na.omit(level.censoring) == cause)){
-            stop("The cause of interest must differ from the level indicating censoring (in the outcome model) \n")
-        } 
-        if(any(is.na(coef(object.event)))){
-            stop("Cannot handle missing values in the model coefficients (event) \n")
-        }
-        if(!is.null(treatment) && identical(eventVar.status, treatment)){
-            stop("The treatment variable has the same name as the event variable. \n")
-        }
-    }
-    
-    ## ** object.treatment    
-    if(!is.null(object.treatment)){
-        if(!inherits(object.treatment,"multinom") && (!inherits(object.treatment,"glm") || object.treatment$family$family!="binomial")){
-            stop("Argument \'treatment\' must be a logistic regression (glm object) or a multinomial regression (nnet::multinom)\n",
-                 " or a character variable giving the name of the treatment variable. \n")
-        }
-
-        if(any(levels(mydata[[treatment]]) %in% mydata[[treatment]] == FALSE)){
-            mistreat <- levels(mydata[[treatment]])[levels(mydata[[treatment]]) %in% mydata[[treatment]] == FALSE]
-            stop("Argument \'mydata\' needs to take all possible treatment values when using IPTW/AIPTW \n",
-                 "missing treatment values: \"",paste(mistreat,collapse="\" \""),"\"\n")
-        }
-
-        if(any(is.na(coef(object.treatment)))){
-            stop("Cannot handle missing values in the model coefficients (object.treatment) \n")
-        }
-
-        if(inherits(object.treatment,"glm") && object.treatment$family$family == "binomial" && length(unique(mydata[[treatment]]))>2){
-            stop("Cannot use a logistic regression in argument \"treatment\" when there are more than two treatment categories \n",
-                 "Consider subsetting the dataset to have only two treatment categories or using a multinomial regression (nnet::multinom).")
-        }
-    }
-
-    ## ** object.censor
-    if(attr(estimator,"IPCW")){
-        ## require censoring model
-        if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg") && !inherits(object.censor,"prodlim")){
-            stop("Argument \'object.censor\' must be a Cox model \n")
-        }
-        
-        if(inherits(object.event,"glm") && any(n.censor > 0) && all(object.event$prior.weights==1)){
-            stop("Argument \'object.event\' should not be a standard logistic regression in presence of censoring \n")
-        }
-
-        if(!identical(censorVar.time,eventVar.time)){
-            stop("The time variable should be the same in \'object.event\' and \'object.censor\' \n")
-        }
-        if(any(cause == level.censoring)){
-            stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
-                 "maybe you have forgotten to set the event type == 0 in the censoring model \n")
-        }
-        if(!identical(censorVar.status,eventVar.status)){
-            if(length(censorVar.status)==1 && length(eventVar.status) == 1 && censorVar.status == eventVar.status){
-                ## ok only difference is in attributes
-            }else if(sum(diag(table(mydata[[censorVar.status]] == level.censoring, mydata[[eventVar.status]] %in% level.states == FALSE)))!=NROW(mydata)){
-                stop("The status variables in object.event and object.censor are inconsistent \n")
-            }
-        }
-        if(any(is.na(coef(object.censor)))){
-            stop("Cannot handle missing values in the model coefficients (object.treatment) \n")
-        }
-    }
-
-    ## ** bootstrap
-    if(B>0){
-        if(se==FALSE){
-            warning("Argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
-        }
-        if(iid==TRUE){
-            stop("Influence function cannot be computed when using the bootstrap approach \n",
-                 "Either set argument \'iid\' to FALSE to not compute the influence function \n",
-                 "or set argument \'B\' to 0 \n")
-        }
-        if(band==TRUE){
-            stop("Confidence bands cannot be computed when using the bootstrap approach \n",
-                 "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
-                 "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
-        }
-        if(!is.null(object.event) && is.null(object.event$call)){
-            stop("Argument \'event\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
-        }
-        if(!is.null(object.treatment) && is.null(object.treatment$call)){
-            stop("Argument \'treatment\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
-        }
-        if(!is.null(object.censor) && is.null(object.censor$call)){
-            stop("Argument \'censor\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
-        }
-        ## if(any(data.index != 1:na.omit(n.obs)[1])){
-        ##     stop("Argument \'data.index\' cannot be used when using bootstrap resampling \n")
-        ## }
-        ## if((Sys.info()["sysname"] == "Windows") && (handler == "mclapply") && (mc.cores>1) ){
-        ## stop("mclapply cannot perform parallel computations on Windows \n",
-        ## "consider setting argument handler to \"foreach\" \n")
-        ## }
-        max.cores <- parallel::detectCores()
-        if(mc.cores > max.cores){
-            stop("Not enough available cores \n","available: ",max.cores," | requested: ",mc.cores,"\n")
-        }
-    }
-
-    ## ** functional delta method
-    if(B==0 && (se|band|iid)){
-        if(!is.null(landmark)){
-            stop("Calculation of the standard errors via the functional delta method not implemented for time dependent covariates \n")
-        }
-        if(length(unique(stats::na.omit(n.obs[-1])))>1){
-            stop("Arguments \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' must be fitted using the same number of observations \n")
-        }
-        test.data.index <- any(data.index %in% 1:max(n.obs[-1],na.rm = TRUE) == FALSE)
-        if(is.null(data.index) || (is.null(call$data.index) && test.data.index)){
-            stop("Incompatible number of observations between argument \'data\' and the dataset from argument(s) \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' \n",
-                 "Consider specifying argument \'data.index\' \n \n")
-        }
-        if(!is.numeric(data.index) || any(duplicated(data.index)) || any(is.na(data.index)) || test.data.index){
-            stop("Incorrect specification of argument \'data.index\' \n",
-                 "Must be a vector of integers between 0 and ",max(n.obs[-1],na.rm = TRUE)," \n")
-        }
-        
-        if(!is.null(object.event)){
-            if ("average.iid" %in% names(formals(candidateMethods)) == FALSE){
-                stop(paste("The method ",candidateMethods," is missing an argument average.iid to be used for the functional delta method. \n",
-                           "Set argument \'B\' to a positive integer to use a bootstrap instead \n",sep=""))
-            }
-        }
-        if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
-            stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
-                 "(discrepancy found in number of rows) \n")
-        }
-
-        if(!is.null(object.censor) && coxN(object.censor)!=NROW(mydata)){ ## note: only check that the datasets have the same size
-                stop("Argument \'censor\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
-                     "(discrepancy found in number of rows) \n")
-        }
-
-    }
-
-    
-    ## ** treatment
-    if(!is.null(treatment)){
-        if(treatment %in% names(mydata) == FALSE){
-            stop("The data set does not seem to have a variable ",treatment," (argument: object.treatment). \n")
-        }
-        if(is.numeric(mydata[[treatment]])){
-            stop("The treatment variable must be a factor variable. \n",
-                 "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
-        }
-    }else if(is.null(strata)){
-        stop("The treatment variable must be specified using the argument \'treatment\' \n")
-    }
-
-    ## ** contrasts/allContrasts
-    if(!is.null(contrasts)){
-        if(any(contrasts %in% unique(mydata[[treatment]]) == FALSE)){
-            stop("Incorrect values for the argument \'contrasts\' \n",
-                 "Possible values: \"",paste(unique(mydata[[treatment]]),collapse="\" \""),"\" \n")
-        }
-    
-    }
-    if(!is.null(allContrasts)){
-        if(any(allContrasts %in% unique(mydata[[treatment]]) == FALSE)){
-            stop("Incorrect values for the argument \'allContrasts\' \n",
-                 "Possible values: \"",paste(unique(mydata[[treatment]]),collapse="\" \""),"\" \n")
-        }
-        if(!is.matrix(allContrasts) || NROW(allContrasts)!=2){
-            stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
-        }
-    }
-
-    ## ** strata
-    if(!is.null(strata)){
-        if(attr(estimator, "IPTW")){
-            stop("Argument \'strata\' only compatible with the G-formula estimator \n")
-        }
-        if(any(strata %in% names(mydata) == FALSE)){
-            stop("The data set does not seem to have a variable \"",paste0(strata, collapse = "\" \""),"\" (argument: strata). \n")
-        }
-        if(length(strata) != 1){
-            stop("Argument strata should have length 1. \n")
-        }
-        if(attr(estimator,"TD")){
-            stop("Landmark analysis is not available when argument strata is specified. \n")
-        }
-    }
-    
-    ## ** event time
-    if(!is.na(eventVar.time)){
-        if(eventVar.time %in% names(mydata) == FALSE){
-            stop("The data set does not seem to have a variable ",eventVar.time," (argument: object.event[1]). \n")
-        }
-        if(is.na(cause)){
-            stop("Argument \'cause\' not specified\n")
-        }
-        data.status <- mydata[[eventVar.status]]
-        if(!is.null(treatment)){
-            data.strata <- mydata[[treatment]]
-        }else{
-            data.strata <- mydata[[strata]]
-        }
-        if(is.factor(data.strata)){
-            data.strata <- droplevels(data.strata)
-        }
-        freq.event <- tapply(data.status, data.strata, function(x){mean(x==cause)})
-        count.event <- tapply(data.status, data.strata, function(x){sum(x==cause)})
-        
-        if(any(count.event < 5)  ){
-            warning("Rare event \n")
-        }
-        if(any(mydata[[eventVar.time]]<0)){
-            stop("The time to event variable should only take positive values \n")
-        }
-    }
-
-    ## ** time dependent covariances
-    if (attr(estimator,"TD")){
-        if (missing(formula))
-            stop("Need formula to do landmark analysis.")
-        if (missing(landmark))
-            stop("Need landmark time(s) to do landmark analysis.")
-        if(length(times)!=1){
-            stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
-        }
-    }
-    
-    ## ** iid.nuisance    
-    if((return.iid.nuisance == FALSE) & (iid == TRUE) & (attr(estimator, "augmented") == FALSE)){
-        warning("Ignoring the uncertainty associated with the estimation of the nuisance parameters may lead to inconsistent standard errors. \n",
-                "Consider using a double robust estimator or setting the argument \'known.nuisance\' to TRUE \n")
-    }
-    
-
-    ## ** output
-    return(TRUE)
-}
-
-
-
-
-
-
-## ** nobs.multinom
-##' @export
-nobs.multinom <- function(object,...){
-    NROW(object$residuals)
 }
 ##----------------------------------------------------------------------
 ### ate.R ends here
