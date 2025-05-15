@@ -26,17 +26,15 @@
 #' @examples
 #' library(survival)
 #' set.seed(8)
-#' d <- sampleData(77,outcome="survival")
+#' d <- sampleData(87,outcome="survival")
 #' test <- sampleData(5,outcome="survival")
 #'
-#' # penalized linear regression
-#' h <- GLMnet(X8~X2+X6,data=d,alpha=0)
-#' predictRisk(h,newdata=test)
-#'
-#' \dontrun{
 #' # penalized logistic regression
-#' g <- GLMnet(X1~X2+X8,data=d)
+#' g <- GLMnet(X2~X1+X8,data=d)
 #' predictRisk(g,newdata=test)
+#' \dontrun{
+#' g1 <- GLMnet(X2~X1+X8,data=d,lambda=0,gamma=0.5)
+#' g2 <- GLMnet(X2~X1+X8,data=d,relax=TRUE)
 #' }
 #' # penalized Cox regression
 #' 
@@ -122,6 +120,10 @@ GLMnet <- function(formula,
                               penalty.factor = penalty.factor,
                               family=family,
                               ...)
+        fit$call$alpha <- alpha
+        fit$call$penalty.factor <- penalty.factor
+        fit$call$family <- family
+        fit$call$lambda <- lambda
         if (selector == "prespecified"){
             selected.lambda <- lambda
             selected.beta <- fit$beta
@@ -141,9 +143,18 @@ GLMnet <- function(formula,
                                  penalty.factor = penalty.factor,
                                  family=family,
                                  ...)
+        fit$call$alpha <- alpha
+        fit$call$penalty.factor <- penalty.factor
+        fit$call$type.measure <- type.measure
+        fit$call$family <- family
+        fit$call$nfolds <- nfolds
+        fit$call$lambda <- lambda
         selected.lambda <- fit[[paste0("lambda.",selector)]]
         selected.beta <- fit$glmnet.fit$beta[,fit$index[,"Lambda"][[selector]],drop = FALSE]
     }
+    colnames(selected.beta) <- switch(family,"binomial" = "log_odds",
+                                      "cox" = "log_hazard_ratio",
+                                      "beta")
     out <- list(fit = fit,
                 y = Y,
                 x = X,

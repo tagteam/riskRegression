@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May  9 2025 (06:14) 
 ## Version: 
-## Last-Updated: May  9 2025 (08:20) 
+## Last-Updated: May 15 2025 (06:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 11
+##     Update #: 21
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,17 +23,19 @@
 #' @method print GLMnet
 #' @export
 print.GLMnet <- function(x,...){
-    cat("glmnet object fitted via formula interface GLMnet.\n",
-        "You can access the fitted glmnet object at x$fit.\n",
+    cat(paste0(switch(x$fit$call$family, "binomial" = "Penalized logistic",
+                      "cox" = "Penalized Cox","Penalized linear")," regression: "),
+        "glmnet object fitted via formula interface GLMnet.\n",
+        "The fitted glmnet object is storted at x$fit.\n",
         if(x$cv){
-            paste0("The penalty parameter lambda was selected via ",x$call$nfolds," cross-validation with loss function ",x$call$type.measure,": lambda=")
+            paste0("The penalty parameter lambda was selected via ",x$fit$call$nfolds," cross-validation with loss function ",x$fit$call$type.measure,": lambda=")
         }else{
             if(x$selector == "undersmooth"){
                 paste0("The largest possible penalty parameter lambda was selected such that the model converged: lambda=")
             }else{
                 paste0("A prespecified penalty parameter lambda value was selected: lambda=")
             }
-        },x$selected.lambda,"\n\nThe regression coefficients at the selected lambda value:\n\n")
+        },x$selected.lambda,"\n\nThe regression coefficients at the selected lambda value:\n\n",sep = "")
     print(x$selected.beta)
 }
 

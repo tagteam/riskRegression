@@ -55,24 +55,27 @@ Fit glmnet models via a formula and a data set for use with \code{\link{predictR
 \examples{
 library(survival)
 set.seed(8)
-d <- sampleData(77,outcome="survival")
+d <- sampleData(87,outcome="survival")
 test <- sampleData(5,outcome="survival")
 
-# penalized linear regression
-h <- GLMnet(X8~X2+X1,data=d)
-
 # penalized logistic regression
-g <- GLMnet(X1~X2+X8,data=d)
-
+g <- GLMnet(X2~X1+X8,data=d)
+predictRisk(g,newdata=test)
+\dontrun{
+g1 <- GLMnet(X2~X1+X8,data=d,lambda=0,gamma=0.5)
+g2 <- GLMnet(X2~X1+X8,data=d,relax=TRUE)
+}
 # penalized Cox regression
 
 f0 <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d,lambda=0)
+predictRisk(f0,newdata=test,times=3)
 f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
 f
 predictCox(f,newdata=test,times=5,product.limit=TRUE)
+predictRisk(f,newdata=test,times=1)
 
 f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
-predictRisk(f,newdata=test,times=1)
+
 predictRisk(f1,newdata=test,times=1)
 }
 \seealso{

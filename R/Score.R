@@ -935,7 +935,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                 jack <- data.table(riskRegression_ID=data[["riskRegression_ID"]],
                                    times=rep(times,rep(N,NT)),
                                    pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
-                if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
+                if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue][]
             }
         }
     } else{
@@ -966,14 +966,14 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                  verbose = verbose)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
-            missing.predictions[,model:=factor(model,levels=mlevs,mlabels)]
+            missing.predictions[,model:=factor(model,levels=mlevs,mlabels)][]
             if (verbose>0)warning("Missing values in the predicted risks. See `missing.predictions' in output list.")
         }else{
             missing.predictions <- "None"
         }
         if (("Brier"%in% metrics) && (any(is.na(DT[["risk"]]))|| (max(DT[["risk"]])>1 || min(DT[["risk"]])<0))){
             off.predictions <- DT[,list("missing.values"=sum(is.na(risk)),"negative.values"=sum(risk<0,na.rm=TRUE),"values.above.1"=sum(risk>1,na.rm=TRUE)),by=byvars]
-            off.predictions[,model:=factor(model,levels=mlevs,mlabels)]
+            off.predictions[,model:=factor(model,levels=mlevs,mlabels)][]
             if (verbose>0) warning("Predicted values off the probability scale (negative or above 100%). See `off.predictions' in output list.\nOnly a problem for the Brier score, You can stop this warning by setting metrics='auc'.")
         }else{
             off.predictions <- "None"
@@ -1090,7 +1090,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                     return(DT.fold)
                 }))
                 DT.b[,b:=b]
-                DT.b
+                DT.b[]
             }
         }else{# either LeaveOneOutBoot or BootCv
             DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
@@ -1128,7 +1128,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                            NT=NT,
                                            verbose = ifelse(b == 1,verbose,-1))
                 DT.b[,b:=b]
-                DT.b
+                DT.b[]
             }
         }
         trycombine <- try(DT.B <- rbindlist(DT.B),silent=TRUE)
@@ -1439,9 +1439,9 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             }
             if (ipa==TRUE){
                 if (response.type=="binary")
-                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]][]
                 else
-                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times][]
             }
         }
         # }}}
@@ -1452,7 +1452,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                   list(risk=mean(risk),
                        sd.risk=sd(risk),
                        oob=.N))},.SDcols=c(response.names,"risk"),by=c(byvars,"riskRegression_ID")]
-            crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+            crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)][]
             setcolorder(crossvalPerf[["risks"]]$score,c("riskRegression_ID",byvars,response.names,"risk","sd.risk"))
         }
         # }}}
@@ -1468,7 +1468,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                            oob=.N))},.SDcols=c(response.names,"risk"),by=c(byvars,"riskRegression_ID")]
                 setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("riskRegression_ID",byvars,response.names,"risk"))
             }
-            crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
+            crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)][]
             if (keep.residuals[[1]]==FALSE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf$Brier$Residuals <- NULL
             }
@@ -1482,13 +1482,13 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     if (split.method$internal.name=="noplan"){
         if (keep.residuals==TRUE){
             if("Brier" %in% metrics)
-                noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
+                noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)][]
         }
         if (keep.iid==TRUE){
             if("Brier" %in% metrics)
-                noSplit$Brier$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)]
+                noSplit$Brier$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)][]
             if("AUC" %in% metrics)
-                noSplit$AUC$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)]
+                noSplit$AUC$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)][]
         }
         output <- noSplit
     } else{
@@ -1498,7 +1498,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     names(models) <- mlabels
     # label models in Sens, Spec, PPV, NPV 
     if (length(output$AUC)>0 && length(output$AUC$cutpoints)>0){
-        output$AUC$cutpoints[,model:=factor(model,levels=mlevs,mlabels)]
+        output$AUC$cutpoints[,model:=factor(model,levels=mlevs,mlabels)][]
     }
     if (keep.vcov){
         lab.models <- mlabels
