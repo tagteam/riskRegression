@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: Apr 16 2025 (07:08) 
+## Last-Updated: May 15 2025 (08:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 65
+##     Update #: 82
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,6 +14,8 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
+# breaks are used to approximate the ROC curve and AUC
+# cutpoints are used to estimate Sens, Spec, PPV, NPV
 AUC.binary <- function(DT,
                        breaks=NULL,
                        se.fit,
@@ -30,33 +32,20 @@ AUC.binary <- function(DT,
                        cutpoints,
                        ...){
     prob_predicted_positive = prob_predicted_negative = PPV=NPV=count_predicted_positive=count_predicted_negative=model=risk=riskRegression_event=FPR=TPR=riskRegression_ID=NULL
-    auRoc.numeric <- function(X,D,breaks,ROC,cutpoints=NULL){
-        if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
+    auRoc.numeric <- function(X,D,breaks,ROC){
+        ## need to reverse when high X is concordant with {response=1}
+        if (is.null(breaks)) breaks <- rev(sort(unique(X))) 
         TPR <- c(prodlim::sindex(jump.times=X[D==1],
                                  eval.times=breaks,
                                  comp="greater",
                                  strict=FALSE)/sum(D==1))
-        FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==0))
-        if (ROC && is.null(cutpoints)) {
+        FPR <- c(prodlim::sindex(jump.times=X[D==0],
+                                 eval.times=breaks,
+                                 comp="greater",
+                                 strict=FALSE)/sum(D==0))
+        if (ROC) {
             data.table(risk=breaks,TPR,FPR)
-        }
-        else if (!is.null(cutpoints)){
-            # predicted positive: Marker >= cutoff
-            # predicted negative: Marker < cutoff
-            # if X = c(7,10,77) and breaks = 7 then 1 is predicted
-            count_predicted_positive <- prodlim::sindex(jump.times=X,eval.times=breaks,comp="greater",strict=FALSE)
-            count_predicted_negative <- prodlim::sindex(jump.times=X,eval.times=breaks,comp="smaller",strict=TRUE)
-            PPV <- prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/count_predicted_positive
-            # if no one is predicted positive then the positive predictive rate is 1
-            PPV[count_predicted_positive == 0] <- 1
-            NPV <- prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="smaller",strict=TRUE)/count_predicted_negative
-            # if no one is predicted negative then the negative predictive rate is 0
-            NPV[count_predicted_negative == 0] <- 1
-            prob_predicted_positive <- count_predicted_positive/length(D)
-            prob_predicted_negative <- count_predicted_negative/length(D)
-            data.table(risk=breaks,TPR,FPR,PPV,NPV,prob_predicted_positive,prob_predicted_negative)
-        }
-        else {
+        } else {
             0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
         }
     }
@@ -68,71 +57,53 @@ AUC.binary <- function(DT,
         else
             0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
     }
-    # }}}
-    
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     data.table::setkey(aucDT,model,riskRegression_ID)
-    if (!is.null(cutpoints)){
-        ROC <- TRUE
-    }
     if (is.factor(DT[["risk"]])){
-        score <- aucDT[,auRoc.factor(risk,riskRegression_event,ROC=ROC),by=list(model)]
-    }
-    else{
+        score <- aucDT[,auRoc.factor(risk,
+                                     riskRegression_event,
+                                     ROC=ROC),by=list(model)]
+    } else{
         score <- aucDT[,auRoc.numeric(X = risk,
                                       D = riskRegression_event,
                                       breaks=breaks,
-                                      ROC=ROC,
-                                      cutpoints=cutpoints),by=list(model)]
+                                      ROC=ROC),by=list(model)]
     }
     if (ROC==FALSE){
         setnames(score,"V1","AUC")
         output <- list(score=score)
-    } else{
+    } else {
         AUC <- score[,list(AUC=0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))),by=list(model)]
         ROC <- score
-        if(!is.null(cutpoints)){
-            temp.TPR.ic <- score[,{
-                # find current cutpoint among the breaks 
-                position <- pmin(prodlim::sindex(jump.times = risk,
-                                                 eval.times = cutpoints,
-                                                 strict = FALSE,
-                                                 comp = "greater"),length(risk))
-                data.table(TPR=c(0,TPR)[1+position],
-                           FPR=c(0,FPR)[1+position],
-                           PPV=c(1,PPV)[1+position],
-                           NPV=c(0,NPV)[1+position],
-                           prob_predicted_positive=c(0,prob_predicted_positive)[1+position],
-                           prob_predicted_negative=c(1,prob_predicted_negative)[1+position],
-                           cutpoints=cutpoints)
-            },by=list(model)]
-            results <- list()
-            for (i in 1:length(cutpoints)){
-                temp.TPR <- subset(temp.TPR.ic,cutpoints==cutpoints[i])
-                aucDT.temp <- merge(aucDT,temp.TPR,by = "model")
-                cut <- aucDT.temp$cutpoints[[i]]
-                results[[i]] <- aucDT.temp[,{
-                    meanY <- mean(riskRegression_event)
-                    out <- list(cutpoint = cut,
-                                TPR = TPR[1], 
-                                se.TPR = sd(riskRegression_event/meanY * ((risk > cut)-TPR))/sqrt(N), 
-                                FPR = FPR[1], 
-                                se.FPR = sd((1-riskRegression_event)/(1-meanY) * ((risk > cut)-FPR))/sqrt(N),
-                                PPV = PPV[1],
-                                se.PPV = sd((risk > cut)/count_predicted_positive[1] * (riskRegression_event - PPV))/sqrt(N),
-                                NPV = NPV[1], 
-                                se.NPV = sd((risk <= cut)/count_predicted_negative[1] * ((1-riskRegression_event) - NPV))/sqrt(N))
-                    out
-                }, by = list(model)]
-            }
-            output <- list(score=AUC,
-                           ROC=ROC,
-                           cutpoints=do.call("rbind",results))
-        }
-        else {
-            output <- list(score=AUC,ROC=ROC)
-        }
+        output <- list(score=AUC,ROC=ROC)
+    }
+    if(!is.null(cutpoints)){
+        cutpoint_results <- aucDT[,{
+            # predicted positive: Marker >= cutoff
+            # predicted negative: Marker < cutoff
+            # if X = c(7,10,77) and breaks = 7 then 1 is predicted
+            TPR <- c(prodlim::sindex(jump.times=risk[riskRegression_event==1],eval.times=cutpoints,comp="greater",strict=FALSE)/sum(riskRegression_event==1))
+            FPR <- c(prodlim::sindex(jump.times=risk[riskRegression_event==0],eval.times=cutpoints,comp="greater",strict=FALSE)/sum(riskRegression_event==0))
+            count_predicted_positive <- prodlim::sindex(jump.times=risk,eval.times=cutpoints,comp="greater",strict=FALSE)
+            count_predicted_negative <- prodlim::sindex(jump.times=risk,eval.times=cutpoints,comp="smaller",strict=TRUE)
+            PPV <- prodlim::sindex(jump.times=risk[riskRegression_event==1],eval.times=cutpoints,comp="greater",strict=FALSE)/count_predicted_positive
+            # if no one is predicted positive then the positive predictive rate is 1
+            PPV[count_predicted_positive == 0] <- 1
+            NPV <- prodlim::sindex(jump.times=risk[riskRegression_event==0],eval.times=cutpoints,comp="smaller",strict=TRUE)/count_predicted_negative
+            # if no one is predicted negative then the negative predictive rate is 0
+            NPV[count_predicted_negative == 0] <- 1
+            prob_predicted_positive <- count_predicted_positive/.N
+            prob_predicted_negative <- count_predicted_negative/.N
+            # standard errors
+            meanY <- mean(riskRegression_event)
+            se.TPR = sapply(1:length(cutpoints),function(i){sd(riskRegression_event/meanY * ((risk > cutpoints[[i]])-TPR[[i]]))/sqrt(.N)})
+            se.FPR = sapply(1:length(cutpoints),function(i){sd((1-riskRegression_event)/(1-meanY) * ((risk > cutpoints[[i]])-FPR[[i]]))/sqrt(.N)})
+            se.PPV = sapply(1:length(cutpoints),function(i){sd((risk > cutpoints[[i]])/prob_predicted_positive[[i]] * (riskRegression_event - PPV[[i]]))/sqrt(.N)})
+            se.NPV = sapply(1:length(cutpoints),function(i){sd((risk <= cutpoints[[i]])/prob_predicted_negative[[i]] * ((1-riskRegression_event) - NPV[[i]]))/sqrt(.N)})
+            data.table(cutpoint=cutpoints,TPR,se.TPR,FPR,se.FPR,PPV,se.PPV,NPV,se.NPV)
+        },by=list(model)]
+        output <- c(output, list(cutpoints=cutpoint_results[]))
     }
     if (length(dolist)>0 || (se.fit[[1]]==1L)){
         ## do not want to depend on Daim as they turn marker to ensure auc > 0.5

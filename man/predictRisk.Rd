@@ -39,7 +39,6 @@
 \alias{predictRisk.SuperPredictor}
 \alias{predictRisk.Hal9001}
 \alias{predictRisk.GLMnet}
-\alias{predictRisk.GLMnet2}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
 \alias{predictRisk.CoxConfidential}
@@ -161,8 +160,6 @@ predictRisk(object, newdata, ...)
 \method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
 
 \method{predictRisk}{GLMnet}(object, newdata, times, product.limit = FALSE, diag = FALSE, ...)
-
-\method{predictRisk}{GLMnet2}(object, newdata, times = NA, ...)
 
 \method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 
