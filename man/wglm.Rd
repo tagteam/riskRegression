@@ -76,7 +76,6 @@ confint(e.wglm)
 model.tables(e.wglm)
 
 summary(ate(e.wglm, data = dFull, times = tau, treatment = "X1", verbose = FALSE))
-
 #### right-censoring ####
 ## no covariante in the censoring model (independent censoring)
 eC.wglm <- wglm(Surv(time,event) ~ X1,

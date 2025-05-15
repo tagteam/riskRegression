@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (18:23) 
-##           By: Brice Ozenne
-##     Update #: 782
+## Last-Updated: May 15 2025 (12:27) 
+##           By: Thomas Alexander Gerds
+##     Update #: 786
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -70,7 +70,6 @@
 #' model.tables(e.wglm)
 #'
 #' summary(ate(e.wglm, data = dFull, times = tau, treatment = "X1", verbose = FALSE))
-#'
 #' #### right-censoring ####
 #' ## no covariante in the censoring model (independent censoring)
 #' eC.wglm <- wglm(Surv(time,event) ~ X1,
@@ -92,10 +91,8 @@
 #' summary(eCR.wglm)
 #' eCR.wglm <- wglm(Surv(time,event) ~ X1, formula.censor = ~X1,
 #'                  times = tau, data = d)
-
-## * wglm (code)
-
 #' @export
+## * wglm (code)
 wglm <- function(formula.event, times, data, formula.censor = ~1, cause = NA,
                  fitter = NULL, ties = NULL, product.limit = NULL,
                  iid = FALSE, se = TRUE, store = NULL){
