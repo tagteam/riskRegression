@@ -104,7 +104,7 @@ GLMnet <- function(formula,
         penalty.factor <- glmnet_args$penalty
         X <- response$design
     }else{
-        if (NCOL(response$unpenalized)>0){
+        if (!is.null(response$unpenalized)){
             penalty.factor <- c(rep(1,NCOL(response$design)),rep(0,NCOL(response$unpenalized)))
             X <- cbind(response$design,response$unpenalized)
         }else{
