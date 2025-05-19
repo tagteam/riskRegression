@@ -198,7 +198,7 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
   }
 
   //// 2- identify the unique event times
-  vector<double> time(nEventsLast);
+  vector<double> time(nEvents);
 
   // first observation
   time[0] = stoptimes[0];
@@ -207,7 +207,6 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
   size_t index_tempo = 0;
   for(int iterPat = 1 ; iterPat < nPatients ; iterPat++){
     if(stoptimes[iterPat] != stoptimes[iterPat-1]){
-      if(maxtime < stoptimes[iterPat]){break;}      // if after the last time we want to predict
       index_tempo++;
       time[index_tempo] = stoptimes[iterPat];
     }
