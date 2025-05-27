@@ -258,11 +258,11 @@ test_that("[ate] logistic regression - compare to lava",{
     dtBC[, ate := Y*X1test/pi + r*(1-X1test/pi)]
     dtBC[, ate.iid := (ate-mean(ate))/.N, by = "X1"]
     ## iid outcome
-    iid.risk <- attr(predictRisk(fitY, newdata = dtBC, iid = TRUE),"iid")
+    iid.risk <- attr(riskRegression::predictRisk(fitY, newdata = dtBC, iid = TRUE),"iid")
     nuisanceY.iid <- rowMultiply_cpp(iid.risk, scale = (1-dtBC$X1test/dtBC$pi))
     dtBC$AnuisanceY.iid <- c(rowMeans(nuisanceY.iid[,dtBC$X1=="0"]),rowMeans(nuisanceY.iid[,dtBC$X1=="1"]))
     ## iid treatment
-    iid.pi <- attr(predictRisk(fitT, newdata = dtBC, iid = TRUE),"iid")
+    iid.pi <- attr(riskRegression::predictRisk(fitT, newdata = dtBC, iid = TRUE),"iid")
     nuisanceT.iid <- rowMultiply_cpp(iid.pi, scale = (-1)^(dtBC$X1=="1")*dtBC$X1test*(dtBC$Y-dtBC$r)/dtBC$pi^2)
     dtBC$AnuisanceT.iid <- c(rowMeans(nuisanceT.iid[,dtBC$X1=="0"]),rowMeans(nuisanceT.iid[,dtBC$X1=="1"]))
     ## global
@@ -330,7 +330,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
+        iPred.logit <- riskRegression::predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
         iPred.Surv <- predictCox(e.S, newdata = iDT, times = tau, type = "survival", iid = TRUE)
 
         iDT[, pi := as.double(iPred.logit)]
@@ -530,7 +530,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
+        iPred.logit <- riskRegression::predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
         iPred.Surv_tau <- predictCox(e.S, newdata = iDT, times = tau, type = "survival", iid = TRUE)
 
         iDT[, pi := as.double(iPred.logit)]
@@ -678,8 +678,8 @@ test_that("[ate] IPCW LR - no censoring", {
     expect_equal(ignore_attr=TRUE,eATE.glm$meanRisk$lower, eATE.wglm$meanRisk[time==tau[3],lower], tol = 1e-4) 
     expect_equal(ignore_attr=TRUE,eATE.glm$meanRisk$upper, eATE.wglm$meanRisk[time==tau[3],upper], tol = 1e-4) 
 
-    expect_equal(ignore_attr=TRUE,mean(predictRisk(e0.glm, newdata = d0.0)), eATE.glm$meanRisk$estimate[1], tol = 1e-5) 
-    expect_equal(ignore_attr=TRUE,mean(predictRisk(e0.glm, newdata = d0.1)), eATE.glm$meanRisk$estimate[2], tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,mean(riskRegression::predictRisk(e0.glm, newdata = d0.0)), eATE.glm$meanRisk$estimate[1], tol = 1e-5) 
+    expect_equal(ignore_attr=TRUE,mean(riskRegression::predictRisk(e0.glm, newdata = d0.1)), eATE.glm$meanRisk$estimate[2], tol = 1e-5)
 
     ## eATE.mets <- logitATE(Event(time,event)~X1+X2+X6, data = d, cause = 1, time = tau[3], treat.model = X1~1)
     ## coef(eATE.mets)
@@ -696,8 +696,8 @@ test_that("[ate] IPCW LR - no censoring", {
     expect_equal(ignore_attr=TRUE,eATE2.glm$meanRisk$upper, eATE2.wglm$meanRisk[time==tau[3],upper], tol = 1e-4)
 
     ## A (Y-f_a) / pi + f_a = AY/pi - (A/pi-1) f_a
-    expect_equal(ignore_attr=TRUE,mean( myW.T0 * d0$Y - (myW.T0-1) * predictRisk(e0.glm, newdata = d0.0)), eATE2.glm$meanRisk$estimate[1], tol = 1e-5) 
-    expect_equal(ignore_attr=TRUE,mean( myW.T1 * d0$Y - (myW.T1-1) * predictRisk(e0.glm, newdata = d0.1)), eATE2.glm$meanRisk$estimate[2], tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,mean( myW.T0 * d0$Y - (myW.T0-1) * riskRegression::predictRisk(e0.glm, newdata = d0.0)), eATE2.glm$meanRisk$estimate[1], tol = 1e-5) 
+    expect_equal(ignore_attr=TRUE,mean( myW.T1 * d0$Y - (myW.T1-1) * riskRegression::predictRisk(e0.glm, newdata = d0.1)), eATE2.glm$meanRisk$estimate[2], tol = 1e-5)
 })
 
 ## ** censoring
@@ -738,9 +738,9 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     e.glm <- glm(Ytrue~X+A2,family="binomial",data=d)
     eATE.wglm <- ate(e.glm, data = d, treatment = "A2", band = FALSE, verbose = FALSE)
 
-    expect_equal(ignore_attr=TRUE,mean(predictRisk(e.glm, newdata = d0)),
+    expect_equal(ignore_attr=TRUE,mean(riskRegression::predictRisk(e.glm, newdata = d0)),
                  0.2468305, tol = 1e-5)
-    expect_equal(ignore_attr=TRUE,mean(predictRisk(e.glm, newdata = d1)),
+    expect_equal(ignore_attr=TRUE,mean(riskRegression::predictRisk(e.glm, newdata = d1)),
                  0.4593332, tol = 1e-5)
     expect_equal(ignore_attr=TRUE,eATE.wglm$meanRisk$estimate,
                  c(0.2468305,0.4593332), tol = 1e-5)
@@ -757,8 +757,8 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     ## G-formula on IPCW glm
     eATE.wglm <- ate(e.wglm, data = d, treatment = "A2", times = 5, band = FALSE, product.limit = TRUE, verbose = FALSE)
 
-    expect_equal(ignore_attr=TRUE,mean(predictRisk(eW.glm, newdata = d0)), 0.1886021, tol = 1e-5) 
-    expect_equal(ignore_attr=TRUE,mean(predictRisk(eW.glm, newdata = d1)), 0.4925792, tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,mean(riskRegression::predictRisk(eW.glm, newdata = d0)), 0.1886021, tol = 1e-5) 
+    expect_equal(ignore_attr=TRUE,mean(riskRegression::predictRisk(eW.glm, newdata = d1)), 0.4925792, tol = 1e-5)
     expect_equal(ignore_attr=TRUE,as.double(coef(eATE.wglm)), c(0.1886021,0.4925792), tol = 1e-3)
 
     ## eATE.mets <- logitIPCWATE(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, treat.model = A2~1, cens.model=~1)
@@ -842,7 +842,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
+        iPred.logit <- riskRegression::predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
         iPred.risk <- predict(e.S, newdata = iDT, times = tau, iid = TRUE,
                               cause = 1, product.limit = FALSE)
 
@@ -1037,7 +1037,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
+        iPred.logit <- riskRegression::predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
         iPred.risk_tau <- suppressWarnings(predict(e.S, newdata = iDT, times = tau, iid = TRUE, cause = 1, product.limit = FALSE))
 
         iDT[, pi := as.double(iPred.logit)]
