@@ -372,7 +372,6 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{ ## case of no event in strata
                 out$etime1.min[iStrata] <- min(Ecpp[[iStrata]]$Utime1)
             }
-    
             ## tau.hazard
             if(is.list(tau.hazard)){
                 iTau.oorder <- tau.oorder[[iStrata]]
@@ -383,7 +382,11 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else if(any(object.status_strata[[iStrata]]==1)){
                 tau.hazard_strata <- unique(object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1])
                 if(!is.null(tau.max)){
-                    tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
+                    if(any(tau.hazard_strata<=tau.max)){
+                        tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
+                    }else{
+                        tau.hazard_strata <- 0
+                    }
                 }
             }else{
                 tau.hazard_strata <- 0
@@ -431,6 +434,7 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{
                 out$time[[iStrata]] <- tau.hazard_strata
             }
+            if(length(out$time[[iStrata]])==0) browser()
             if(store.iid=="minimal"){
                 if(need.order && nVar.lp>0){
                     out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0[,iTau.oorder,drop=FALSE]

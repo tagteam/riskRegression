@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: May 26 2025 (11:46) 
+## last-updated: maj 27 2025 (11:43) 
 ##           By: Brice Ozenne
-##     Update #: 127
+##     Update #: 128
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -116,9 +116,9 @@ e.coxph <- coxph(Surv(time, event) ~ strata(X1), data = dtS,
                  x = TRUE, y = TRUE)
 test_that("[iidCox] empty strata", {
     test <- iidCox(e.coxph, tau.max = 1)
-    expect_equal(ignore_attr=TRUE,length(test$iid$time[[1]]),0)
+    expect_equal(ignore_attr=TRUE,test$iid$time[[1]],0)
     expect_equal(ignore_attr=TRUE,test$iid$time[[2]],c(0.2,0.6,0.9))
-    expect_equal(ignore_attr=TRUE,length(test$iid$time[[3]]),0)
+    expect_equal(ignore_attr=TRUE,test$iid$time[[3]],0)
 
     expect_equal(ignore_attr=TRUE,unname(test$iid$IFhazard[[1]]), matrix(0, nrow = NROW(dtS), ncol = 1))
     GS <- cbind("0.2" = c(0, 0, 0, -0.00173611, 0.03993056, 0, 0, -0.00173611, 0, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611, 0, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611, 0, -0.00173611, -0.00173611, -0.00173611, -0.00173611, 0, 0, -0.00173611, 0, 0, -0.00173611, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611), 
