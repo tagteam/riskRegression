@@ -102,7 +102,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     }else{
         reverse <- FALSE
     }
-    
+  
     ## ** Extract new observations
     if(!is.null(newdata)){
     
@@ -210,7 +210,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     Ecpp <- list()
     new.indexJump <- list()
     new.order <- NULL
-  
+
     for(iStrata in 1:nStrata){
         ## reorder object data
         object.index_strata[[iStrata]] <- which(object.strata == object.levelStrata[iStrata])
@@ -230,7 +230,7 @@ iidCox.coxph <- function(object, newdata = NULL,
         }
         object.status_strata[[iStrata]] <- object.modelFrame[indexTempo, .SD$status]
         object.time_strata[[iStrata]] <- object.modelFrame[indexTempo, .SD$stop]
-    
+            
         ## reorder new data
         if(!is.null(newdata)){
             new.index_strata[[iStrata]] <- which(new.strata == object.levelStrata[iStrata])
@@ -366,7 +366,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 timeStrata <- lambda0$time[index.keep]
                 lambda0Strata <- lambda0$hazard[index.keep]
             }
-
+        
             if(length(timeStrata)>0){
                 out$etime1.min[iStrata] <- timeStrata[1]
             }else{ ## case of no event in strata
@@ -380,12 +380,15 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else if(!is.null(tau.hazard)){
                 iTau.oorder <- tau.oorder
                 tau.hazard_strata <- Utau.hazard
-            }else{
+            }else if(any(object.status_strata[[iStrata]]==1)){
                 tau.hazard_strata <- unique(object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1])
                 if(!is.null(tau.max)){
                     tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
                 }
+            }else{
+                tau.hazard_strata <- 0
             }
+            
 
             ## E
             nUtime1_strata <- length(Ecpp[[iStrata]]$Utime1)
@@ -394,7 +397,7 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{
                 Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
             }
-            
+
             ## IF
             if(length(timeStrata)==0){
                 ## no event in the strata
@@ -423,9 +426,6 @@ iidCox.coxph <- function(object, newdata = NULL,
                                               reverse = reverse)
             }
             ## output
-            if(length(tau.hazard_strata)==0){
-                tau.hazard_strata <- 0
-            }
             if(need.order){
                 out$time[[iStrata]] <- tau.hazard_strata[iTau.oorder]
             }else{

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct 20 2024 (21:33) 
+## last-updated: May 26 2025 (11:49) 
 ##           By: Brice Ozenne
-##     Update #: 351
+##     Update #: 352
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1528,14 +1528,14 @@ test_that("[predictCSC]: surv.type", {
     fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma,
                 surv.type="surv",cause=2)
 
-    r2 <- predictRisk(fit2,cause=2,newdata=Melanoma,times=1000)
+    r2 <- riskRegression::predictRisk(fit2,cause=2,newdata=Melanoma,times=1000)
 
 
     Melanoma$status[196:205]=1
     fitGS <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma,
                  surv.type="surv",cause=2)
 
-    rGS <- predictRisk(fitGS,cause=2,newdata=Melanoma,times=1000)
+    rGS <- riskRegression::predictRisk(fitGS,cause=2,newdata=Melanoma,times=1000)
     expect_equal(ignore_attr=TRUE,r2,rGS, tol = 1e-6)
 })
 
