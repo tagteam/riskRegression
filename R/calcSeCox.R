@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: Oct 20 2024 (13:50) 
+## last-updated: maj 27 2025 (10:37) 
 ##           By: Brice Ozenne
-##     Update #: 950
+##     Update #: 958
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -70,7 +70,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.n, new.eXb, new.LPdata, new.strata, new.survival, 
                       nVar.lp, export, store.iid){
-    
+
     ## ** Computation of the influence function
     if(is.iidCox(object)){
         store.iid <- object$iid$store.iid
@@ -474,6 +474,7 @@ selectJump <- function(IF, times, type){
               IF$IFhazard[[iStrata]] <- subsetIndex(IF$IFhazard[[iStrata]], index = match.times, default = 0, col = TRUE)
           }
           if("cumhazard" %in% type || "survival" %in% type){
+              if(length(times)==0 || length(IF$time[[iStrata]])==0 ) browser()
               indexJump <- prodlim::sindex(jump.times = IF$time[[iStrata]], eval.times = times)
               if(any(times > IF$etime.max[[iStrata]])){
                   indexJump[times > IF$etime.max[[iStrata]]] <- NA
