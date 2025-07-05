@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: May 14 2025 (17:14) 
+## Last-Updated: Jul  5 2025 (09:30) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 33
+##     Update #: 34
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,8 +109,8 @@ coxLP.coxph <- function(object, data, center){
           ## survival:::predict.coxph search for it and read (at least) the status variable
           txt <- paste0("survival::predict.coxph returns the following error:\n",
                         as.character(Xb),
-                        "It seems that the dataset used to fit the model is no more compatible with the model,\n",
-                        "probably because it has been modified afterwards.\n",
+                        "It seems that the dataset used to fit the model is not compatible with the model,\n",
+                        "probably because it has been modified after fitting.\n",
                         "coxLP.coxph will try to reconstruct the original dataset and continue the execution.\n")
           warning(txt)
           ## So avoid an error, the following code re-create the original dataset
