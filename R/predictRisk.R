@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: May 14 2025 (17:23) 
+## last-updated: Jul  5 2025 (10:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 624
+##     Update #: 626
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -726,7 +726,6 @@ predictRisk.prodlim <- function(object,
 
     ## ** export
     return(p)
-
 }
 
 ## * predictRisk.survfit
@@ -1324,7 +1323,8 @@ predictRisk.GLMnet <- function(object,
                                product.limit = FALSE,
                                diag = FALSE,
                                ...){
-    has_survival <- inherits(object$fit,"coxnet")
+    has_survival <- (inherits(object$fit,"coxnet")||
+                     (inherits(object$fit,"cv.glmnet") && inherits(object$fit$glmnet.fit,"coxnet")))
     dots <- list(...)
     type <- dots$type ## hidden argument for ate
     if (has_survival){
