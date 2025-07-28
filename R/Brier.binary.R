@@ -39,7 +39,7 @@ Brier.binary <- function(DT,
         ## Brier.null <- score[model==0][["Brier"]]
         ## Brier.model <- score[model!=0][["Brier"]]
         ## IC.ipa <- -(1/Brier.null)* DT[model!=0][["residuals"]] + DT[model==0][["residuals"]]*Brier.model/(Brier.null)^2
-        if (keep.vcov){
+        if (keep.iid){
             DT[,Brier:=sum(residuals)/N,by=list(model)]
             DT[,IF.Brier:=residuals-Brier]
         }
