@@ -35,10 +35,6 @@ Brier.binary <- function(DT,
         score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=list(model)]
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
-        ## Influence function IPA
-        ## Brier.null <- score[model==0][["Brier"]]
-        ## Brier.model <- score[model!=0][["Brier"]]
-        ## IC.ipa <- -(1/Brier.null)* DT[model!=0][["residuals"]] + DT[model==0][["residuals"]]*Brier.model/(Brier.null)^2
         if (keep.iid){
             DT[,Brier:=sum(residuals)/N,by=list(model)]
             DT[,IF.Brier:=residuals-Brier]
