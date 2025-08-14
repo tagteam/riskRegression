@@ -108,6 +108,8 @@ print.scoreBrier <- function(x,B,digits=3,response.type,...){
     X <- copy(x)
     X$score[,Brier:=sprintf(fmt=fmt,100*Brier)]
     if (match("IPA",colnames(X$score),nomatch=0)) X$score[,IPA:=sprintf(fmt=fmt,100*IPA)]
+    if (match("lower.IPA",colnames(X$score),nomatch=0)) X$score[,lower.IPA:=sprintf(fmt=fmt,100*lower.IPA)]
+    if (match("upper.IPA",colnames(X$score),nomatch=0)) X$score[,upper.IPA:=sprintf(fmt=fmt,100*upper.IPA)]
     if (match("se",colnames(X$score),nomatch=0)) X$score[,se:=NULL]
     if (match("se.conservative",colnames(X$score),nomatch=0)) X$score[,se.conservative:=NULL]
     if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
