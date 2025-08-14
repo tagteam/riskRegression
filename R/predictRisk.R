@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jul  5 2025 (10:05) 
+## last-updated: Jul  7 2025 (15:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 626
+##     Update #: 634
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -143,7 +143,7 @@
 #'
 #' @export
 predictRisk <- function(object,newdata,...){
-    UseMethod(generic = "predictRisk",object = object)
+        UseMethod(generic = "predictRisk",object = object)
 }
 
 ## * predictRisk.default
@@ -857,7 +857,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
     if (missing(times)||is.null(times)){
         p <- stats::predict(object,newdata=newdata,importance="none",...)$predicted
         if (NCOL(p)>1)
-        p <- as.numeric(p[,2,drop=TRUE])
+            p <- as.numeric(p[,2,drop=TRUE])
         p
     }else{
         if (object$family[[1]]=="surv") {

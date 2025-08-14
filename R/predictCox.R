@@ -64,8 +64,10 @@
 #' The centered argument enables us to reproduce the results obtained with the \code{basehaz}
 #' function from the survival package but should not be modified by the user.
 #'
-#' @return The iid decomposition is output in an attribute called \code{"iid"},
-#' using an array containing the value of the influence of each subject used to fit the object (dim 1), for each subject in newdata (dim 3), and each time (dim 2).
+#' @return A list with the predicted values. The iid decomposition is contained in
+#' the value in an attribute called \code{"iid"},
+#' using an array containing the value of the influence of each subject used to fit
+#' the object (dim 1), for each subject in newdata (dim 3), and each time (dim 2).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #'
@@ -444,7 +446,7 @@ predictCox <- function(object,
             }
         }
     }
-
+    
     ## ** compress newdata into unique patient profile
     outCompress <- compressData(object, newdata = newdata, times = times, diag = diag, average.iid = average.iid,
                                 oorder.times = oorder.times, times.sorted = times.sorted,
@@ -994,7 +996,6 @@ baseHaz_prodlim <- function(object, times, etimes.max){
                     cumhazard = NA,
                     strata = unlist(mapply(s = 0:(n.strata-1), size = object$size.strata, function(s,size){rep(s,size)}, SIMPLIFY = FALSE)))
     Lambda0$cumhazard <- unname(unlist(tapply(Lambda0$hazard, Lambda0$strata, cumsum, simplify = FALSE)))
-
     ## ** subset to match user specific times
     if(length(times)>0){
         ls.Lambda0 <- lapply(0:(n.strata-1), function(iS){ ## iS <- 0
