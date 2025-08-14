@@ -1484,12 +1484,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             if("Brier" %in% metrics)
                 noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)][]
         }
-        if (keep.iid==TRUE){
-            if("Brier" %in% metrics)
-                noSplit$Brier$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)][]
-            if("AUC" %in% metrics)
-                noSplit$AUC$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)][]
-        }
         output <- noSplit
     } else{
         output <- crossvalPerf
