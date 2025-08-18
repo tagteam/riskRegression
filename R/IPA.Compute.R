@@ -56,7 +56,7 @@ IPA.Compute <- function(brier.results,
                 score <- score[,-"se.IPA"]
 
             } else {
-                warning("Brier influence curves not available for IPA confidence interval computation. pass keep = c(\"iid\") to Score to make influence curves available. ")
+                warning("Brier influence curves not available for IPA confidence interval computation.")
             }
         }
         
