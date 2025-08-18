@@ -19,7 +19,6 @@ IPA.Compute <- function(brier.results,
                            response.type,
                            se.fit,
                            alpha) {
-
         score <- brier.results$score 
         
         # Calculate IPA point estimate
@@ -49,17 +48,18 @@ IPA.Compute <- function(brier.results,
                 ipa.se.dt <- merged.IF.data[, .(se = sd(IF.IPA) / sqrt(.N)), by = c("model", if (response.type != "binary") "times")]
                 
                 #Merge and compute confidence intervals for IPA
-                score <- merge(score, ipa.se.dt, by = c("model", if (response.type != "binary") "times"), suffixes = c("",".IPA"))
-                score[, lower.IPA := IPA - qnorm(1 - alpha/2) * se.IPA]
-                score[, upper.IPA := IPA + qnorm(1 - alpha/2) * se.IPA]
+                score <- score[,-c("se","lower","upper")]
+                score <- merge(score, ipa.se.dt, by = c("model", if (response.type != "binary") "times"))
+                score[, lower := IPA - qnorm(1 - alpha/2) * se]
+                score[, upper := IPA + qnorm(1 - alpha/2) * se]
                 
-                score <- score[,-"se.IPA"]
-
+                
+                
             } else {
-                warning("Brier influence curves not available for IPA confidence interval computation.")
+              warning("Brier influence curves not available for IPA confidence interval computation.")
             }
         }
+        score <- score[,-"Brier"]
         
-        brier.results$score <- score
-        return(brier.results)
-    }
+        return(list(score = score))
+}

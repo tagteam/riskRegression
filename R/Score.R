@@ -1548,6 +1548,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     #   output$AUC$score <- output$AUC$score[model!="Null model"]
     #   output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
     # }
+    if(ipa && !(is.null(output[["IPA"]]))){ #IPA removed earlier from summary statistics. Add back.
+     summary <- c(summary,"IPA")
+     output$summary <- summary
+    }
     for (p in c(plots)){
         output[[p]]$plotmethod <- p
         class(output[[p]]) <- paste0("score",p)
