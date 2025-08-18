@@ -32,6 +32,7 @@ Other contributors:
   \item Nikolaj Tollenaar [contributor]
   \item John Muschelli [contributor]
   \item Ulla Brasch Mogensen [contributor]
+  \item Asbjørn Risom \email{ar@math.ku.dk} [contributor]
 }
 
 }

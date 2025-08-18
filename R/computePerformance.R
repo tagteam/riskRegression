@@ -146,7 +146,7 @@ computePerformance <- function(DT,
         }
     }
     if (ipa == TRUE) {
-        out[["IPA"]] <- IPA.Compute(brier.results = copy(out[["Brier"]]),
+        out[["IPA"]] <- IPACompute(brier.results = copy(out[["Brier"]]),
                                      response.type = response.type,
                                      se.fit = se.fit,
                                      alpha = alpha)
