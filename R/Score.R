@@ -785,21 +785,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         })
     }
     # }}}
-    # {{{ resolve keep statements
-    if (!missing(keep) && is.character(unlist(keep))){
-        if ("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
-        if ("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
-        if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
-        if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
-        if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.iid = FALSE
-    }else{
-        keep.residuals=FALSE
-        keep.vcov=FALSE
-        keep.iid=FALSE
-        keep.cv=FALSE
-        keep.splitindex=FALSE
-    }
-    # }}}
     # {{{ resolve se.fit and contrasts
     if (missing(se.fit)){
         if (is.logical(conf.int)[[1]] && conf.int[[1]]==FALSE
@@ -842,6 +827,24 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                     stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
             }
         }
+    }
+    # }}}
+    # {{{ resolve keep statements
+    if (!missing(keep) && is.character(unlist(keep))){
+      if ("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
+      if ("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
+      if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
+      if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
+      if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.iid = FALSE
+    }else{
+      keep.residuals=FALSE
+      keep.vcov=FALSE
+      keep.iid=FALSE
+      keep.cv=FALSE
+      keep.splitindex=FALSE
+    }
+    if (se.fit && ipa){
+      keep.iid=TRUE
     }
     # }}}
     # {{{ Evaluation landmarks and horizons (times)
