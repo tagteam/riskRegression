@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-IPA.Compute <- function(brier.results, 
+IPACompute <- function(brier.results, 
                            response.type,
                            se.fit,
                            alpha) {
