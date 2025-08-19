@@ -36,8 +36,8 @@ test_that("R squared/IPA", {
   r1 <- rsquared(f1,newdata=d)
   r2 <- IPA(f2,newdata=d)
   full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),keep = c("iid"),plots="ROC")
-  expect_equal(ignore_attr=TRUE,r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
-  expect_equal(ignore_attr=TRUE,r2$IPA[2],full$Brier$score[model=="f2",IPA])
+  expect_equal(ignore_attr=TRUE,r1$IPA.drop[1],full$IPA$score[model=="f1",IPA])
+  expect_equal(ignore_attr=TRUE,r2$IPA[2],full$IPA$score[model=="f2",IPA])
 })
 # }}}
 

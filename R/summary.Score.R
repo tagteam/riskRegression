@@ -38,7 +38,7 @@ summary.Score <- function(object,
                           pvalue.digits=4,
                           ...){
     ## score
-    out=AUC=model=lower=upper=Brier=Model=x=reference=delta.AUC=p=delta.Brier=Reference=NULL
+    out=AUC=model=lower=upper=Brier=Model=x=reference=delta.AUC=p=delta.Brier=Reference=lower.IPA=upper.IPA=NULL
     what <- sapply(tolower(what),function(w){match.arg(w,c("score","contrasts"))})
     # check models 
     fitted.models <- names(object$models)

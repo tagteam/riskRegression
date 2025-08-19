@@ -126,6 +126,7 @@ print.scoreBrier <- function(x,B,digits=3,response.type,...){
 #' @method print scoreIPA
 #' @export
 print.scoreIPA <- function(x,B,digits=3,response.type,...){
+  lower = upper = se = NULL
   cat("\nResults by model:\n\n")
   fmt <- paste0("%1.",digits[[1]],"f")
   X <- copy(x)
