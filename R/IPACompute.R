@@ -20,7 +20,7 @@ IPACompute <- function(brier.results,
                            se.fit,
                            alpha) {
         score <- brier.results$score 
-        
+        Brier = model = IF.IPA = Brier.Null = IF.Brier = IF.Brier.Null = . = lower = se = upper = times =  NULL
         # Calculate IPA point estimate
         if (response.type == "binary") {
             score[, IPA := 1 - Brier / Brier[model == "Null model"]]
