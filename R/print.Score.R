@@ -130,6 +130,7 @@ print.scoreIPA <- function(x,B,digits=3,response.type,...){
   cat("\nResults by model:\n\n")
   fmt <- paste0("%1.",digits[[1]],"f")
   X <- copy(x)
+  X$score <- X$score[X$score[,model != "Null model"]]
   if (match("IPA",colnames(X$score),nomatch=0)) X$score[,IPA:=sprintf(fmt=fmt,100*IPA)]
   if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
   if (match("upper",colnames(X$score),nomatch=0)) X$score[,upper:=sprintf(fmt=fmt,100*upper)]
