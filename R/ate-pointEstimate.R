@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: maj 27 2025 (10:42) 
+## Last-Updated: aug 28 2025 (10:22) 
 ##           By: Brice Ozenne
-##     Update #: 1136
+##     Update #: 1144
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -376,7 +376,7 @@ ATE_TI <- function(object.event,
             out$store$iid.AIPTW[[iC]][data.index,] <- out$store$iid.AIPTW[[iC]][data.index,] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs
         }
     }
-        
+
     ## ** save quantities useful for the calculation of iid.nuisance
     if(return.iid.nuisance){
         out$store$n.obs <- n.obs

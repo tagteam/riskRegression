@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 27 2025 (10:44) 
+## last-updated: sep  1 2025 (10:05) 
 ##           By: Brice Ozenne
-##     Update #: 2582
+##     Update #: 2597
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -516,14 +516,14 @@ ate <- function(event,
         data.contrasts <- data[data[[var.group]] %in% contrasts]
 
         ## do not use [,,by=...] because there can be confusion between the argument times
-        # and a column named times when present in the data.table
+                                        # and a column named times when present in the data.table
         data.timeContrasts <- do.call(rbind,by(data.contrasts, INDICES = data.contrasts[[var.group]], FUN = function(iDF){
             iM <- do.call(rbind,lapply(times, function(t){c(times = t, pc = sum(iDF[[eventVar.time]]>=t))}))
             return(cbind(iDF[1,.SD, .SDcols = var.group], iM))                                                               
         }))
-    attr(out$eval.times,"n.at.risk") <- dcast(data.timeContrasts,
-                                              value.var = "pc",
-                                              formula = as.formula(paste0(var.group,"~times")))
+        attr(out$eval.times,"n.at.risk") <- dcast(data.timeContrasts,
+                                                  value.var = "pc",
+                                                  formula = as.formula(paste0(var.group,"~times")))
     }    
     attr(out$eval.times,"n.censored") <- n.censor
     class(out) <- c("ate")
@@ -586,7 +586,7 @@ ate <- function(event,
     tps1 <- Sys.time()
 
     pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate)
-    
+
     tps2 <- Sys.time()
 
     out$meanRisk <- pointEstimate$meanRisk
@@ -594,6 +594,27 @@ ate <- function(event,
     out$ratioRisk <- pointEstimate$ratioRisk
     out$computation.time[["point"]] <- tps2-tps1
 
+    ## warning when violation in the case of stratified Cox models with not all treatment levels per strata 
+    if(all(is.na(out$meanRisk$estimate)) && any(class(object.event) %in% c("coxph","cph","phreg","CauseSpecificCox"))){
+        if(inherits(object.event,"CauseSpecificCox")){
+            ls.debugLastTime <- lapply(object.event$model, function(iO){
+                iPred <- predictCox(iO, newdata = data, times = times[1])
+                iLastTime <- stats::setNames(iPred$lastEventTime[unique(iPred$strata)],unique(iPred$strata))
+                return(iLastTime)
+            })
+            debugLastTime <- stats::setNames(apply(do.call(rbind,ls.debugLastTime),2,min), names(ls.debugLastTime[[1]]))
+        }else{ ## cox model
+            debugPred <- predictCox(object.event, newdata = data, times = times[1])
+            debugLastTime <- stats::setNames(debugPred$lastEventTime[unique(debugPred$strata)],unique(debugPred$strata))
+        }
+        
+        if(any(times > debugLastTime)){ ## if any strata variable
+            index.pb <- which(times > debugLastTime)
+            warning("Cannot identify the average treatment effect as argument \'times\' goes beyond the last observation in some strata. \n",
+                    "Survival of strata \"",paste(names(debugLastTime)[index.pb], collapse ="\", \""),"\" is estimated up to time ",paste(round(debugLastTime[index.pb],5), collapse =", "),". \n")
+        }
+    }
+    
     if(verbose>1/2){cat(" done \n")}
 
     ## ** Confidence intervals
@@ -686,7 +707,7 @@ ate <- function(event,
                 cat("done\n")
             }
 
-   
+            
                                         # }}}
         }
     }
