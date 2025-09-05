@@ -21,9 +21,9 @@ formula is given the covariates enter in exactly the same way into all Cox regre
 
 \item{surv.type}{Either \code{"hazard"} (the default) or
 \code{"survival"}.  If \code{"hazard"} fit cause-specific Cox
-regression models for all causes.  If \code{"survival"} fit one
-cause-specific Cox regression model for the cause of interest and
-also a Cox regression model for event-free survival.}
+regression models for all causes to predict the event free survival probabilities. If \code{"survival"} fit 
+a Cox regression model for the hazard function of the combined endpoint (all causes combined with 'or')
+to predict the event-free survival probabilities.}
 
 \item{fitter}{Character string specifying the routine to fit the Cox regression models. Available are
 \code{"coxph"} for \link[survival]{coxph}, \code{"coxph"} for \link[rms]{cph},

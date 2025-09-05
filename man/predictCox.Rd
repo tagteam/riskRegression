@@ -86,8 +86,10 @@ Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 \item{store}{[vector of length 2] Whether prediction should only be computed for unique covariate sets and mapped back to the original dataset (\code{data="minimal"}) and whether the influence function should be stored in a memory efficient way (\code{iid="minimal"}). Otherwise use \code{data="full"} and/or \code{iid="full"}.}
 }
 \value{
-The iid decomposition is output in an attribute called \code{"iid"},
-using an array containing the value of the influence of each subject used to fit the object (dim 1), for each subject in newdata (dim 3), and each time (dim 2).
+A list with the predicted values. The iid decomposition is contained in
+the value in an attribute called \code{"iid"},
+using an array containing the value of the influence of each subject used to fit
+the object (dim 1), for each subject in newdata (dim 3), and each time (dim 2).
 }
 \description{
 Routine to get baseline hazards and subject specific hazards

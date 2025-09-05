@@ -335,6 +335,9 @@ plotCalibration(xb)
 markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
 Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
+## IPA with confidence intervals
+Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,summary = "IPA",data=testdat)
+
 # cross-validation
 \dontrun{
     set.seed(10)
@@ -414,6 +417,10 @@ Score(survmarkers,
 # compare models on test data
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=testSurv,conf.int=TRUE,times=c(5,8))
+
+# compare models by IPA at input times
+Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+ formula=Surv(time,event)~1,data=testSurv,summary = "IPA",times=c(5,8))
 }
 # crossvalidation models in traindata
 \dontrun{

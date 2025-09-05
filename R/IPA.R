@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Nov 21 2022 (19:43) 
+## Last-Updated: sep  5 2025 (15:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 184
+##     Update #: 186
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -178,7 +178,7 @@ IPA.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
                 cens.model="km",
                 summary="IPA",
                 ...)
-    r2 <- copy(x$Brier$score)
+    r2 = x$Brier$score[x$IPA$score,on = intersect(names(x$Brier$score),names(x$IPA$score))]
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
@@ -221,7 +221,7 @@ IPA.coxph <- function(object,formula,newdata,times,...){
                 cens.model="km",
                 summary="IPA",
                 ...)
-    r2 = merge(copy(x$Brier$score),copy(x$IPA$score))
+    r2 = x$Brier$score[x$IPA$score,on = intersect(names(x$Brier$score),names(x$IPA$score))]
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
@@ -265,7 +265,7 @@ IPA.glm <- function(object,formula,newdata,...){
                ...)
     # need to copy to avoid error:
     #"It appears that at some earlier point, names of this data.table have been reassigned."
-    r2 <- merge(copy(x$Brier$score),copy(x$IPA$score))
+    r2 = x$Brier$score[x$IPA$score,on = intersect(names(x$Brier$score),names(x$IPA$score))]
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
