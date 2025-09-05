@@ -263,6 +263,9 @@
 ##' markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
 ##' Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 ##'
+##' ## IPA with confidence intervals
+##' Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,summary = "IPA",data=testdat)
+##' 
 ##' # cross-validation
 ##' \dontrun{
 ##'     set.seed(10)
@@ -342,6 +345,10 @@
 ##' # compare models on test data
 ##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 ##'       formula=Surv(time,event)~1,data=testSurv,conf.int=TRUE,times=c(5,8))
+##' 
+##' # compare models by IPA at input times
+##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+##'  formula=Surv(time,event)~1,data=testSurv,summary = "IPA",times=c(5,8))
 ##' }
 ##' # crossvalidation models in traindata
 ##' \dontrun{
@@ -785,21 +792,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         })
     }
     # }}}
-    # {{{ resolve keep statements
-    if (!missing(keep) && is.character(unlist(keep))){
-        if ("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
-        if ("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
-        if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
-        if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
-        if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.iid = FALSE
-    }else{
-        keep.residuals=FALSE
-        keep.vcov=FALSE
-        keep.iid=FALSE
-        keep.cv=FALSE
-        keep.splitindex=FALSE
-    }
-    # }}}
     # {{{ resolve se.fit and contrasts
     if (missing(se.fit)){
         if (is.logical(conf.int)[[1]] && conf.int[[1]]==FALSE
@@ -842,6 +834,24 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                     stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
             }
         }
+    }
+    # }}}
+    # {{{ resolve keep statements
+    if (!missing(keep) && is.character(unlist(keep))){
+      if ("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
+      if ("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
+      if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
+      if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
+      if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.iid = FALSE
+    }else{
+      keep.residuals=FALSE
+      keep.vcov=FALSE
+      keep.iid=FALSE
+      keep.cv=FALSE
+      keep.splitindex=FALSE
+    }
+    if (se.fit && ipa){
+      keep.iid=TRUE
     }
     # }}}
     # {{{ Evaluation landmarks and horizons (times)
@@ -1484,12 +1494,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             if("Brier" %in% metrics)
                 noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)][]
         }
-        if (keep.iid==TRUE){
-            if("Brier" %in% metrics)
-                noSplit$Brier$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)][]
-            if("AUC" %in% metrics)
-                noSplit$AUC$iid.decomp[,model:=factor(model,levels=mlevs,mlabels)][]
-        }
         output <- noSplit
     } else{
         output <- crossvalPerf
@@ -1551,6 +1555,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     #   output$AUC$score <- output$AUC$score[model!="Null model"]
     #   output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
     # }
+    if(ipa && !(is.null(output[["IPA"]]))){ #IPA removed earlier from summary statistics. Add back.
+     summary <- c(summary,"IPA")
+     output$summary <- summary
+    }
     for (p in c(plots)){
         output[[p]]$plotmethod <- p
         class(output[[p]]) <- paste0("score",p)

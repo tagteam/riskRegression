@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:03) 
 ## Version: 
-## Last-Updated: Jun  5 2024 (14:52) 
-##           By: Thomas Alexander Gerds
-##     Update #: 9
+## Last-Updated: Aug  14 2025 
+##           By: Asbjørn Risom
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,11 +35,7 @@ Brier.binary <- function(DT,
         score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=list(model)]
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
-        ## Influence function IPA
-        ## Brier.null <- score[model==0][["Brier"]]
-        ## Brier.model <- score[model!=0][["Brier"]]
-        ## IC.ipa <- -(1/Brier.null)* DT[model!=0][["residuals"]] + DT[model==0][["residuals"]]*Brier.model/(Brier.null)^2
-        if (keep.vcov){
+        if (keep.iid | keep.vcov){
             DT[,Brier:=sum(residuals)/N,by=list(model)]
             DT[,IF.Brier:=residuals-Brier]
         }

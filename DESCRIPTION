@@ -12,7 +12,9 @@ Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
              person("Nikolaj", "Tollenaar", role = "ctb"),
              person("John", "Muschelli", role = "ctb"),
              person("Ulla Brasch", "Mogensen", role = "ctb"),
-             person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")))
+             person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")),
+             person("Asbjørn", "Risom", role = "ctb", email = "ar@math.ku.dk")
+             )
 Depends:
     R (>= 3.5.0),
 Imports:

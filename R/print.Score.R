@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Mar 26 2025 (09:17) 
-##           By: Thomas Alexander Gerds
-##     Update #: 74
+## last-updated: Aug 18 2025 
+##           By: Asbjørn Risom
+##     Update #: 76
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -107,7 +107,6 @@ print.scoreBrier <- function(x,B,digits=3,response.type,...){
     fmt <- paste0("%1.",digits[[1]],"f")
     X <- copy(x)
     X$score[,Brier:=sprintf(fmt=fmt,100*Brier)]
-    if (match("IPA",colnames(X$score),nomatch=0)) X$score[,IPA:=sprintf(fmt=fmt,100*IPA)]
     if (match("se",colnames(X$score),nomatch=0)) X$score[,se:=NULL]
     if (match("se.conservative",colnames(X$score),nomatch=0)) X$score[,se.conservative:=NULL]
     if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
@@ -122,10 +121,23 @@ print.scoreBrier <- function(x,B,digits=3,response.type,...){
         print(X$contrasts[],...)
     }
     message("\nNOTE: Values are multiplied by 100 and given in %.") 
-    if (match("IPA",colnames(x$score),nomatch=0))
-        message("NOTE: The lower Brier the better, the higher IPA the better.")
-    else
-        message("NOTE: The lower Brier the better.")
+    message("NOTE: The lower Brier the better.")
+}
+#' @method print scoreIPA
+#' @export
+print.scoreIPA <- function(x,B,digits=3,response.type,...){
+  lower = upper = se = NULL
+  cat("\nResults by model:\n\n")
+  fmt <- paste0("%1.",digits[[1]],"f")
+  X <- copy(x)
+  X$score <- X$score[X$score[,model != "Null model"]]
+  if (match("IPA",colnames(X$score),nomatch=0)) X$score[,IPA:=sprintf(fmt=fmt,100*IPA)]
+  if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
+  if (match("upper",colnames(X$score),nomatch=0)) X$score[,upper:=sprintf(fmt=fmt,100*upper)]
+  if (match("se",colnames(X$score),nomatch=0)) X$score[,se:=NULL]
+  print(X$score[],...)
+  message("\nNOTE: Values are multiplied by 100 and given in %.") 
+  message("NOTE: The higher IPA the better.")
 }
 
 

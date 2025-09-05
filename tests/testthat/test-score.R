@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jul 23 2025 (10:52) 
+## last-updated: sep  5 2025 (13:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 173
+##     Update #: 174
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,15 +29,15 @@ test_that("Missing values in data", {
 # }}}
 # {{{ "R squared/IPA"
 test_that("R squared/IPA", { 
-    set.seed(112)
-    d <- sampleData(43,outcome="binary")
-    f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
-    f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
-    r1 <- rsquared(f1,newdata=d)
-    r2 <- IPA(f2,newdata=d)
-    full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("ipa"),plots="ROC")
-    expect_equal(ignore_attr=TRUE,r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
-    expect_equal(ignore_attr=TRUE,r2$IPA[2],full$Brier$score[model=="f2",IPA])
+  set.seed(112)
+  d <- sampleData(43,outcome="binary")
+  f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
+  f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
+  r1 <- rsquared(f1,newdata=d)
+  r2 <- IPA(f2,newdata=d)
+  full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),keep = c("iid"),plots="ROC")
+  expect_equal(ignore_attr=TRUE,r1$IPA.drop[1],full$IPA$score[model=="f1",IPA])
+  expect_equal(ignore_attr=TRUE,r2$IPA[2],full$IPA$score[model=="f2",IPA])
 })
 # }}}
 

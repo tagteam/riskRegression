@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: Jul 28 2025 (11:11) 
+## Last-Updated: sep  5 2025 (13:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 27
+##     Update #: 29
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -113,6 +113,9 @@ computePerformance <- function(DT,
             out[[m]]$contrasts[,model:=factor(model,levels=models$levels,labels=models$labels)]
             out[[m]]$contrasts[,reference:=factor(reference,levels=models$levels,labels=models$labels)]
         }
+        if (keep.iid & !(is.null(out[[m]]$iid.decomp))){
+          out[[m]]$iid.decomp[,model:=factor(model,levels=models$levels,labels=models$labels)]
+        }
     }
     ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
     if (ibs){
@@ -142,12 +145,12 @@ computePerformance <- function(DT,
             }),by=c("model")]
         }
     }
-    if (ipa == TRUE){
-        if (response.type=="binary")
-            out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
-        else
-            out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
-    }
+    if (ipa == TRUE) {
+        out[["IPA"]] <- IPACompute(brier.results = copy(out[["Brier"]]),
+                                     response.type = response.type,
+                                     se.fit = se.fit,
+                                     alpha = alpha)
+        }
     # }}}
     out[]
 }
