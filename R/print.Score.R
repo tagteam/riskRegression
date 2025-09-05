@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Aug 18 2025 
-##           By: Asbjørn Risom
-##     Update #: 76
+## last-updated: sep  5 2025 (14:35) 
+##           By: Thomas Alexander Gerds
+##     Update #: 77
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -126,7 +126,7 @@ print.scoreBrier <- function(x,B,digits=3,response.type,...){
 #' @method print scoreIPA
 #' @export
 print.scoreIPA <- function(x,B,digits=3,response.type,...){
-  lower = upper = se = NULL
+  lower = upper = se = model = NULL
   cat("\nResults by model:\n\n")
   fmt <- paste0("%1.",digits[[1]],"f")
   X <- copy(x)
