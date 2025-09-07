@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: maj 27 2025 (10:37) 
-##           By: Brice Ozenne
-##     Update #: 958
+## last-updated: sep  7 2025 (08:14) 
+##           By: Thomas Alexander Gerds
+##     Update #: 959
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -474,7 +474,6 @@ selectJump <- function(IF, times, type){
               IF$IFhazard[[iStrata]] <- subsetIndex(IF$IFhazard[[iStrata]], index = match.times, default = 0, col = TRUE)
           }
           if("cumhazard" %in% type || "survival" %in% type){
-              if(length(times)==0 || length(IF$time[[iStrata]])==0 ) browser()
               indexJump <- prodlim::sindex(jump.times = IF$time[[iStrata]], eval.times = times)
               if(any(times > IF$etime.max[[iStrata]])){
                   indexJump[times > IF$etime.max[[iStrata]]] <- NA

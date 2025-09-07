@@ -434,7 +434,6 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{
                 out$time[[iStrata]] <- tau.hazard_strata
             }
-            if(length(out$time[[iStrata]])==0) browser()
             if(store.iid=="minimal"){
                 if(need.order && nVar.lp>0){
                     out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0[,iTau.oorder,drop=FALSE]
