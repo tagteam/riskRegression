@@ -3,13 +3,13 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-03-09 Wed 08:42 -->
+<!-- 2025-09-05 fre 15:49 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Index of Prediction Accuracy (IPA)</title>
-<meta name="generator" content="Org mode" />
+<meta name="generator" content="Org Mode" />
 <style type="text/css">
- <!--/*--><![CDATA[/*><!--*/
+  #content { max-width: 60em; margin: auto; }
   .title  { text-align: center;
              margin-bottom: .2em; }
   .subtitle { text-align: center;
@@ -30,8 +30,9 @@
   #postamble p, #preamble p { font-size: 90%; margin: .2em; }
   p.verse { margin-left: 3%; }
   pre {
-    border: 1px solid #ccc;
-    box-shadow: 3px 3px 3px #eee;
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
     padding: 8pt;
     font-family: monospace;
     overflow: auto;
@@ -40,21 +41,21 @@
   pre.src {
     position: relative;
     overflow: auto;
-    padding-top: 1.2em;
   }
   pre.src:before {
     display: none;
     position: absolute;
-    background-color: white;
-    top: -10px;
-    right: 10px;
+    top: -8px;
+    right: 12px;
     padding: 3px;
-    border: 1px solid black;
+    color: #555;
+    background-color: #f2f2f299;
   }
   pre.src:hover:before { display: inline; margin-top: 14px;}
   /* Languages per Org manual */
   pre.src-asymptote:before { content: 'Asymptote'; }
   pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
   pre.src-C:before { content: 'C'; }
   /* pre.src-C++ doesn't work in CSS */
   pre.src-clojure:before { content: 'Clojure'; }
@@ -69,7 +70,7 @@
   pre.src-haskell:before { content: 'Haskell'; }
   pre.src-hledger:before { content: 'hledger'; }
   pre.src-java:before { content: 'Java'; }
-  pre.src-js:before { content: 'Javascript'; }
+  pre.src-js:before { content: 'JavaScript'; }
   pre.src-latex:before { content: 'LaTeX'; }
   pre.src-ledger:before { content: 'Ledger'; }
   pre.src-lisp:before { content: 'Lisp'; }
@@ -189,68 +190,54 @@
     { font-size: 10px; font-weight: bold; white-space: nowrap; }
   .org-info-js_search-highlight
     { background-color: #ffff00; color: #000000; font-weight: bold; }
-  .org-svg { width: 90%; }
-  /*]]>*/-->
+  .org-svg { }
 </style>
 <link rel="stylesheet" type="text/css" href="https://publicifsv.sund.ku.dk/~tag/styles/practicals.css" />
-<script type="text/javascript">
-// @license magnet:?xt=urn:btih:e95b018ef3580986a04669f1b5879592219e2a7a&dn=public-domain.txt Public Domain
-<!--/*--><![CDATA[/*><!--*/
-     function CodeHighlightOn(elem, id)
-     {
-       var target = document.getElementById(id);
-       if(null != target) {
-         elem.classList.add("code-highlighted");
-         target.classList.add("code-highlighted");
-       }
-     }
-     function CodeHighlightOff(elem, id)
-     {
-       var target = document.getElementById(id);
-       if(null != target) {
-         elem.classList.remove("code-highlighted");
-         target.classList.remove("code-highlighted");
-       }
-     }
-    /*]]>*///-->
-// @license-end
+<script>
+  window.MathJax = {
+    tex: {
+      ams: {
+        multlineWidth: '85%'
+      },
+      tags: 'ams',
+      tagSide: 'right',
+      tagIndent: '.8em'
+    },
+    chtml: {
+      scale: 1.0,
+      displayAlign: 'center',
+      displayIndent: '0em'
+    },
+    svg: {
+      scale: 1.0,
+      displayAlign: 'center',
+      displayIndent: '0em'
+    },
+    output: {
+      font: 'mathjax-modern',
+      displayOverflow: 'overflow'
+    }
+  };
 </script>
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        displayAlign: "center",
-        displayIndent: "0em",
 
-        "HTML-CSS": { scale: 100,
-                        linebreaks: { automatic: "false" },
-                        webFont: "TeX"
-                       },
-        SVG: {scale: 100,
-              linebreaks: { automatic: "false" },
-              font: "TeX"},
-        NativeMML: {scale: 100},
-        TeX: { equationNumbers: {autoNumber: "AMS"},
-               MultLineWidth: "85%",
-               TagSide: "right",
-               TagIndent: ".8em"
-             }
-});
+<script
+  id="MathJax-script"
+  async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
-<script type="text/javascript"
-        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
 </head>
 <body>
 <div id="preamble" class="status">
 <br>Thomas Alexander Gerds
 </div>
-<div id="content">
+<div id="content" class="content">
 <h1 class="title">Index of Prediction Accuracy (IPA)</h1>
-
-<div id="outline-container-org679f209" class="outline-2">
-<h2 id="org679f209"><span class="section-number-2">1</span> Introduction</h2>
+<div id="outline-container-org4515eb0" class="outline-2">
+<h2 id="org4515eb0"><span class="section-number-2">1.</span> Introduction</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 This vignette demonstrates how our software calculates the index of
-prediction accuracy<sup><a id="fnr.1" class="footref" href="#fn.1">1</a></sup><sup>, </sup><sup><a id="fnr.2" class="footref" href="#fn.2">2</a></sup>. We distinguish three settings:
+prediction accuracy<sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup><sup>, </sup><sup><a id="fnr.2" class="footref" href="#fn.2" role="doc-backlink">2</a></sup>. We distinguish three settings:
 </p>
 
 <ul class="org-ul">
@@ -271,34 +258,27 @@ standard linear regression model:
 \end{equation*}
 </div>
 </div>
-
-<div id="outline-container-orgbc99a7b" class="outline-2">
-<h2 id="orgbc99a7b"><span class="section-number-2">2</span> Package version</h2>
+<div id="outline-container-orgcb25a4f" class="outline-2">
+<h2 id="orgcb25a4f"><span class="section-number-2">2.</span> Package version</h2>
 <div class="outline-text-2" id="text-2">
-<pre class="example" id="orgd89b8be">
-data.table:
-[1] ‘1.14.2’
+<pre class="example">
+data.table:[1] ‘1.17.8’
 
-survival:
-[1] ‘3.2.13’
+survival:[1] ‘3.8.3’
 
-riskRegression:
-[1] ‘2022.3.8’
+riskRegression:[1] ‘2025.9.5’
 
-Publish:
-[1] ‘2020.12.23’
+Publish:[1] ‘2025.7.24’
 </pre>
 </div>
 </div>
-
-
-<div id="outline-container-org9ebc988" class="outline-2">
-<h2 id="org9ebc988"><span class="section-number-2">3</span> Data</h2>
+<div id="outline-container-org99aeac2" class="outline-2">
+<h2 id="org99aeac2"><span class="section-number-2">3.</span> Data</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 For the purpose of illustrating our software we simulate data alike
 the data of an active surveillance prostate cancer
-study <sup><a id="fnr.3" class="footref" href="#fn.3">3</a></sup>. Specifically, we generate a learning set (n=278) and a
+study <sup><a id="fnr.3" class="footref" href="#fn.3" role="doc-backlink">3</a></sup>. Specifically, we generate a learning set (n=278) and a
 validation set (n=208). In both data sets we define a binary outcome
 variable for the progression status after one year. Note that smallest
 censored event time is larger than 1 year, and hence the event status
@@ -306,18 +286,17 @@ after one year is uncensored.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R" id="org28ceb79">set.seed(18)
-astrain <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> simActiveSurveillance(278)
-astest <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> simActiveSurveillance(208)
+<pre class="src src-R" id="orgd122d7c">set.seed(18)
+astrain <span style="color: #008b8b;">&lt;-</span> simActiveSurveillance(278)
+astest <span style="color: #008b8b;">&lt;-</span> simActiveSurveillance(208)
 astrain[,Y1:=1*(event==1 &amp; time&lt;=1)]
 astest[,Y1:=1*(event==1 &amp; time&lt;=1)]
 </pre>
 </div>
 </div>
 </div>
-
 <div id="outline-container-sec:binary" class="outline-2">
-<h2 id="sec:binary"><span class="section-number-2">4</span> IPA for a binary outcome</h2>
+<h2 id="sec:binary"><span class="section-number-2">4.</span> IPA for a binary outcome</h2>
 <div class="outline-text-2" id="text-sec:binary">
 <p>
 To illustrate the binary outome setting we analyse the 1-year
@@ -328,9 +307,9 @@ regression models, one including and one excluding the biomarker
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R">lrfit.ex <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,family=<span style="font-style: italic;">"binomial"</span>)
-lrfit.inc <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,family=<span style="font-style: italic;">"binomial"</span>)
-publish(lrfit.inc,org=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
+<pre class="src src-R">lrfit.ex <span style="color: #008b8b;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,family=<span style="color: #8b2252;">"binomial"</span>)
+lrfit.inc <span style="color: #008b8b;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,family=<span style="color: #8b2252;">"binomial"</span>)
+publish(lrfit.inc,org=<span style="color: #228b22;">TRUE</span>)
 </pre>
 </div>
 
@@ -457,7 +436,7 @@ year in the validation set.
 <div class="org-src-container">
 <pre class="src src-R">astest[,risk.ex:=100*predictRisk(lrfit.ex,newdata=astest)]
 astest[,risk.inc:=100*predictRisk(lrfit.inc,newdata=astest)]
-publish(head(astest[,-c(8,9)]),digits=1,org=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
+publish(head(astest[,-c(8,9)]),digits=1,org=<span style="color: #228b22;">TRUE</span>)
 </pre>
 </div>
 
@@ -588,25 +567,39 @@ regression models.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R">X1 <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> Score(list(<span style="font-style: italic;">"Exclusive ERG"</span>=lrfit.ex,<span style="font-style: italic;">"Inclusive ERG"</span>=lrfit.inc),data=astest,
-            formula=Y1~1,summary=<span style="font-style: italic;">"ipa"</span>,se.fit=0L,metrics=<span style="font-style: italic;">"brier"</span>,contrasts=<span style="font-weight: bold; text-decoration: underline;">FALSE</span>)
+<pre class="src src-R">X1 <span style="color: #008b8b;">&lt;-</span> Score(list(<span style="color: #8b2252;">"Exclusive ERG"</span>=lrfit.ex,<span style="color: #8b2252;">"Inclusive ERG"</span>=lrfit.inc),data=astest,
+            formula=Y1~1,summary=<span style="color: #8b2252;">"ipa"</span>,se.fit=1L,metrics=<span style="color: #8b2252;">"brier"</span>,contrasts=<span style="color: #228b22;">FALSE</span>)
 X1
 </pre>
 </div>
 
-<pre class="example" id="org4fe6883">
+<pre class="example" id="org0436668">
+
+Summary statistics IPA:
+
+Results by model:
+
+Key: &lt;model&gt;
+           model    IPA  lower  upper
+          &lt;fctr&gt; &lt;char&gt; &lt;char&gt; &lt;char&gt;
+1: Exclusive ERG    2.7   -1.6    6.9
+2: Inclusive ERG    7.3    0.4   14.2
+
+NOTE: Values are multiplied by 100 and given in %.
+NOTE: The higher IPA the better.
 
 Metric Brier:
 
 Results by model:
 
-           model Brier IPA
-1:    Null model  15.2 0.0
-2: Exclusive ERG  14.8 2.7
-3: Inclusive ERG  14.1 7.3
+           model  Brier  lower  upper
+          &lt;fctr&gt; &lt;char&gt; &lt;char&gt; &lt;char&gt;
+1:    Null model   15.2   11.9   18.6
+2: Exclusive ERG   14.8   11.5   18.2
+3: Inclusive ERG   14.1   11.1   17.2
 
 NOTE: Values are multiplied by 100 and given in %.
-NOTE: The lower Brier the better, the higher IPA the better.
+NOTE: The lower Brier the better.
 </pre>
 
 
@@ -633,17 +626,18 @@ model and IPA of the model where the variable is omitted.
 </pre>
 </div>
 
-<pre class="example" id="org44aa21a">
-     Variable Brier IPA IPA.drop
-1: Null model  15.2 0.0      7.3
-2: Full model  14.1 7.3      0.0
-3:        age  14.1 7.4     -0.1
-4:    lpsaden  14.1 7.6     -0.3
-5:       ppb5  14.2 6.9      0.4
-6:       lmax  14.1 7.2      0.1
-7:        ct1  14.1 7.3     -0.0
-8:     diaggs  14.6 4.4      2.9
-9: erg.status  14.8 2.7      4.6
+<pre class="example" id="orgbae2e47">
+     Variable  Brier    IPA IPA.drop
+       &lt;fctr&gt; &lt;char&gt; &lt;char&gt;   &lt;char&gt;
+1: Null model   15.2    0.0      7.3
+2: Full model   14.1    7.3      0.0
+3:        age   14.1    7.4     -0.1
+4:    lpsaden   14.1    7.6     -0.3
+5:       ppb5   14.2    6.9      0.4
+6:       lmax   14.1    7.2      0.1
+7:        ct1   14.1    7.3     -0.0
+8:     diaggs   14.6    4.4      2.9
+9: erg.status   14.8    2.7      4.6
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
@@ -652,9 +646,8 @@ the more important is the variable for the full model.
 </pre>
 </div>
 </div>
-
 <div id="outline-container-sec:survival" class="outline-2">
-<h2 id="sec:survival"><span class="section-number-2">5</span> IPA for right censored survival outcome</h2>
+<h2 id="sec:survival"><span class="section-number-2">5.</span> IPA for right censored survival outcome</h2>
 <div class="outline-text-2" id="text-sec:survival">
 <p>
 To illustrate the survival outome setting we analyse the 3-year
@@ -664,9 +657,9 @@ including and one excluding the biomarker <code>erg.status</code>:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R">coxfit.ex <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,x=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
-coxfit.inc <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,x=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
-publish(coxfit.inc,org=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
+<pre class="src src-R">coxfit.ex <span style="color: #008b8b;">&lt;-</span> coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,x=<span style="color: #228b22;">TRUE</span>)
+coxfit.inc <span style="color: #008b8b;">&lt;-</span> coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,x=<span style="color: #228b22;">TRUE</span>)
+publish(coxfit.inc,org=<span style="color: #228b22;">TRUE</span>)
 </pre>
 </div>
 
@@ -784,6 +777,7 @@ publish(coxfit.inc,org=<span style="font-weight: bold; text-decoration: underlin
 </tbody>
 </table>
 
+
 <p>
 Based on these models we predict the risk of progression or death
 within 3 years in the validation set.
@@ -792,7 +786,7 @@ within 3 years in the validation set.
 <div class="org-src-container">
 <pre class="src src-R">astest[,risk.ex:=100*predictRisk(coxfit.ex,newdata=astest,times=3)]
 astest[,risk.inc:=100*predictRisk(coxfit.inc,newdata=astest,times=3)]
-publish(head(astest[,-c(8,9)]),digits=1,org=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
+publish(head(astest[,-c(8,9)]),digits=1,org=<span style="color: #228b22;">TRUE</span>)
 </pre>
 </div>
 
@@ -916,6 +910,7 @@ publish(head(astest[,-c(8,9)]),digits=1,org=<span style="font-weight: bold; text
 </table>
 
 
+
 <p>
 To calculate the Index of Prediction Accuracy (IPA) we call the
 <code>Score</code> function as follows on a list which includes the two Cox 
@@ -923,25 +918,39 @@ regression models.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R">X2 <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> Score(list(<span style="font-style: italic;">"Exclusive ERG"</span>=coxfit.ex,<span style="font-style: italic;">"Inclusive ERG"</span>=coxfit.inc),data=astest,
-            formula=Surv(time,event!=0)~1,summary=<span style="font-style: italic;">"ipa"</span>,se.fit=0L,metrics=<span style="font-style: italic;">"brier"</span>,contrasts=<span style="font-weight: bold; text-decoration: underline;">FALSE</span>,times=3)
+<pre class="src src-R">X2 <span style="color: #008b8b;">&lt;-</span> Score(list(<span style="color: #8b2252;">"Exclusive ERG"</span>=coxfit.ex,<span style="color: #8b2252;">"Inclusive ERG"</span>=coxfit.inc),data=astest,
+            formula=Surv(time,event!=0)~1,summary=<span style="color: #8b2252;">"ipa"</span>,se.fit=1L,metrics=<span style="color: #8b2252;">"brier"</span>,contrasts=<span style="color: #228b22;">FALSE</span>,times=3)
 X2
 </pre>
 </div>
 
-<pre class="example" id="org5acbfd7">
+<pre class="example" id="org541be9e">
+
+Summary statistics IPA:
+
+Results by model:
+
+Key: &lt;model, times&gt;
+           model times    IPA  lower  upper
+          &lt;fctr&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt; &lt;char&gt;
+1: Exclusive ERG     3    6.4   -2.6   15.4
+2: Inclusive ERG     3   17.1    8.3   25.8
+
+NOTE: Values are multiplied by 100 and given in %.
+NOTE: The higher IPA the better.
 
 Metric Brier:
 
 Results by model:
 
-           model times Brier  IPA
-1:    Null model     3  24.0  0.0
-2: Exclusive ERG     3  22.4  6.4
-3: Inclusive ERG     3  19.9 17.1
+           model times  Brier  lower  upper
+          &lt;fctr&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt; &lt;char&gt;
+1:    Null model     3   24.0   22.6   25.4
+2: Exclusive ERG     3   22.4   20.5   24.4
+3: Inclusive ERG     3   19.9   17.8   21.9
 
 NOTE: Values are multiplied by 100 and given in %.
-NOTE: The lower Brier the better, the higher IPA the better.
+NOTE: The lower Brier the better.
 </pre>
 
 <p>
@@ -960,61 +969,58 @@ model and IPA of the model where the variable is omitted.
 </pre>
 </div>
 
-<pre class="example" id="orged7171e">
-     Variable times Brier  IPA IPA.drop
-1: Null model     3  24.0  0.0     17.1
-2: Full model     3  19.9 17.1      0.0
-3:        age     3  19.7 17.6     -0.6
-4:    lpsaden     3  20.1 16.2      0.8
-5:       ppb5     3  21.3 11.2      5.9
-6:       lmax     3  19.9 16.7      0.4
-7:        ct1     3  19.9 17.0      0.1
-8:     diaggs     3  20.8 13.0      4.1
-9: erg.status     3  22.4  6.4     10.7
+<pre class="example" id="orgaac0a5d">
+     Variable times  Brier    IPA IPA.drop
+       &lt;fctr&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt;   &lt;char&gt;
+1: Null model     3   24.0    0.0     17.1
+2: Full model     3   19.9   17.1      0.0
+3:        age     3   19.7   17.6     -0.6
+4:    lpsaden     3   20.1   16.2      0.8
+5:       ppb5     3   21.3   11.2      5.9
+6:       lmax     3   19.9   16.7      0.4
+7:        ct1     3   19.9   17.0      0.1
+8:     diaggs     3   20.8   13.0      4.1
+9: erg.status     3   22.4    6.4     10.7
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
 NOTE: IPA.drop = IPA(Full model) - IPA. The higher the drop
 the more important is the variable for the full model.
-Warning message:
-In `[.data.table`(r2, , `:=`(IPA.drop, IPA[Variable == "Full model"] -  :
-  Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names&lt;- and attr&lt;- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.
 </pre>
 </div>
 </div>
-
-
 <div id="outline-container-sec:survival" class="outline-2">
-<h2 id="sec:survival"><span class="section-number-2">6</span> IPA for right censored time to event outcome with competing risks</h2>
+<h2 id="sec:survival"><span class="section-number-2">6.</span> IPA for right censored time to event outcome with competing risks</h2>
 <div class="outline-text-2" id="text-sec:survival">
 <p>
 To illustrate the competing risk setting we analyse the 3-year risk of
 progression in presence of the competing risk of death without
-progression. We fit two sets of cause-specific Cox regression models <sup><a id="fnr.4" class="footref" href="#fn.4">4</a></sup>,
+progression. We fit two sets of cause-specific Cox regression models <sup><a id="fnr.4" class="footref" href="#fn.4" role="doc-backlink">4</a></sup>,
 one including and one excluding the biomarker <code>erg.status</code>:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R">cscfit.ex <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain)
-cscfit.inc <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain)
+<pre class="src src-R">cscfit.ex <span style="color: #008b8b;">&lt;-</span> CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain)
+cscfit.inc <span style="color: #008b8b;">&lt;-</span> CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain)
 publish(cscfit.inc)
 </pre>
 </div>
 
-<pre class="example" id="org9666db3">
-  Variable Units                1                2 
-       age       1.04 [1.00;1.09] 1.01 [0.95;1.07] 
-   lpsaden       1.13 [0.92;1.38] 1.09 [0.83;1.42] 
-      ppb5       1.14 [1.04;1.24] 1.39 [1.22;1.58] 
-      lmax       1.19 [1.03;1.39] 0.82 [0.67;1.00] 
-       ct1   cT1             Ref              Ref  
-             cT2 1.31 [0.73;2.36] 0.31 [0.07;1.28] 
-    diaggs   GNA             Ref              Ref  
-             3/3 0.54 [0.35;0.84] 0.56 [0.29;1.10] 
-             3/4 0.44 [0.22;0.88] 0.19 [0.06;0.60] 
-erg.status   neg             Ref              Ref  
-             pos 2.20 [1.56;3.11] 1.20 [0.71;2.04]
+<pre class="example" id="org057eb32">
+   Variable Units                1                2 
+        age       1.04 [1.00;1.09] 1.01 [0.95;1.07] 
+    lpsaden       1.13 [0.92;1.38] 1.09 [0.83;1.42] 
+       ppb5       1.14 [1.04;1.24] 1.39 [1.22;1.58] 
+       lmax       1.19 [1.03;1.39] 0.82 [0.67;1.00] 
+        ct1   cT1             Ref              Ref  
+              cT2 1.31 [0.73;2.36] 0.31 [0.07;1.28] 
+     diaggs   GNA             Ref              Ref  
+              3/3 0.54 [0.35;0.84] 0.56 [0.29;1.10] 
+              3/4 0.44 [0.22;0.88] 0.19 [0.06;0.60] 
+ erg.status   neg             Ref              Ref  
+              pos 2.20 [1.56;3.11] 1.20 [0.71;2.04]
 </pre>
+
 
 
 <p>
@@ -1025,7 +1031,7 @@ of the competing risk of death within 3 years in the validation set.
 <div class="org-src-container">
 <pre class="src src-R">astest[,risk.ex:=100*predictRisk(cscfit.ex,newdata=astest,times=3,cause=1)]
 astest[,risk.inc:=100*predictRisk(cscfit.inc,newdata=astest,times=3,cause=1)]
-publish(head(astest[,-c(8,9)]),digits=1,org=<span style="font-weight: bold; text-decoration: underline;">TRUE</span>)
+publish(head(astest[,-c(8,9)]),digits=1,org=<span style="color: #228b22;">TRUE</span>)
 </pre>
 </div>
 
@@ -1156,29 +1162,44 @@ cause-specific Cox regression models.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R">X3 <span style="font-weight: bold; text-decoration: underline;">&lt;-</span> Score(list(<span style="font-style: italic;">"Exclusive ERG"</span>=cscfit.ex,
-                 <span style="font-style: italic;">"Inclusive ERG"</span>=cscfit.inc),
+<pre class="src src-R">X3 <span style="color: #008b8b;">&lt;-</span> Score(list(<span style="color: #8b2252;">"Exclusive ERG"</span>=cscfit.ex,
+                 <span style="color: #8b2252;">"Inclusive ERG"</span>=cscfit.inc),
             data=astest, formula=Hist(time,event)~1,
-            summary=<span style="font-style: italic;">"ipa"</span>,se.fit=0L,metrics=<span style="font-style: italic;">"brier"</span>,
-            contrasts=<span style="font-weight: bold; text-decoration: underline;">FALSE</span>,times=3,cause=1)
+            summary=<span style="color: #8b2252;">"ipa"</span>,se.fit=1L,metrics=<span style="color: #8b2252;">"brier"</span>,
+            contrasts=<span style="color: #228b22;">FALSE</span>,times=3,cause=1)
 X3
 </pre>
 </div>
 
-<pre class="example" id="orgf8b51db">
+<pre class="example" id="orgcd2ab85">
+
+Summary statistics IPA:
+
+Results by model:
+
+Key: &lt;model, times&gt;
+           model times    IPA  lower  upper
+          &lt;fctr&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt; &lt;char&gt;
+1: Exclusive ERG     3    5.0   -1.9   11.9
+2: Inclusive ERG     3   17.5   10.1   25.0
+
+NOTE: Values are multiplied by 100 and given in %.
+NOTE: The higher IPA the better.
 
 Metric Brier:
 
 Results by model:
 
-           model times Brier  IPA
-1:    Null model     3  24.5  0.0
-2: Exclusive ERG     3  23.2  5.0
-3: Inclusive ERG     3  20.2 17.5
+           model times  Brier  lower  upper
+          &lt;fctr&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt; &lt;char&gt;
+1:    Null model     3   24.5   23.4   25.5
+2: Exclusive ERG     3   23.2   21.1   25.3
+3: Inclusive ERG     3   20.2   18.1   22.2
 
 NOTE: Values are multiplied by 100 and given in %.
-NOTE: The lower Brier the better, the higher IPA the better.
+NOTE: The lower Brier the better.
 </pre>
+
 
 
 <p>
@@ -1198,17 +1219,18 @@ IPA of the model where the variable is omitted.
 </pre>
 </div>
 
-<pre class="example" id="org3e5a77b">
-     Variable times Brier  IPA IPA.drop
-1: Null model     3  24.5  0.0     17.5
-2: Full model     3  20.2 17.5      0.0
-3:        age     3  20.1 18.0     -0.5
-4:    lpsaden     3  20.4 16.8      0.8
-5:       ppb5     3  20.4 16.5      1.1
-6:       lmax     3  21.4 12.6      4.9
-7:        ct1     3  19.8 18.9     -1.4
-8:     diaggs     3  20.8 14.8      2.8
-9: erg.status     3  23.2  5.0     12.5
+<pre class="example" id="org880c0df">
+     Variable times  Brier    IPA IPA.drop
+       &lt;fctr&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt;   &lt;char&gt;
+1: Null model     3   24.5    0.0     17.5
+2: Full model     3   20.2   17.5      0.0
+3:        age     3   20.1   18.0     -0.5
+4:    lpsaden     3   20.4   16.8      0.8
+5:       ppb5     3   20.4   16.5      1.1
+6:       lmax     3   21.4   12.6      4.9
+7:        ct1     3   19.8   18.9     -1.4
+8:     diaggs     3   20.8   14.8      2.8
+9: erg.status     3   23.2    5.0     12.5
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
@@ -1221,19 +1243,19 @@ the more important is the variable for the full model.
 <h2 class="footnotes">Footnotes: </h2>
 <div id="text-footnotes">
 
-<div class="footdef"><sup><a id="fn.1" class="footnum" href="#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="#fnr.1" role="doc-backlink">1</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
 Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: An intuitive measure useful for evaluating risk prediction models. Diagnostic and Prognostic Research, 2(1):7, 2018.
 </p></div></div>
 
-<div class="footdef"><sup><a id="fn.2" class="footnum" href="#fnr.2">2</a></sup> <div class="footpara"><p class="footpara">
+<div class="footdef"><sup><a id="fn.2" class="footnum" href="#fnr.2" role="doc-backlink">2</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
 Thomas A Gerds and Michael W Kattan. Medical Risk Prediction: With Ties to Machine Learning. Chapman and Hall/CRC, 2021.
 </p></div></div>
 
-<div class="footdef"><sup><a id="fn.3" class="footnum" href="#fnr.3">3</a></sup> <div class="footpara"><p class="footpara">
+<div class="footdef"><sup><a id="fn.3" class="footnum" href="#fnr.3" role="doc-backlink">3</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
 Berg KD, Vainer B, Thomsen FB, Roeder MA, Gerds TA, Toft BG, Brasso K, and Iversen P. Erg protein expression in diagnostic specimens is associated with increased risk of progression during active surveillance for prostate cancer. European urology, 66(5):851&#x2013;860, 2014.
 </p></div></div>
 
-<div class="footdef"><sup><a id="fn.4" class="footnum" href="#fnr.4">4</a></sup> <div class="footpara"><p class="footpara">
+<div class="footdef"><sup><a id="fn.4" class="footnum" href="#fnr.4" role="doc-backlink">4</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
 Brice Ozenne, Anne Lyngholm S{\o }rensen, Thomas Scheike, Christian Torp-Pedersen, and Thomas Alexander Gerds. riskregression: Predicting the risk of an event using Cox regression models. R Journal, 9(2):440&#x2013;460, 2017.
 </p></div></div>
 
@@ -1241,7 +1263,7 @@ Brice Ozenne, Anne Lyngholm S{\o }rensen, Thomas Scheike, Christian Torp-Pederse
 </div>
 </div></div>
 <div id="postamble" class="status">
-Last update: 09 Mar 2022 by Thomas Alexander Gerds.
+Last update: 05 sep 2025 by Thomas Alexander Gerds.
 </div>
 </body>
 </html>

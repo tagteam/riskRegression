@@ -420,8 +420,6 @@ predict.CauseSpecificCox <- function(object,
     ## ** compute CIF (aka absolute risk) or event-free survival
     vec.etimes.max <- apply(M.etimes.max,1,max) ## take the max because if not censored for one cause and last event equal to 1 then we have the full curve
     if(type == "absRisk"){
-        uu <- list(hazard = ls.hazard,cumhazard = ls.cumhazard,eXb = M.eXb,strata = M.strata.num,newtimes = if(diag){times}else{sort(times)},etimes = eventTimes,etimeMax = vec.etimes.max,t0 = landmark,nEventTimes = nEventTimes,nNewTimes = n.times,nData = new.n,cause = index.cause - 1,nCause = nModel,survtype = (surv.type=="survival"),productLimit = product.limit>0,diag = diag,exportSurv = (se || band || iid || average.iid))
-        saveRDS(uu,file = "~/tmp/uu.rds")
         outCpp <- predictCIF_cpp(hazard = ls.hazard, 
                                  cumhazard = ls.cumhazard, 
                                  eXb = M.eXb, 
