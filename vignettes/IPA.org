@@ -45,12 +45,12 @@ cat("\nPublish:")
 packageVersion("Publish")
 #+END_SRC
 
-#+RESULTS[(2022-03-09 08:39:17) f47684812cfced1ee3e11c1d127ff83471a909ef]:
+#+RESULTS[(2025-09-05 15:48:49) f47684812cfced1ee3e11c1d127ff83471a909ef]:
 : data.table:[1] ‘1.17.8’
 : 
 : survival:[1] ‘3.8.3’
 : 
-: riskRegression:[1] ‘2025.9.1’
+: riskRegression:[1] ‘2025.9.5’
 : 
 : Publish:[1] ‘2025.7.24’
 
@@ -99,7 +99,7 @@ lrfit.inc <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,fam
 publish(lrfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:26:35) 4ad587463242261d838b316f44356bc6b6112649]:
+#+RESULTS[(2025-09-05 15:48:50) 4ad587463242261d838b316f44356bc6b6112649]:
 :results:
 | Variable   | Units | OddsRatio | CI.95       | p-value |
 |------------+-------+-----------+-------------+---------|
@@ -127,7 +127,7 @@ astest[,risk.inc:=100*predictRisk(lrfit.inc,newdata=astest)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:26:55) 1b832f895d12a85feea8e807fa4ca3edced723a1]:
+#+RESULTS[(2025-09-05 15:48:50) 1b832f895d12a85feea8e807fa4ca3edced723a1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -147,21 +147,22 @@ regression models.
 #+ATTR_LATEX: :options otherkeywords={}, deletekeywords={list,time,summary,formula,se,contrasts,data}
 #+BEGIN_SRC R  :results output  :exports both  :session *R* :cache yes  :eval always
 X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
-            formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE)
+            formula=Y1~1,summary="ipa",se.fit=1L,metrics="brier",contrasts=FALSE)
 X1
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:27:11) 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
+#+RESULTS[(2025-09-05 15:49:20) 2ec582cdb0ab737228c55ae00f0d6f7b96b3bdb4]:
 #+begin_example
 
 Summary statistics IPA:
 
 Results by model:
 
-           model    IPA
-          <fctr> <char>
-1: Exclusive ERG    2.7
-2: Inclusive ERG    7.3
+Key: <model>
+           model    IPA  lower  upper
+          <fctr> <char> <char> <char>
+1: Exclusive ERG    2.7   -1.6    6.9
+2: Inclusive ERG    7.3    0.4   14.2
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
@@ -170,11 +171,11 @@ Metric Brier:
 
 Results by model:
 
-           model  Brier
-          <fctr> <char>
-1:    Null model   15.2
-2: Exclusive ERG   14.8
-3: Inclusive ERG   14.1
+           model  Brier  lower  upper
+          <fctr> <char> <char> <char>
+1:    Null model   15.2   11.9   18.6
+2: Exclusive ERG   14.8   11.5   18.2
+3: Inclusive ERG   14.1   11.1   17.2
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The lower Brier the better.
@@ -202,7 +203,7 @@ model and IPA of the model where the variable is omitted.
 IPA(lrfit.inc,newdata=astest)
 #+END_SRC
 
-#+RESULTS[(2022-03-09 08:39:18) 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
+#+RESULTS[(2025-09-05 15:48:50) 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
 #+begin_example
      Variable  Brier    IPA IPA.drop
        <fctr> <char> <char>   <char>
@@ -239,7 +240,7 @@ coxfit.inc <- coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.sta
 publish(coxfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:27:46) ab47285b61012d2bca8c73e0eb087b9e08233abe]:
+#+RESULTS[(2025-09-05 15:48:50) ab47285b61012d2bca8c73e0eb087b9e08233abe]:
 :results:
 | Variable   | Units | HazardRatio | CI.95       | p-value |
 |------------+-------+-------------+-------------+---------|
@@ -267,7 +268,7 @@ astest[,risk.inc:=100*predictRisk(coxfit.inc,newdata=astest,times=3)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:27:55) 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
+#+RESULTS[(2025-09-05 15:48:50) 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -288,21 +289,22 @@ regression models.
 #+ATTR_LATEX: :options otherkeywords={}, deletekeywords={list,time,summary,formula,se,contrasts,data}
 #+BEGIN_SRC R  :results output  :exports both  :session *R* :cache yes  :eval always
 X2 <- Score(list("Exclusive ERG"=coxfit.ex,"Inclusive ERG"=coxfit.inc),data=astest,
-            formula=Surv(time,event!=0)~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE,times=3)
+            formula=Surv(time,event!=0)~1,summary="ipa",se.fit=1L,metrics="brier",contrasts=FALSE,times=3)
 X2
 #+END_SRC
 
-#+RESULTS[(2022-03-09 08:39:19) 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
+#+RESULTS[(2025-09-05 15:49:26) 1cb80fc9b6ec838816bc33f8301f4673cb1d47d9]:
 #+begin_example
 
 Summary statistics IPA:
 
 Results by model:
 
-           model times    IPA
-          <fctr> <num> <char>
-1: Exclusive ERG     3    6.4
-2: Inclusive ERG     3   17.1
+Key: <model, times>
+           model times    IPA  lower  upper
+          <fctr> <num> <char> <char> <char>
+1: Exclusive ERG     3    6.4   -2.6   15.4
+2: Inclusive ERG     3   17.1    8.3   25.8
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
@@ -311,11 +313,11 @@ Metric Brier:
 
 Results by model:
 
-           model times  Brier
-          <fctr> <num> <char>
-1:    Null model     3   24.0
-2: Exclusive ERG     3   22.4
-3: Inclusive ERG     3   19.9
+           model times  Brier  lower  upper
+          <fctr> <num> <char> <char> <char>
+1:    Null model     3   24.0   22.6   25.4
+2: Exclusive ERG     3   22.4   20.5   24.4
+3: Inclusive ERG     3   19.9   17.8   21.9
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The lower Brier the better.
@@ -335,7 +337,7 @@ model and IPA of the model where the variable is omitted.
 IPA(coxfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:28:22) f4b18b24db785e34b067d3c4ce6c02234098476e]:
+#+RESULTS[(2025-09-05 15:48:50) f4b18b24db785e34b067d3c4ce6c02234098476e]:
 #+begin_example
      Variable times  Brier    IPA IPA.drop
        <fctr> <num> <char> <char>   <char>
@@ -372,7 +374,7 @@ cscfit.inc <- CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,d
 publish(cscfit.inc)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:28:40) b0817074933de144121448371b80edfbf281c9da]:
+#+RESULTS[(2025-09-05 15:48:51) b0817074933de144121448371b80edfbf281c9da]:
 #+begin_example
    Variable Units                1                2 
         age       1.04 [1.00;1.09] 1.01 [0.95;1.07] 
@@ -400,7 +402,7 @@ astest[,risk.inc:=100*predictRisk(cscfit.inc,newdata=astest,times=3,cause=1)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:28:48) 841985da41439efcbff01b0901042c38e91abda3]:
+#+RESULTS[(2025-09-05 15:48:51) 841985da41439efcbff01b0901042c38e91abda3]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -422,22 +424,23 @@ cause-specific Cox regression models.
 X3 <- Score(list("Exclusive ERG"=cscfit.ex,
                  "Inclusive ERG"=cscfit.inc),
             data=astest, formula=Hist(time,event)~1,
-            summary="ipa",se.fit=0L,metrics="brier",
+            summary="ipa",se.fit=1L,metrics="brier",
             contrasts=FALSE,times=3,cause=1)
 X3
 #+END_SRC
 
-#+RESULTS[(2025-09-05 15:28:58) 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
+#+RESULTS[(2025-09-05 15:49:09) 647f08d86416c767edfab2126ba1f6f639fe5820]:
 #+begin_example
 
 Summary statistics IPA:
 
 Results by model:
 
-           model times    IPA
-          <fctr> <num> <char>
-1: Exclusive ERG     3    5.0
-2: Inclusive ERG     3   17.5
+Key: <model, times>
+           model times    IPA  lower  upper
+          <fctr> <num> <char> <char> <char>
+1: Exclusive ERG     3    5.0   -1.9   11.9
+2: Inclusive ERG     3   17.5   10.1   25.0
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
@@ -446,11 +449,11 @@ Metric Brier:
 
 Results by model:
 
-           model times  Brier
-          <fctr> <num> <char>
-1:    Null model     3   24.5
-2: Exclusive ERG     3   23.2
-3: Inclusive ERG     3   20.2
+           model times  Brier  lower  upper
+          <fctr> <num> <char> <char> <char>
+1:    Null model     3   24.5   23.4   25.5
+2: Exclusive ERG     3   23.2   21.1   25.3
+3: Inclusive ERG     3   20.2   18.1   22.2
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The lower Brier the better.
@@ -473,18 +476,19 @@ IPA of the model where the variable is omitted.
 IPA(cscfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[(2022-03-09 08:39:20) 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
+#+RESULTS[(2025-09-05 15:48:51) 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
 #+begin_example
-     Variable times Brier  IPA IPA.drop
-1: Null model     3  24.5  0.0     17.5
-2: Full model     3  20.2 17.5      0.0
-3:        age     3  20.1 18.0     -0.5
-4:    lpsaden     3  20.4 16.8      0.8
-5:       ppb5     3  20.4 16.5      1.1
-6:       lmax     3  21.4 12.6      4.9
-7:        ct1     3  19.8 18.9     -1.4
-8:     diaggs     3  20.8 14.8      2.8
-9: erg.status     3  23.2  5.0     12.5
+     Variable times  Brier    IPA IPA.drop
+       <fctr> <num> <char> <char>   <char>
+1: Null model     3   24.5    0.0     17.5
+2: Full model     3   20.2   17.5      0.0
+3:        age     3   20.1   18.0     -0.5
+4:    lpsaden     3   20.4   16.8      0.8
+5:       ppb5     3   20.4   16.5      1.1
+6:       lmax     3   21.4   12.6      4.9
+7:        ct1     3   19.8   18.9     -1.4
+8:     diaggs     3   20.8   14.8      2.8
+9: erg.status     3   23.2    5.0     12.5
 
 NOTE: Values are multiplied by 100 and given in %.
 NOTE: The higher IPA the better.
