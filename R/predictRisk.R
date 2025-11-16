@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jul  7 2025 (15:31) 
-##           By: Thomas Alexander Gerds
-##     Update #: 634
+## last-updated: Nov 16 2025 (11:56) 
+##           By: Brice Ozenne
+##     Update #: 637
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -610,12 +610,29 @@ predictRisk.coxph <- function(object,
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk coxph.penal
-predictRisk.coxph.penal <- function(object,newdata,times,...){
-    # assume that only one cluster/sparse penalty is allowed 
+predictRisk.coxph.penal <- function(object,
+                                    newdata,
+                                    times,
+                                    product.limit = FALSE,
+                                    diag = FALSE,
+                                    iid = FALSE,
+                                    average.iid = FALSE,
+                                    ...){
+    ## assume that only one cluster/sparse penalty is allowed
     frailhistory <- object$history[[1]]$history
-    if (length(frailhistory) == 0){
-        predictRisk.coxph(object,newdata,times,...)
+    
+    ## if (length(frailhistory) == 0){ ## old version
+    if (length(frailhistory) == 0 || all(grepl("pspline",names(object$history), fixed = TRUE))){
+        ## in case penalty terms correspond to p-splines, use the 'usual' predictRisk
+        predictRisk.coxph(object,newdata,times,  product.limit = product.limit,
+                          diag = diag, iid = iid, average.iid = average.iid, ...)
     }else{
+        if(product.limit==TRUE){
+            warning("Argument \'product.limit\' is ignored with frailty Cox models. \n")
+        }
+        if(diag==TRUE){
+            warning("Argument \'diag\' is ignored with frailty Cox models. \n")
+        }
         frailVar <- frailhistory[NROW(frailhistory),1]
         linearPred <- predict(object,newdata=newdata,se.fit=FALSE,conf.int=FALSE)
         basehaz <- basehaz(object)
