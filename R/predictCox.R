@@ -731,8 +731,20 @@ predictCox <- function(object,
                      "Maybe because newdata contains NA values \n")
             }
             if(any(sort(colnames(new.LPdata))!=sort(names(coef(object))))){
-                stop("Names of the design matrix and model parameters differ. \n",
-                     "Possible error in model.matrix due to special operator in the formula. \n")
+                if(!is.null(object$pterms)){
+                    index.mismatch <- which(colnames(new.LPdata)!=names(coef(object)))
+                    possible.mismatch <- unlist(object$assign2[which(object$pterms==1)])
+                    if(identical(as.integer(index.mismatch),as.integer(possible.mismatch))){
+                        colnames(new.LPdata) <- names(coef(object))
+                        warning("Uncertainty quantification ignores penalization by the integrated second derivative. \n")
+                    }else{                        
+                        stop("Names of the design matrix and model parameters differ. \n",
+                             "Possible error in model.matrix due to special operator in the formula. \n")
+                    }
+                }else{
+                    stop("Names of the design matrix and model parameters differ. \n",
+                         "Possible error in model.matrix due to special operator in the formula. \n")
+                }
             }
         }else{
             new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
@@ -763,7 +775,7 @@ predictCox <- function(object,
         }else{
             times2 <- times.sorted
         }
-        attr(times2,"etimes.max") <- attr(times.sorted,"etimes.max")
+        attr(times2,"etimes.max") <- attr(times.sorted,"etimes.max")        
         outSE <- calcSeCox(object,
                            times = times2,
                            nTimes = nTimes,
