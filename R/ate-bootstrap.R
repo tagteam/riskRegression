@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: May 14 2025 (15:30) 
-##           By: Thomas Alexander Gerds
-##     Update #: 345
+## Last-Updated: Nov 16 2025 (11:02) 
+##           By: Brice Ozenne
+##     Update #: 357
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -101,12 +101,10 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
             if(!is.null(args[[iModel]])){
                 args[[iModel]]$call$data <- ls.data[[iModel]][index] ## resample dataset
                 args[[iModel]] <- try(eval(args[[iModel]]$call),silent=TRUE) ## refit  model
-                if (inherits(x=args[[iModel]],what="try-error")){
-                    iBoot <- c(paste0("Failed to fit model ",iModel," on the bootstrap sample", sep = ""),
-                               args[[iModel]]
-                               )
-                    class(iBoot) <- "try-error"
-                    return(iBoot)
+                if (inherits(x=args[[iModel]],what="try-error")){ ## fail to fit the model on the bootstrap sample
+                    out <- rep(NA, length(name.estimate), name.estimate)
+                    attr(out,"error") <- args[[iModel]]
+                    return(out)
                 }
             }
         }
@@ -157,6 +155,7 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
         ## progress bar 
         if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
         b <- NULL ## [:forCRANcheck:] foreach
+
         boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
             if(verbose>0){setTxtProgressBar(pb, b)}
             set.seed(bootseeds[[b]])
