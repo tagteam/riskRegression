@@ -96,7 +96,16 @@ predictRisk(object, newdata, ...)
   ...
 )
 
-\method{predictRisk}{coxph.penal}(object, newdata, times, ...)
+\method{predictRisk}{coxph.penal}(
+  object,
+  newdata,
+  times,
+  product.limit = FALSE,
+  diag = FALSE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
 
 \method{predictRisk}{cph}(
   object,
