@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Nov 16 2025 (11:56) 
-##           By: Brice Ozenne
-##     Update #: 637
+## last-updated: feb 16 2026 (09:57) 
+##           By: Thomas Alexander Gerds
+##     Update #: 641
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -551,6 +551,60 @@ predictRisk.comprisk <- function(object, newdata, times, ...) {
   return(out)
 }
 
+## * predictRisk.survreg
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk survreg
+predictRisk.survreg <- function(object,
+                                newdata,
+                                times,
+                                ...) {
+
+  if (missing(newdata)) stop("newdata must be supplied")
+  if (missing(times)) stop("times must be supplied")
+
+  lp    <- predict(object, newdata = newdata, type = "lp")
+  sigma <- object$scale
+  dist  <- object$dist
+
+  n  <- length(lp)
+  nt <- length(times)
+
+    ## subject-specific LP, common time grid
+    LP    <- matrix(lp, n, 1)
+    TIMES <- matrix(times, n, nt, byrow = TRUE)
+
+    risk <- switch(
+        dist,
+        weibull = {
+            shape <- 1 / sigma
+            scale <- exp(LP)
+            stats::pweibull(TIMES, shape = shape, scale = scale)
+        },
+
+    lognormal = {
+      stats::plnorm(TIMES, meanlog = LP, sdlog = sigma)
+    },
+
+    loglogistic = {
+      shape <- 1 / sigma
+      scale <- exp(LP)
+      z <- (TIMES / scale)^shape
+      z / (1 + z)
+    },
+
+    exponential = {
+      rate <- exp(-LP)
+      stats::pexp(TIMES, rate = rate)
+    },
+
+    stop("Distribution '", dist, "' not supported")
+  )
+
+  colnames(risk) <- times
+  risk
+}
+
 
 ## * predictRisk.coxph
 ##' @export
@@ -603,6 +657,7 @@ predictRisk.coxph <- function(object,
 
     return(out)
 }
+
 
 
 

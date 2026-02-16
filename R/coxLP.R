@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: Jul  5 2025 (09:30) 
+## Last-Updated: feb 16 2026 (09:46) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 34
+##     Update #: 36
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -135,6 +135,7 @@ coxLP.coxph <- function(object, data, center){
 
   return(unname(Xb))
 }
+
 
 ## ** coxLP.phreg
 #' @rdname coxLP

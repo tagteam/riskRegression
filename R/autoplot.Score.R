@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Mar  9 2022 (15:49) 
+## last-updated: feb  6 2026 (13:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 79
+##     Update #: 80
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,7 +68,7 @@ autoplot.Score <- function(object,
         yticks <- seq(0,1,0.05)
         yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
         pp <- ggplot2::ggplot(data=pframe,aes(times,AUC,fill=model,colour=model))
-        pp + geom_line(size=lwd)
+        pp + geom_line(linewidth=lwd)
     }else{
         ## delta AUC
         pframe[,contrast:=paste(model,reference,sep=" - ")]
@@ -87,10 +87,10 @@ autoplot.Score <- function(object,
                                          panel.grid.major.y = element_blank(), panel.grid.minor = element_line(), 
                                          panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank(), 
                                          strip.background = element_rect(colour = "black", 
-                                                                         size = 0.5), legend.key = element_blank())
+                                                                         linewidth = 0.5), legend.key = element_blank())
     pp <- pp+ scale_fill_manual(values=cbbPalette)+ scale_colour_manual(values=cbbPalette)
     ## add the lines
-    pp <- pp + geom_line(size=lwd) + xlim(xlim) + theme(legend.key = element_blank())
+    pp <- pp + geom_line(linewidth=lwd) + xlim(xlim) + theme(legend.key = element_blank())
     ## y-axis
     pp <- pp + scale_y_continuous(expand=c(0,0),
                                   limits=ylim,

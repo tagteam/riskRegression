@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec 26 2019 (08:58) 
 ## Version: 
-## Last-Updated: Aug  18 2025 
-##           By: Asbjørn Risom
-##     Update #: 92
+## Last-Updated: feb  9 2026 (06:26) 
+##           By: Thomas Alexander Gerds
+##     Update #: 95
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -63,16 +63,16 @@ summary.Score <- function(object,
             }
             if ("upper"%in%names(object$Brier$score)){
                 if (!is.null(object$IPA)){
-                  brier.merge <- merge(object$Brier$score,object$IPA$score, by = "model", suffixes = c("",".IPA"))
-                  tab.Brier <- brier.merge[(model %in% models),data.table::data.table(Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::formatCI(x=100*Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),
-                                                                                      "IPA (%)"=Publish::formatCI(x=100*IPA,lower=100*lower.IPA,upper=100*upper.IPA,show.x=1,digits=digits))]
+                    brier.merge <- merge(object$Brier$score,object$IPA$score, by = "model", suffixes = c("",".IPA"))
+                    tab.Brier <- brier.merge[(model %in% models),data.table::data.table(Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::formatCI(x=100*Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),
+                                                                                        "IPA (%)"=Publish::formatCI(x=100*IPA,lower=100*lower.IPA,upper=100*upper.IPA,show.x=1,digits=digits))]
                 }
                 else
                     tab.Brier <- object$Brier$score[(model %in% models),data.table::data.table(Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::formatCI(x=100*Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
             }else{
                 if (!is.null(object$IPA)){
-                  brier.merge <- merge(object$Brier$score,object$IPA$score, by = "model", suffixes = c("",".IPA"))
-                  tab.Brier <- brier.merge[(model %in% models),data.table::data.table(Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::pubformat(x=100*Brier,digits=digits),IPA=sprintf(paste0("%1.",digits,"f"),100*IPA))]
+                    brier.merge <- merge(object$Brier$score,object$IPA$score, by = "model", suffixes = c("",".IPA"))
+                    tab.Brier <- brier.merge[(model %in% models),data.table::data.table(Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::pubformat(x=100*Brier,digits=digits),IPA=sprintf(paste0("%1.",digits,"f"),100*IPA))]
                 }
                 else
                     tab.Brier <- object$Brier$score[(model %in% models),data.table::data.table(Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::pubformat(x=100*Brier,digits=digits))]
@@ -143,7 +143,7 @@ summary.Score <- function(object,
                 tab.delta <- tab.deltaAUC
             }
             if (length(tab.delta)>0)
-            out <- c(out,list(contrasts=tab.delta))
+                out <- c(out,list(contrasts=tab.delta))
         }
         # }}}
         # }}}
@@ -168,7 +168,7 @@ summary.Score <- function(object,
                     if (!is.null(object$IPA)){
                         brier.merge <- merge(object$Brier$score,object$IPA$score, by = c("times","model"), suffixes = c("",".IPA"))
                         tab.Brier <- brier.merge[(times%in%ttt)&(model%in%models),data.table::data.table(times=times,Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::formatCI(x=100*Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"IPA (%)"=Publish::formatCI(x=100*IPA,lower=100*lower.IPA,upper=100*upper.IPA,show.x=1,digits=digits))]
-                        }
+                    }
                     else
                         tab.Brier <- object$Brier$score[(times%in%ttt)&(model%in%models),data.table::data.table(times=times,Model=factor(model,levels=fitted.models)[,drop=TRUE],"Brier (%)"=Publish::formatCI(x=100*Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
                 }else{

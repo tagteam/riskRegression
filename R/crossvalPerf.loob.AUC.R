@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:20) 
 ## Version: 
-## Last-Updated: Jun 14 2024 (07:46) 
+## Last-Updated: feb 13 2026 (13:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 97
+##     Update #: 103
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -19,7 +19,6 @@
 ## 
 ### Code:
 crossvalPerf.loob.AUC <- function(times,
-                                  mlevs,
                                   se.fit,
                                   NT,
                                   response.type,
@@ -50,11 +49,13 @@ crossvalPerf.loob.AUC <- function(times,
     if (N_has_oob<N) conservative <- TRUE
     oob_warning <- FALSE
     # initializing output
+    fitted_models <- DT.B[,levels(model)]
     if (response.type=="binary") {
-        auc.loob <- data.table(expand.grid(times=0,model=mlevs)) #add times to auc.loob; now we can write less code for the same thing!
+        #add times to auc.loob; now we can write less code for the same thing!
+        auc.loob <- data.table(expand.grid(times=0,model=fitted_models)) 
         times <- 0
     }
-    auc.loob <- data.table::data.table(expand.grid(times=times,model=mlevs))
+    auc.loob <- data.table::data.table(expand.grid(times=times,model=fitted_models))
     auc.loob[,AUC:=as.numeric(NA)]
     aucDT <- NULL
     # TRUE FALSE matrix indicating which ID's are out-of-bag
@@ -108,7 +109,7 @@ crossvalPerf.loob.AUC <- function(times,
             muCase <- sum(w.cases)
             muControls <- sum(w.controls)
             Phi <- (1/N^2)*muCase*muControls
-            for (mod in mlevs){
+            for (mod in fitted_models){
                 if (mod == 0){
                     aucLPO <- 0.5
                     auc.loob[times==t&model==mod,AUC:=aucLPO]
@@ -242,14 +243,6 @@ crossvalPerf.loob.AUC <- function(times,
         }
         setnames(contrasts.AUC,"delta","delta.AUC")
         output <- c(output,list(contrasts=contrasts.AUC))
-    }
-    if (!is.null(output$score)){
-        output$score[,model:=factor(model,levels=mlevs,mlabels)]
-    }
-    ## set model and reference in model comparison results
-    if (!is.null(output$contrasts)){
-        output$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-        output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
     }
     if (oob_warning[1] == TRUE)
         attr(output,"subjects_never_oob") <- 1L

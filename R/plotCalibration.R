@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Apr 29 2025 (08:05) 
+## last-updated: feb 13 2026 (15:39) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 414
+##     Update #: 440
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,7 +23,7 @@
 ##' @title Plot Calibration curve
 ##' @export
 ##' @param x Object obtained with function \code{Score}
-##' @param models Choice of models to plot
+##' @param models Choice of models to plot. When argument \code{bars=TRUE} only one model can be chosen.
 ##' @param times Time point specifying the prediction horizon.
 ##' @param method The method for estimating the calibration curve(s):
 ##' \itemize{
@@ -102,7 +102,7 @@
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
 ##'           plots="cal")
 ##' plotCalibration(xb,brier.in.legend=TRUE)
-##' plotCalibration(xb,bars=TRUE,model="model1")
+##' plotCalibration(xb,bars=TRUE,models="model1")
 ##' plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 ##' 
 ##' # survival
@@ -202,7 +202,12 @@ plotCalibration <- function(x,
     else
         Rvar <- grep("^(riskRegression_status|pseudovalue)$",names(pframe),value=TRUE)[[1]]
     if (!missing(models)){
+        if (bars&&length(models) != 1){
+            stop(paste0("The calibration bar plot works for exactly one model. But, argument models was ",
+                        paste0(models,collapse = ", "),"."))
+        }
         fitted.models <- pframe[,unique(model)]
+        fitted.models <- fitted.models[fitted.models != "Null model"]
         if (all(models%in%fitted.models)){
             pframe <- pframe[model%in%models]
         } else {
@@ -215,6 +220,11 @@ plotCalibration <- function(x,
                             "\ndo not all match the fitted models: ",
                             paste0(fitted.models,collapse=", ")))
             }
+        }
+    }else{
+        if (bars) {
+            models <- fitted.models[fitted.models != "Null model"][[1]]
+            pframe <- pframe[model == models]
         }
     }
     data.table::setkey(pframe,model)
@@ -234,7 +244,7 @@ plotCalibration <- function(x,
     NF <- pframe[,length(unique(model))]
     if (bars){
         method="quantile"
-        if (!(NF==1)) stop(paste0("Barplots work only for one risk prediction model at a time. Provided are ",NF, "models."))
+        if (!(NF==1)) stop(paste0("Barplots work only for one risk prediction model at a time. Provided are ",NF, " models."))
     }
     # }}}
     # {{{ lines 
@@ -390,11 +400,16 @@ plotCalibration <- function(x,
                    else{
                        groups <- q
                    }
-                   xgroups <- (groups[-(length(groups))]+groups[-1])/2
-                   pcut <- cut(x = p,
-                               breaks = sort(unique(groups)),
-                               include.lowest=TRUE)
-                   ## if (x$cens.type=="rightCensored"){
+                   groups <- sort(unique(groups))
+                   # calculate midpoints in the intervals. but why
+                   ## xgroups <- (groups[-(length(groups))]+groups[-1])/2
+                   if (length(unique(p)) <= length(groups)){
+                       pcut <- factor(sort(p))
+                   }else{
+                       pcut <- cut(x = p,
+                                   breaks = groups,
+                                   include.lowest=TRUE)
+                   }
                    if (x$response.type=="binary"){
                        plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                             Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))

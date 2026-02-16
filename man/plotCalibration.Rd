@@ -44,7 +44,7 @@ plotCalibration(
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
 
-\item{models}{Choice of models to plot}
+\item{models}{Choice of models to plot. When argument \code{bars=TRUE} only one model can be chosen.}
 
 \item{times}{Time point specifying the prediction horizon.}
 
@@ -163,7 +163,7 @@ fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
           plots="cal")
 plotCalibration(xb,brier.in.legend=TRUE)
-plotCalibration(xb,bars=TRUE,model="model1")
+plotCalibration(xb,bars=TRUE,models="model1")
 plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 
 # survival

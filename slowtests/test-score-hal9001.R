@@ -9,7 +9,7 @@ test_that("Predict risk is working with hal",{
     trainCR.surv <- sampleData(270,outcome="survival") ## censoring does not depend on covariates
     testCR.surv <- sampleData(5,outcome="survival") ##
     cox1 = coxph(Surv(time,event)~X1+X9,data=trainCR.surv,y = TRUE,x = TRUE)
-    hal1 = Hal9001(Surv(time,event)~X1+X9,data=trainCR.surv)
+    hal1 = Hal9001(Surv(time,event)~X1+X9,data=trainCR.surv,family = "cox")
     p1 = predictRisk(hal1,newdata = testCR.surv[1,],times = c(1,3))
     p2 = predictRisk(cox1,newdata = testCR.surv,times = c(1,3))
     expect_output(print(p1))

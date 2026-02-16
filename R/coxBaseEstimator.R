@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:30) 
 ## Version: 
-## Last-Updated: May  8 2025 (13:43) 
+## Last-Updated: feb 16 2026 (09:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,6 +38,7 @@ coxBaseEstimator <- function(object){
 coxBaseEstimator.coxph <- function(object){
   return(object$method)
 }
+
 
 ## ** coxBaseEstimator.phreg
 #' @rdname coxBaseEstimator

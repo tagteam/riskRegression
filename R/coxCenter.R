@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:31) 
 ## Version: 
-## Last-Updated: Apr 27 2025 (07:31) 
+## Last-Updated: feb 16 2026 (09:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 3
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -46,6 +46,7 @@ coxCenter.cph <- function(object){
 coxCenter.coxph <- function(object){
   return(setNames(object$means, names(coef(object))))
 }
+
 
 ## ** coxCenter.phreg
 #' @rdname coxCenter

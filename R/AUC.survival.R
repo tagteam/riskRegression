@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Mar 26 2025 (12:16) 
+## Last-Updated: feb  6 2026 (13:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 57
+##     Update #: 60
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -34,7 +34,7 @@ AUC.survival <- function(DT,
     riskRegression_ID=model=times=risk=Cases=riskRegression_time=riskRegression_status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     output = NULL
     cause <- 1
-    aucDT <- DT[model>0]
+    aucDT <- DT[model != "Null model"]
     ## remove null model comparisons
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     ## assign Weights before ordering

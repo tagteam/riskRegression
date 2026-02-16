@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: sep  5 2025 (13:34) 
+## Last-Updated: feb 13 2026 (12:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 29
+##     Update #: 57
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -59,8 +59,14 @@ computePerformance <- function(DT,
                   cens.model=cens.model,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
-                  keep.iid=keep.iid,                  
-                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,IC.data=IC.data,breaks=breaks,cutpoints=cutpoints)
+                  keep.iid=keep.iid,
+                  dolist=dolist,
+                  Q=probs,
+                  ROC=FALSE,
+                  MC=MC,
+                  IC.data=IC.data,
+                  breaks=breaks,
+                  cutpoints=cutpoints)
     if (response.type=="competing.risks") {
         input <- c(input,list(cause=cause,states=states))
     }
@@ -68,24 +74,15 @@ computePerformance <- function(DT,
     # {{{ collect data for summary statistics
     for (s in summary){
         if (s=="risks") {
-            out[[s]] <- list(score=copy(input$DT)[,model:=factor(model,levels=models$levels,models$labels)],
-                             contrasts=NULL)
+            out[[s]] <- list(score=copy(input$DT), contrasts=NULL)
         } else{
             out[[s]] <- do.call(paste(s,response.type,sep="."),input)
-            if (NROW(out[[s]]$score)>0){
-                out[[s]]$score[,model:=factor(model,levels=models$levels,labels=models$labels)]
-            }
-            if (NROW(out[[s]]$contrasts)>0){
-                out[[s]]$contrasts[,model:=factor(model,levels=models$levels,labels=models$labels)]
-                out[[s]]$contrasts[,reference:=factor(reference,levels=models$levels,labels=models$labels)]
-            }
         }
     }
     # }}}
     # {{{ collect data for calibration plots
     if ("Calibration" %in% plots){
         out[["Calibration"]]$plotframe <- DT[model!=0]
-        out[["Calibration"]]$plotframe[,model:=factor(model,levels=models$levels,labels=models$labels)]
         if (length(jack)>0)
             out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("riskRegression_ID","times"))
     }
@@ -98,23 +95,15 @@ computePerformance <- function(DT,
             ## call AUC method
             out[[m]] <- do.call(paste(m,response.type,sep="."),input)
             out[["ROC"]]$plotframe <- out[[m]]$ROC
-            out[["ROC"]]$plotframe[,model:=factor(model,levels=models$levels,labels=models$labels)]
             out[[m]]$ROC <- NULL
         }else{
-            input <- replace(input, "ROC",FALSE)
+            input <- replace(input, "ROC", FALSE)
             ## call Brier or AUC method
-            out[[m]] <- do.call(paste(m,response.type,sep="."),input)
-        }
-        if (!is.null(out[[m]]$score)){
-            out[[m]]$score[,model:=factor(model,levels=models$levels,labels=models$labels)]
-        }
-        ## set model and reference in model comparison results
-        if (!is.null(out[[m]]$contrasts)>0){
-            out[[m]]$contrasts[,model:=factor(model,levels=models$levels,labels=models$labels)]
-            out[[m]]$contrasts[,reference:=factor(reference,levels=models$levels,labels=models$labels)]
-        }
-        if (keep.iid & !(is.null(out[[m]]$iid.decomp))){
-          out[[m]]$iid.decomp[,model:=factor(model,levels=models$levels,labels=models$labels)]
+            if ((m == "Brier") && (ipa == TRUE)&& (se.fit == TRUE)){
+                out[[m]] <- do.call(paste(m,response.type,sep="."),replace(input,"keep.iid",TRUE))
+            }else{
+                out[[m]] <- do.call(paste(m,response.type,sep="."),input)
+            }
         }
     }
     ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
@@ -147,10 +136,21 @@ computePerformance <- function(DT,
     }
     if (ipa == TRUE) {
         out[["IPA"]] <- IPACompute(brier.results = copy(out[["Brier"]]),
-                                     response.type = response.type,
-                                     se.fit = se.fit,
-                                     alpha = alpha)
+                                   response.type = response.type,
+                                   se.fit = se.fit,
+                                   alpha = alpha)
+        ## clean up if necessary
+        if (keep.iid == FALSE){
+            out[["Brier"]]$iid.decomp <- NULL
         }
+        # for backward compability add IPA to x$Brier$score
+        if ("times" %in% names(out[["Brier"]][["score"]])) {
+            byvars <- c("model","times")
+        }else{
+            byvars <- c("model")
+        }
+        out[["Brier"]][["score"]] <- out[["IPA"]][["score"]][,.SD,.SDcols = c(byvars,"IPA")][out[["Brier"]][["score"]],on = byvars]
+    }
     # }}}
     out[]
 }

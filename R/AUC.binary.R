@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: May 15 2025 (08:49) 
+## Last-Updated: feb  6 2026 (16:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 82
+##     Update #: 99
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -57,8 +57,7 @@ AUC.binary <- function(DT,
         else
             0.5 * sum(diff(c(0,FPR,0,1)) * (c(TPR,0,1) + c(0,TPR,0)))
     }
-    aucDT <- DT[model>0]
-    dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
+    aucDT <- DT[model != "Null model"]
     data.table::setkey(aucDT,model,riskRegression_ID)
     if (is.factor(DT[["risk"]])){
         score <- aucDT[,auRoc.factor(risk,
@@ -105,15 +104,15 @@ AUC.binary <- function(DT,
         },by=list(model)]
         output <- c(output, list(cutpoints=cutpoint_results[]))
     }
+    # remove null model
+    dolist <- dolist[sapply(dolist,function(do){match("Null model",do,nomatch=0L)})==0]
+    # 
     if (length(dolist)>0 || (se.fit[[1]]==1L)){
         ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
         delongtest <-  function(risk,score,dolist,response,cause,alpha,se.fit,keep.vcov) {
             cov=lower=upper=p=AUC=se=lower=upper=NULL
             if (keep.iid == TRUE){warning("Argument 'keep.iid' is ignored. This function does not explicitely calculate the estimated influence function for AUC with binary outcome.")}
-            auc <- score[["AUC"]]
-            nauc <- ncol(risk)
-            modelnames <- score[["model"]]
-            score <- data.table(model=colnames(risk),AUC=auc)
+            score <- score[model != "Null model"]
             if (se.fit==1L){
                 Cases <- response == cause
                 #Controls <- response != cause
@@ -125,6 +124,7 @@ AUC.binary <- function(DT,
                 # article can be found here:
                 # https://ieeexplore.ieee.org/document/6851192
                 S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
+                colnames(S) <- colnames(riskcases)
                 se.auc <- sqrt(diag(S))
                 score[,se:=se.auc]
                 score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
@@ -133,25 +133,25 @@ AUC.binary <- function(DT,
             }else{
                 setcolorder(score,c("model","AUC"))
             }
-            names(auc) <- 1:nauc
             if (length(dolist)>0){
                 ncomp <- length(dolist)
                 delta.AUC <- numeric(ncomp)
                 se <- numeric(ncomp)
-                model <- numeric(ncomp)
-                reference <- numeric(ncomp)
+                model <- character(ncomp)
+                reference <- character(ncomp)
                 ctr <- 1
                 Qnorm <- qnorm(1 - alpha/2)
                 for (d in dolist){
-                    i <- d[1]
+                    d <- as.character(d)
+                    i <- d[[1]]
                     for (j in d[-1]) {
-                        delta.AUC[ctr] <- auc[j]-auc[i]
+                        delta.AUC[ctr] <- score[model == j][["AUC"]]-score[model == i][["AUC"]]
                         if (se.fit[[1]]){
-                            LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
+                            LSL <- t(c(1, -1)) %*% S[match(c(j,i), colnames(riskcases)), match(c(j,i), colnames(riskcases))] %*% c(1, -1)
                             se[ctr] <- sqrt(LSL)
                         }
-                        model[ctr] <- modelnames[j]
-                        reference[ctr] <- modelnames[i]
+                        model[ctr] <- j
+                        reference[ctr] <- i
                         ctr <- ctr + 1
                     }
                 }

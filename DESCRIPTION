@@ -2,9 +2,8 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2025.11.16
-Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
-                    email = "tag@biostat.ku.dk"),
+Version: 2026.02.13
+Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"), email = "tag@biostat.ku.dk"),
              person("Johan Sebastian", "Ohlendorff", role = "aut"),
              person("Paul", "Blanche", role = "ctb"),
              person("Rikke", "Mortensen", role = "ctb"),
@@ -12,9 +11,8 @@ Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
              person("Nikolaj", "Tollenaar", role = "ctb"),
              person("John", "Muschelli", role = "ctb"),
              person("Ulla Brasch", "Mogensen", role = "ctb"),
-             person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")),
-             person("Asbjørn", "Risom", role = "ctb", email = "ar@math.ku.dk")
-             )
+             person("Asbjørn", "Risom", role = "ctb", email = "ar@math.ku.dk"),
+             person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk"))
 Depends:
     R (>= 3.5.0),
 Imports:

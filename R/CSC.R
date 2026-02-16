@@ -20,7 +20,7 @@
 #' a Cox regression model for the hazard function of the combined endpoint (all causes combined with 'or')
 #' to predict the event-free survival probabilities.
 #' @param fitter Character string specifying the routine to fit the Cox regression models. Available are
-#' \code{"coxph"} for \link[survival]{coxph}, \code{"coxph"} for \link[rms]{cph},
+#' \code{"coxph"} for \link[survival]{coxph}, \code{"cph"} for \link[rms]{cph},
 #' \code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.
 #' @param ... Arguments given to the function defined by argument \code{fitter}.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
@@ -288,7 +288,7 @@ CSC <- function(formula,
             fit <- do.call("phreg",c(args,extra.args))
         } else if(fitter=="glmnet"){
             fit <- do.call("GLMnet", c(args, extra.args))
-        }
+        } 
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)
         ## fit$call$formula <- fit$formula
