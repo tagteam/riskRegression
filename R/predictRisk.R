@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: feb 16 2026 (09:57) 
+## last-updated: feb 16 2026 (10:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 641
+##     Update #: 644
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -601,11 +601,57 @@ predictRisk.survreg <- function(object,
     stop("Distribution '", dist, "' not supported")
   )
 
-  colnames(risk) <- times
-  risk
+    colnames(risk) <- times
+    risk
 }
 
+## NOTE: add these when mets has removed predictRisk
+if (FALSE){
+    ## * predictRisk.phreg
+    ##' @export
+    ##' @rdname predictRisk
+    ##' @method predictRisk phreg
+    predictRisk.phreg <- function(object,newdata,times=NULL,...){
+        1-predict(object,newdata,times=times,se=FALSE)$surv
+    }
 
+    ## * predictRisk.binreg
+    ##' @export
+    ##' @rdname predictRisk
+    ##' @method predictRisk binreg
+    predictRisk.binreg <- function(object,newdata,times=NULL,cause,...){
+        if (times != object$time)
+            stop(paste0("This binreg object can only predict time ",object$time))
+        if (cause != object$cause)
+            stop(paste0("This binreg object can only predict cause ",object$cause))
+        c(predict(object,newdata,se=FALSE))
+    }
+
+    ## * predictRisk.cifreg
+    ##' @export
+    ##' @rdname predictRisk
+    ##' @method predictRisk cifreg
+    predictRisk.cifreg <- function(object,newdata,times=NULL,cause,...){
+        c(predict(object = object,newdata = newdata,times = times,se=FALSE)$cif)
+    }
+
+    ## * predictRisk.cifregFG
+    ##' @export
+    ##' @rdname predictRisk
+    ##' @method predictRisk cifregFG
+    predictRisk.cifregFG <- function(object,newdata,times=NULL,cause,...){
+        c(predict(object = object,newdata = newdata,times = times,se=FALSE)$cif)
+    }
+
+    ## * predictRisk.recreg
+    ##' @export
+    ##' @rdname predictRisk
+    ##' @method predictRisk recreg
+    predictRisk.recreg <- function(object,newdata,times=NULL,cause,...){
+        c(predict(object = object,newdata = newdata,times = times,se=FALSE)$cumhaz)
+    }
+    
+}
 ## * predictRisk.coxph
 ##' @export
 ##' @rdname predictRisk
