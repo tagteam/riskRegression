@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Dec 21 2021 (11:04) 
 ## Version: 
-## Last-Updated: Oct 14 2024 (10:26) 
-##           By: Brice Ozenne
-##     Update #: 30
+## Last-Updated: feb 14 2026 (08:03) 
+##           By: Thomas Alexander Gerds
+##     Update #: 31
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 ## * Packages
 library(testthat)
 library(data.table)
-library(mets)
+## library(mets)
 library(riskRegression)
 library(survival)
 

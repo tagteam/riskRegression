@@ -26,7 +26,7 @@ a Cox regression model for the hazard function of the combined endpoint (all cau
 to predict the event-free survival probabilities.}
 
 \item{fitter}{Character string specifying the routine to fit the Cox regression models. Available are
-\code{"coxph"} for \link[survival]{coxph}, \code{"coxph"} for \link[rms]{cph},
+\code{"coxph"} for \link[survival]{coxph}, \code{"cph"} for \link[rms]{cph},
 \code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.}
 
 \item{...}{Arguments given to the function defined by argument \code{fitter}.}

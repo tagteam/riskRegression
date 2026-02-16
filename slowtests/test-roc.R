@@ -16,4 +16,4 @@ test_that("cross-validated ROC curves", {
     plotROC(Y,add = TRUE,col = 3)
     plotROC(y,add = TRUE,col = 4)
     plotROC(Q,add = TRUE,col = 5)
-}
+})

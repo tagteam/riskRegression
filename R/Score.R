@@ -1,5 +1,4 @@
 # {{{ roxy header
-
 ##' Methods to score the predictive performance of risk markers and risk prediction models
 ##'
 ##' The function implements a toolbox for the risk prediction modeller:
@@ -485,6 +484,7 @@
 ##' @export Score.list
 ##' @export
 ##'
+
 # }}}
 
 
@@ -537,6 +537,9 @@ Score.list <- function(object,
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=riskRegression_time=riskRegression_time_status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=riskRegression_event=residuals=event=riskRegression_status = j = NULL
     # }}}
     theCall <- match.call()
+    # {{{ ---------------------------- # }}}
+    # {{{ Preamble                     # }}}
+    # {{{ ---------------------------- # }}}
     # {{{ decide about metrics and plots
 
     ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
@@ -627,10 +630,8 @@ Score.list <- function(object,
     ## if (missing(event)) event <- 1
     responsevars <- all.vars(responseFormula)
     if (!all(responsevars%in%names(data)))stop("Response variable(s) ",paste(responsevars,collapse=", ")," not found in data.")
-    response <- getResponse(formula=responseFormula,
-                            data=data,
-                            cause=cause,
-                            vars=responsevars)
+    response <- getResponse(formula=responseFormula,data=data,cause=cause,vars=responsevars)
+    # stop when there are missing values 
     if (any(is.na(response))) stop("Missing values in response.
 Delete missing values *before* calling `Score', if this is reasonable,
 c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction models. ")
@@ -687,16 +688,15 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     cens.type <- attr(response,"cens.type")
     if (is.null(cens.type)) cens.type <- "uncensored"
     # }}}
-    # {{{ add null model and find names for the object
+    # {{{ Add null model and find names for the object
     if (null.model==TRUE){
         nullobject <- getNullModel(formula=formula,data=data,response.type=response.type)
     } else{
         nullobject <- NULL
     }
     # }}}
-    # {{{ SplitMethod & parallel stuff
+    # {{{ Resolve split.method & specify parallel computing if any 
     if (!missing(seed)) {
-        ## message("Random seed set to control split of data: seed=",seed)
         set.seed(seed)
     }
     split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M,seed=seed)
@@ -732,9 +732,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
 
     # }}}
     # {{{ Checking the ability of the elements of object to predict risks
-    # {{{ number of models and their labels
     NF <- length(object)
-    # }}}
     allmethods <- utils::methods(predictRisk)
     if (is.null(names(object))){
         names(object) <- sapply(object,function(o)class(o)[1])}
@@ -833,25 +831,23 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                 }))))
                     stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
             }
+            dolist <- lapply(dolist,function(m){factor(m,levels = mlevs, labels = mlabels)})
         }
     }
     # }}}
     # {{{ resolve keep statements
     if (!missing(keep) && is.character(unlist(keep))){
-      if ("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
-      if ("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
-      if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
-      if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
-      if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.iid = FALSE
+        if ("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
+        if ("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
+        if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
+        if ("cv" %in% tolower(keep)) keep.cv=TRUE else keep.cv = FALSE
+        if ("iid" %in% tolower(keep)) keep.iid=TRUE else keep.iid = FALSE
     }else{
-      keep.residuals=FALSE
-      keep.vcov=FALSE
-      keep.iid=FALSE
-      keep.cv=FALSE
-      keep.splitindex=FALSE
-    }
-    if (se.fit && ipa){
-      keep.iid=TRUE
+        keep.residuals=FALSE
+        keep.vcov=FALSE
+        keep.iid=FALSE
+        keep.cv=FALSE
+        keep.splitindex=FALSE
     }
     # }}}
     # {{{ Evaluation landmarks and horizons (times)
@@ -901,7 +897,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         NT <- 1
     }
     # }}}
-    # {{{ Dealing with censored data outside the loop
+    # {{{ Dealing with censored data (outside any cross-validation loops)
     Weights <- NULL
     jack <- NULL
     if (response.type %in% c("survival","competing.risks")){
@@ -914,7 +910,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                            influence.curve=getIC, 
                                            censoring.save.memory = censoring.save.memory,
                                            verbose = verbose)
-            ##split.method$internal.name %in% c("noplan",".632+")
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata)
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
             ## IC is an array with dimension (nlearn, times, newdata)
@@ -949,81 +944,35 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             }
         }
     } else{
-        jack <- NULL ## [BRICE: add jack <- NULL to avoid error in example 'Error in Score.list(list(`LR(X1+X2+X7+X9)` = lr1, `LR(X3+X5+X6)` = lr2),  :   object 'jack' not found']
+        jack <- NULL
         Weights <- NULL
     }
     # }}}
+    # {{{ ---------------------------- # }}}
+    # {{{ Main calculus                # }}}
+    # {{{ ---------------------------- # }}}
     # {{{ Nosplit performance: external data (hopefully not apparent)
     missing.predictions <- "Don't know yet"
     off.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
-        DT <- getPerformanceData(testdata=data,
-                                 testweights=Weights,
-                                 traindata=NULL,
-                                 trainseed=NULL,
-                                 response.type=response.type,
-                                 times=times,
-                                 cause=cause,
-                                 neworder=neworder,
-                                 levs=mlevs,
-                                 labels=mlabels,
-                                 predictRisk.args=predictRisk.args,
-                                 nullobject=nullobject,
-                                 cens.type=cens.type,
-                                 object=object,
-                                 object.classes=object.classes,
-                                 NT=NT,
-                                 verbose = verbose)
+        DT <- getPerformanceData(testdata=data,testweights=Weights,traindata=NULL,trainseed=NULL,response.type=response.type,times=times,cause=cause,neworder=neworder,levs=mlevs,labels=mlabels,predictRisk.args=predictRisk.args,nullobject=nullobject,cens.type=cens.type,object=object,object.classes=object.classes,NT=NT,verbose = verbose)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
-            missing.predictions[,model:=factor(model,levels=mlevs,mlabels)][]
             if (verbose>0)warning("Missing values in the predicted risks. See `missing.predictions' in output list.")
         }else{
             missing.predictions <- "None"
         }
         if (("Brier"%in% metrics) && (any(is.na(DT[["risk"]]))|| (max(DT[["risk"]])>1 || min(DT[["risk"]])<0))){
             off.predictions <- DT[,list("missing.values"=sum(is.na(risk)),"negative.values"=sum(risk<0,na.rm=TRUE),"values.above.1"=sum(risk>1,na.rm=TRUE)),by=byvars]
-            off.predictions[,model:=factor(model,levels=mlevs,mlabels)][]
             if (verbose>0) warning("Predicted values off the probability scale (negative or above 100%). See `off.predictions' in output list.\nOnly a problem for the Brier score, You can stop this warning by setting metrics='auc'.")
         }else{
             off.predictions <- "None"
         }
-        noSplit <- computePerformance(DT=DT,
-                                      N=N,
-                                      NT=NT,
-                                      NF=NF,
-                                      models=list(levels=mlevs,labels=mlabels),
-                                      response.type=response.type,
-                                      times=times,
-                                      jack=jack,
-                                      cens.type=cens.type,
-                                      cause=cause,
-                                      states=states,
-                                      alpha=alpha,
-                                      se.fit=se.fit,
-                                      conservative=conservative,
-                                      cens.model=cens.model,
-                                      keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,
-                                      keep.iid=keep.iid,
-                                      dolist=dolist,
-                                      probs=probs,
-                                      metrics=metrics,
-                                      plots=plots,
-                                      summary=summary,
-                                      ibs=ibs,
-                                      ipa = ipa,
-                                      ROC=ROC,
-                                      MC=Weights$IC,
-                                      IC.data=Weights$IC.data,
-                                      breaks=NULL,
-                                      cutpoints=cutpoints)
+        noSplit <- computePerformance(DT=DT,N=N,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=se.fit,conservative=conservative,cens.model=cens.model,keep.residuals=keep.residuals,keep.vcov=keep.vcov,keep.iid=keep.iid,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ipa = ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=NULL,cutpoints=cutpoints)
         if (verbose>2) message("computed apparent performance")
     }
     # }}}
-    # {{{ Crossvalidation
-    # {{{ bootstrap re-fitting and k-fold-CV
-
+    # {{{ bootcv, loob and k-fold-CV
     if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
@@ -1033,9 +982,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                 trainseeds <- sample(1:1000000,size=B,replace=FALSE)
             }
         }
-        ## if (parallel=="snow")
-        ## exports <- c("data","split.method","Weights","N","trainseeds")
-        ## else
         exports <- NULL
         verbose <- as.numeric(verbose[[1]])
         if (verbose >= 0){
@@ -1054,7 +1000,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             progress.bar <- NULL
         }
         `%dopar%` <- foreach::`%dopar%`
-        ## k-fold-CV
+        ## k-fold-CV get predicted risks
         if (split.method$internal.name == "crossval"){
             DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
                 ## repetitions of k-fold to avoid Monte-Carlo error
@@ -1080,29 +1026,13 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                     }
                     ## predicted risks of model trained without this fold
                     ## evaluated and added to this fold
-                    DT.fold <- getPerformanceData(testdata=testdata,
-                                                  testweights=testweights,
-                                                  traindata=traindata,
-                                                  trainseed=trainseeds[[(b-1)*split.method$k+fold]],
-                                                  response.type=response.type,
-                                                  times=times,
-                                                  cause=cause,
-                                                  neworder=NULL,
-                                                  levs=mlevs,
-                                                  labels=mlabels,
-                                                  predictRisk.args=predictRisk.args,
-                                                  nullobject=nullobject,
-                                                  cens.type=cens.type,
-                                                  object=object,
-                                                  object.classes=object.classes,
-                                                  NT=NT,
-                                                  verbose = ifelse(b == 1,verbose,-1))
+                    DT.fold <- getPerformanceData(testdata=testdata,testweights=testweights,traindata=traindata,trainseed=trainseeds[[(b-1)*split.method$k+fold]],response.type=response.type,times=times,cause=cause,neworder=NULL,levs=mlevs,labels=mlabels,predictRisk.args=predictRisk.args,nullobject=nullobject,cens.type=cens.type,object=object,object.classes=object.classes,NT=NT,verbose = ifelse(b == 1,verbose,-1))
                     return(DT.fold)
                 }))
                 DT.b[,b:=b]
                 DT.b[]
             }
-        }else{# either LeaveOneOutBoot or BootCv
+        }else{# either LeaveOneOutBoot or BootCv  get predicted risks
             DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
                 if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 ## DT.B <- rbindlist(lapply(1:B,function(b){
@@ -1120,23 +1050,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                 } else {
                     testweights <- NULL
                 }
-                DT.b <- getPerformanceData(testdata=testdata,
-                                           testweights=testweights,
-                                           traindata=traindata,
-                                           trainseed=trainseeds[[b]],
-                                           response.type=response.type,
-                                           times=times,
-                                           cause=cause,
-                                           neworder=NULL,
-                                           levs=mlevs,
-                                           labels=mlabels,
-                                           predictRisk.args=predictRisk.args,
-                                           nullobject=nullobject,
-                                           cens.type=cens.type,
-                                           object=object,
-                                           object.classes=object.classes,
-                                           NT=NT,
-                                           verbose = ifelse(b == 1,verbose,-1))
+                DT.b <- getPerformanceData(testdata=testdata,testweights=testweights,traindata=traindata,trainseed=trainseeds[[b]],response.type=response.type,times=times,cause=cause,neworder=NULL,levs=mlevs,labels=mlabels,predictRisk.args=predictRisk.args,nullobject=nullobject,cens.type=cens.type,object=object,object.classes=object.classes,NT=NT,verbose = ifelse(b == 1,verbose,-1))
                 DT.b[,b:=b]
                 DT.b[]
             }
@@ -1171,287 +1085,158 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         }
         if (verbose>2) message("setup data for cross-validation performance")
         # }}}
-        # {{{ Leave-one-out bootstrap
-        ## start clause split.method$name=="LeaveOneOutBoot
+        # {{{ Leave-one-out bootstrap performance calculation
         if (split.method$internal.name =="crossval" && B == 1){
-            crossvalPerf <- computePerformance(DT=DT.B,
-                                               N=N,
-                                               NT=NT,
-                                               NF=NF,
-                                               models=list(levels=mlevs,labels=mlabels),
-                                               response.type=response.type,
-                                               times=times,
-                                               jack=jack,
-                                               cens.type=cens.type,
-                                               cause=cause,
-                                               states=states,
-                                               alpha=alpha,
-                                               se.fit=se.fit,
-                                               conservative=conservative,
-                                               cens.model=cens.model,
-                                               keep.residuals=FALSE,
-                                               keep.vcov=FALSE,
-                                               keep.iid = FALSE,
-                                               dolist=dolist,
-                                               probs=probs,
-                                               metrics=metrics,
-                                               plots=plots,
-                                               summary=summary,
-                                               ibs=ibs,
-                                               ipa=ipa,
-                                               ROC=ROC,
-                                               MC=Weights$IC,
-                                               IC.data=Weights$IC.data,
-                                               breaks=NULL)
-        }
-        else if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
-            if (verbose>1) message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",
-                                          NROW(DT.B),
-                                          " rows.",
-                                          ifelse(NROW(DT.B)>1000000,
-                                                 " This may take a while ...",
-                                                 " This should be fast ...")))
-            crossvalPerf <- lapply(metrics, function(m){
-                # either crossvalPerf.loob.AUC or crossvalPerf.loob.Brier
-                cvploob = paste0("crossvalPerf.loob.",m)
-                do.call(cvploob,list(times = times,
-                                     mlevs = mlevs,
-                                     se.fit = se.fit,
-                                     NT = NT,
-                                     response.type = response.type,
-                                     response.names = response.names,
-                                     cens.type = cens.type,
-                                     Weights = Weights,
-                                     N = N,
-                                     B = B,
-                                     DT.B = DT.B,
-                                     dolist = dolist,
-                                     alpha = alpha,
-                                     byvars = byvars,
-                                     mlabels = mlabels,
-                                     ipa = ipa,
-                                     ibs = ibs,
-                                     keep.residuals = keep.residuals,
-                                     conservative = conservative,
-                                     cens.model = cens.model,
-                                     cause = cause))
-            })
-            names(crossvalPerf) <- metrics
-            if ((verbose > 0)){
-                if (("Brier" %in% metrics) && (attr(crossvalPerf[["Brier"]],"n_subjects_never_oob")>0)){
-                    warning("Of ",
-                            N,
-                            " subjects ",
-                            attr(crossvalPerf[["Brier"]],"n_subjects_never_oob"),
-                            " are never out of bag.\n",
-                            ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"),
-                            "To fix this, you have to increase the number of bootstrap replications (argument 'B').")
-                }else{
-                    if (("AUC" %in% metrics) && (attr(crossvalPerf[["AUC"]],"subjects_never_oob")>0)){
-                        warning("Some pairs of subjects are never out of bag at the same time.\n",
-                                ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"),
-                                "To fix this, you could increase the number of bootstrap replications (argument 'B').")
+            crossvalPerf <- computePerformance(DT=DT.B,N=N,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=se.fit,conservative=conservative,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid = FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=NULL)
+        } else {
+            if (split.method$internal.name %in% c("LeaveOneOutBoot","crossval")){
+                if (verbose>1) message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",NROW(DT.B)," rows.",ifelse(NROW(DT.B)>1000000," This may take a while ..."," This should be fast ...")))
+                crossvalPerf <- lapply(metrics, function(m){
+                    # either crossvalPerf.loob.AUC or crossvalPerf.loob.Brier
+                    cvploob = paste0("crossvalPerf.loob.",m)
+                    do.call(cvploob,list(times = times,se.fit = se.fit,NT = NT,response.type = response.type,response.names = response.names,cens.type = cens.type,Weights = Weights,N = N,B = B,DT.B = DT.B,dolist = dolist,alpha = alpha,byvars = byvars,mlabels = mlabels,ipa = ipa,ibs = ibs,keep.residuals = keep.residuals,conservative = conservative,cens.model = cens.model,cause = cause))
+                })
+                names(crossvalPerf) <- metrics
+                ## FIXME: extracting IPA table 
+                if (ipa){
+                    crossvalPerf$IPA <- crossvalPerf$Brier$IPA
+                    crossvalPerf$Brier$IPA <- NULL
+                }
+                if ((verbose > 0)){
+                    if (("Brier" %in% metrics) && (attr(crossvalPerf[["Brier"]],"n_subjects_never_oob")>0)){
+                        warning("Of ",N," subjects ",attr(crossvalPerf[["Brier"]],"n_subjects_never_oob")," are never out of bag.\n",ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"),"To fix this, you have to increase the number of bootstrap replications (argument 'B').")
+                    }else{
+                        if (("AUC" %in% metrics) && (attr(crossvalPerf[["AUC"]],"subjects_never_oob")>0)){
+                            warning("Some pairs of subjects are never out of bag at the same time.\n", ifelse((response.type == "binary"||conservative == TRUE),"","Due to this, argument 'conservative' was changed from FALSE to TRUE.\n"), "To fix this, you could increase the number of bootstrap replications (argument 'B').")
+                        }
                     }
-
                 }
-            }
-            names(crossvalPerf) <- metrics
-            ## copy paste from bootcv; same method to calculate ROC
-            if (ROC){
-                ## implement ROC here
-                if (parallel=="snow") exports <- c("DT.B","N.b","cens.model") else exports <- NULL
-                if (!is.null(progress.bar)){
-                    if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-                    pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
-                    if (verbose>1) message(paste0("Calculating the ROC curve in ",B," validation data sets"))
-                }
-                crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
-                    DT.b <- DT.B[b==j]
-                    N.b <- length(unique(DT.b[["riskRegression_ID"]]))
-                    if(!is.null(progress.bar)){
-                        setTxtProgressBar(pb1, j)
+                ## copy paste from bootcv; same method to calculate ROC
+                if (ROC){
+                    ## implement ROC here
+                    if (parallel=="snow") exports <- c("DT.B","N.b","cens.model") else exports <- NULL
+                    if (!is.null(progress.bar)){
+                        if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
+                        pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
+                        if (verbose>1) message(paste0("Calculating the ROC curve in ",B," validation data sets"))
                     }
-                    computePerformance(DT=DT.b,
-                                       N=N.b,
-                                       NT=NT,
-                                       NF=NF,
-                                       models=list(levels=mlevs,labels=mlabels),
-                                       response.type=response.type,
-                                       times=times,
-                                       jack=jack,
-                                       cens.type=cens.type,
-                                       cause=cause,
-                                       states=states,
-                                       alpha=alpha,
-                                       se.fit=FALSE,
-                                       conservative=TRUE,
-                                       cens.model=cens.model,
-                                       keep.residuals=FALSE,
-                                       keep.vcov=FALSE,
-                                       keep.iid =FALSE,
-                                       dolist=dolist,
-                                       probs=probs,
-                                       metrics="AUC",
-                                       plots=plots,
-                                       summary=summary,
-                                       ibs=ibs,
-                                       ipa=ipa,
-                                       ROC=ROC,
-                                       MC=Weights$IC,
-                                       IC.data=Weights$IC.data, 
-                                       breaks=breaks)
-                }
-                cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
-                TPR=FPR=NULL
-                fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
+                    crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
+                        DT.b <- DT.B[b==j]
+                        N.b <- length(unique(DT.b[["riskRegression_ID"]]))
+                        if(!is.null(progress.bar)){
+                            setTxtProgressBar(pb1, j)
+                        }
+                        computePerformance(DT=DT.b,N=N.b,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=FALSE,conservative=TRUE,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid =FALSE,dolist=dolist,probs=probs,metrics="AUC",plots=plots,summary=summary,ibs=ibs,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=breaks)
+                    }
+                    cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
+                    TPR=FPR=NULL
+                    fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
+                        if (roc.method == "vertical"){
+                            temp <- stats::approx(x=FPR,y=TPR,xout=roc.grid,ties=median,yleft=0,yright=1)$y
+                            list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
+                        } else {
+                            temp <- stats::approx(x=TPR,y=FPR,xout=roc.grid,ties=median,yleft=0, #have to consider if yleft and yright have to be modified.
+                                                  yright=1)$y
+                            data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
+                        }
+                    }
+                    rocbyvars <- "model"
+                    if (response.type != "binary"){
+                        rocbyvars <- c(byvars,"times")
+                    }
+                    cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=rocbyvars])
                     if (roc.method == "vertical"){
-                        temp <- stats::approx(x=FPR,
-                                              y=TPR,
-                                              xout=roc.grid,
-                                              ties=median,
-                                              yleft=0,
-                                              yright=1)$y
-                        list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
+                        byvars <- c(byvars,"FPR")
+                    }else{
+                        byvars <- c(byvars,"TPR")
                     }
-                    else {
-                        temp <- stats::approx(x=TPR,
-                                              y=FPR,
-                                              xout=roc.grid,
-                                              ties=median,
-                                              yleft=0, #have to consider if yleft and yright have to be modified.
-                                              yright=1)$y
-                        data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
+                    cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=rocbyvars]
+                    setorder(cumROC, cols = "TPR")
+                    ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
+                    class(ROC.res) <- "scoreROC"
+                    crossvalPerf[["ROC"]] <- ROC.res
+                }
+            } else {
+                if (split.method$name=="BootCv"){
+                    # {{{ bootcv
+                    ## implement ROC here
+                    if (parallel=="snow") exports <- c("DT.B","N.b","cens.model") else exports <- NULL
+                    if (!is.null(progress.bar)){
+                        if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
+                        pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
+                        if (verbose>1) message(paste0("Calculating the performance metrics in ",B," validation data sets"))
+                    }
+                    if (!("ROC" %in% plots)){
+                        breaks <- NULL
+                    }
+                    crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
+                        DT.b <- DT.B[b==j]
+                        N.b <- length(unique(DT.b[["riskRegression_ID"]]))
+                        if(!is.null(progress.bar)){
+                            setTxtProgressBar(pb1, j)
+                        }
+                        computePerformance(DT=DT.b,N=N.b,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=FALSE,conservative=TRUE,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid = FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=breaks)
+                    }
+                    if (!is.null(progress.bar)){
+                        cat("\n")
+                    }
+                    crossvalPerf <- lapply(metrics,function(m) {
+                        crossvalPerf.bootcv(m,crossval,se.fit,keep.cv,byvars,alpha)
+                    })
+                    names(crossvalPerf) <- metrics
+                    if ("ROC" %in% plots){
+                        cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
+                        TPR=FPR=NULL
+                        fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
+                            if (roc.method == "vertical"){
+                                temp <- stats::approx(x=FPR,
+                                                      y=TPR,
+                                                      xout=roc.grid,
+                                                      ties=median,
+                                                      yleft=0,
+                                                      yright=1)$y
+                                list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
+                            }
+                            else {
+                                temp <- stats::approx(x=TPR,
+                                                      y=FPR,
+                                                      xout=roc.grid,
+                                                      ties=median,
+                                                      yleft=0, #have to consider if yleft and yright have to be modified.
+                                                      yright=1)$y
+                                data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
+                            }
+                        }
+                        if (response.type == "binary"){
+                            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model)])
+                            if (roc.method == "vertical"){
+                                cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
+                            }
+                            else {
+                                cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,TPR)]
+                            }
+                        }
+                        else {
+                            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model,times)])
+                            if (roc.method == "vertical"){
+                                cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
+                            }
+                            else {
+                                cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,TPR)]
+                            }
+                        }
+                        setorder(cumROC, cols = "TPR")
+                        ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
+                        class(ROC.res) <- "scoreROC"
+                        crossvalPerf[["ROC"]] <- ROC.res
+                    }
+                    if (ipa==TRUE){
+                        if (response.type=="binary")
+                            crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]][]
+                        else
+                            crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times][]
                     }
                 }
-                if (response.type == "binary"){
-                    cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model)])
-                    if (roc.method == "vertical"){
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
-                    }
-                    else {
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,TPR)]
-                    }
-                }
-                else {
-                    cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model,times)])
-                    if (roc.method == "vertical"){
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
-                    }
-                    else {
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,TPR)]
-                    }
-                }
-                setorder(cumROC, cols = "TPR")
-                ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
-                class(ROC.res) <- "scoreROC"
-                crossvalPerf[["ROC"]] <- ROC.res
-            }
-        }
-        else if (split.method$name=="BootCv"){
-            # {{{ bootcv
-            ## implement ROC here
-            if (parallel=="snow") exports <- c("DT.B","N.b","cens.model") else exports <- NULL
-            if (!is.null(progress.bar)){
-                if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-                pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
-                if (verbose>1) message(paste0("Calculating the performance metrics in ",B," validation data sets"))
-            }
-            if (!("ROC" %in% plots)){
-                breaks <- NULL
-            }
-            crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
-                DT.b <- DT.B[b==j]
-                N.b <- length(unique(DT.b[["riskRegression_ID"]]))
-                if(!is.null(progress.bar)){
-                    setTxtProgressBar(pb1, j)
-                }
-                computePerformance(DT=DT.b,
-                                   N=N.b,
-                                   NT=NT,
-                                   NF=NF,
-                                   models=list(levels=mlevs,labels=mlabels),
-                                   response.type=response.type,
-                                   times=times,
-                                   jack=jack,
-                                   cens.type=cens.type,
-                                   cause=cause,
-                                   states=states,
-                                   alpha=alpha,
-                                   se.fit=FALSE,
-                                   conservative=TRUE,
-                                   cens.model=cens.model,
-                                   keep.residuals=FALSE,
-                                   keep.vcov=FALSE,
-                                   keep.iid = FALSE,
-                                   dolist=dolist,
-                                   probs=probs,
-                                   metrics=metrics,
-                                   plots=plots,
-                                   summary=summary,
-                                   ibs=ibs,
-                                   ipa=ipa,
-                                   ROC=ROC,
-                                   MC=Weights$IC,
-                                   IC.data=Weights$IC.data, 
-                                   breaks=breaks)
-            }
-            if (!is.null(progress.bar)){
-                cat("\n")
-            }
-            crossvalPerf <- lapply(metrics,function(m) crossvalPerf.bootcv(m,crossval,se.fit,keep.cv,byvars,alpha))
-            names(crossvalPerf) <- metrics
-        
-            if ("ROC" %in% plots){
-                cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
-                TPR=FPR=NULL
-                fancy.fun <- function(risk,TPR,FPR,roc.method,roc.grid){
-                    if (roc.method == "vertical"){
-                        temp <- stats::approx(x=FPR,
-                                              y=TPR,
-                                              xout=roc.grid,
-                                              ties=median,
-                                              yleft=0,
-                                              yright=1)$y
-                        list(risk = rep(NA,length(roc.grid)),TPR=temp, FPR=roc.grid)
-                    }
-                    else {
-                        temp <- stats::approx(x=TPR,
-                                              y=FPR,
-                                              xout=roc.grid,
-                                              ties=median,
-                                              yleft=0, #have to consider if yleft and yright have to be modified.
-                                              yright=1)$y
-                        data.table(risk = rep(NA,length(roc.grid)),TPR=roc.grid, FPR=temp)
-                    }
-                }
-                if (response.type == "binary"){
-                    cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model)])
-                    if (roc.method == "vertical"){
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
-                    }
-                    else {
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,TPR)]
-                    }
-                }
-                else {
-                    cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,roc.method=roc.method,roc.grid=roc.grid),by=list(model,times)])
-                    if (roc.method == "vertical"){
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
-                    }
-                    else {
-                        cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,TPR)]
-                    }
-                }
-                setorder(cumROC, cols = "TPR")
-                ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
-                class(ROC.res) <- "scoreROC"
-                crossvalPerf[["ROC"]] <- ROC.res
-            }
-            if (ipa==TRUE){
-                if (response.type=="binary")
-                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]][]
-                else
-                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times][]
             }
         }
         # }}}
@@ -1462,7 +1247,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                   list(risk=mean(risk),
                        sd.risk=sd(risk),
                        oob=.N))},.SDcols=c(response.names,"risk"),by=c(byvars,"riskRegression_ID")]
-            crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)][]
             setcolorder(crossvalPerf[["risks"]]$score,c("riskRegression_ID",byvars,response.names,"risk","sd.risk"))
         }
         # }}}
@@ -1478,7 +1262,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                            oob=.N))},.SDcols=c(response.names,"risk"),by=c(byvars,"riskRegression_ID")]
                 setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("riskRegression_ID",byvars,response.names,"risk"))
             }
-            crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)][]
             if (keep.residuals[[1]]==FALSE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf$Brier$Residuals <- NULL
             }
@@ -1488,12 +1271,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         # }}}
     }
     # }}}
-    # {{{ the output object
+    # {{{ ---------------------------- # }}}
+    # {{{ Postamble
+    # {{{ ---------------------------- # }}}
     if (split.method$internal.name=="noplan"){
-        if (keep.residuals==TRUE){
-            if("Brier" %in% metrics)
-                noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)][]
-        }
         output <- noSplit
     } else{
         output <- crossvalPerf
@@ -1501,9 +1282,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     models <- mlevs
     names(models) <- mlabels
     # label models in Sens, Spec, PPV, NPV 
-    if (length(output$AUC)>0 && length(output$AUC$cutpoints)>0){
-        output$AUC$cutpoints[,model:=factor(model,levels=mlevs,mlabels)][]
-    }
     if (keep.vcov){
         lab.models <- mlabels
         if (null.model){
@@ -1550,14 +1328,9 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                             missing.predictions=missing.predictions,
                             off.predictions=off.predictions,
                             call=theCall))
-    # remove null model from AUC
-    # if (!is.null(output$AUC) && null.model){
-    #   output$AUC$score <- output$AUC$score[model!="Null model"]
-    #   output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
-    # }
     if(ipa && !(is.null(output[["IPA"]]))){ #IPA removed earlier from summary statistics. Add back.
-     summary <- c(summary,"IPA")
-     output$summary <- summary
+        summary <- c(summary,"IPA")
+        output$summary <- summary
     }
     for (p in c(plots)){
         output[[p]]$plotmethod <- p

@@ -4,7 +4,7 @@
 \alias{Hal9001}
 \title{Fitting HAL for use with predictRisk}
 \usage{
-Hal9001(formula, data, lambda = NULL, ...)
+Hal9001(formula, data, lambda = NULL, family, ...)
 }
 \arguments{
 \item{formula}{A formula.}
@@ -12,6 +12,8 @@ Hal9001(formula, data, lambda = NULL, ...)
 \item{data}{The data on which to fit the model.}
 
 \item{lambda}{The tuning parameters for HAL. If set to NULL, then it the parameters are chosen for you.}
+
+\item{family}{Can be one of \code{c("binomial","normal")}. If any other value is translated into event history analysis.}
 
 \item{\dots}{Additional arguments that are passed on to the hal_fit.}
 }

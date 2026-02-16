@@ -30,7 +30,7 @@
 #' test <- sampleData(5,outcome="survival")
 #'
 #' # penalized logistic regression
-#' g <- GLMnet(X2~X1+X8,data=d)
+#' g <- GLMnet(X2~X1+X8,data=d,family="binomial")
 #' predictRisk(g,newdata=test)
 #' \dontrun{
 #' g1 <- GLMnet(X2~X1+X8,data=d,lambda=0,gamma=0.5)

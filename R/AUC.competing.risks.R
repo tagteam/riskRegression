@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Mar 26 2025 (11:03) 
+## Last-Updated: feb  6 2026 (12:12) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 53
+##     Update #: 54
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -36,7 +36,7 @@ AUC.competing.risks <- function(DT,
                                 ...){
     riskRegression_ID=model=times=risk=Cases=riskRegression_time=riskRegression_status=riskRegression_event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     output = NULL
-    aucDT <- DT[model>0]
+    aucDT <- DT[model != "Null model"]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     ## assign Weights before ordering
     aucDT[,ipcwControls1:=1/(Wt*N)]

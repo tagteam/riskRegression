@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 28 2025 (09:31) 
 ## Version: 
-## Last-Updated: May 14 2025 (17:10) 
+## Last-Updated: feb 14 2026 (08:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 13
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,8 +27,8 @@ test_that("unpenalized Cox models",{
              alpha = 0)
     expect_equal(as.numeric(coef(a$models[[1]])),as.numeric(b$models[[1]]$selected.beta),tolerance = 0.001)
     expect_true(all(abs(as.numeric(u$models[[1]]$selected.beta))<abs(as.numeric(b$models[[1]]$selected.beta))))
-    x
 })
+
 test_that("penalized Cox models",{
     set.seed(17)
     d <- sampleData(100)
@@ -49,7 +49,7 @@ test_that("penalized Cox models",{
               data = test,
               summary = "risk",
               times = 3)
-    predictRisk(l,newdata = test,times = 3)
+    riskRegression::predictRisk(l,newdata = test,times = 3)
     ## plotRisk(x,times = 3)
     ## plotRisk(x,times = 3,models = c("lasso","elnet"))
     x

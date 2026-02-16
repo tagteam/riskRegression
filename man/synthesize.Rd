@@ -73,7 +73,7 @@ library(lava)
 data(pbc)
 pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
 pbc$logbili <- log(pbc$bili)
-v_synt <- synthesize(object=Hist(time,status)~sex+age+logbili,data=pbc)
+v_synt <- synthesize(object=Hist(time,status)~logbili+age+sex,data=pbc)
 set.seed(8)
 d <- simsynth(v_synt,38)
 fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
@@ -83,7 +83,7 @@ cbind(coef(fit_sim),coef(fit_real))
 
 # return the simulation code instead of the object 
 synthesize(object=Hist(time,status)~logbili+age+sex,data=pbc,return_code=TRUE)
-# recursive
+# option recursive creates a structural equation model
 synthesize(object=Hist(time,status)~logbili+age+sex,
              data=pbc,
       return_code=TRUE,

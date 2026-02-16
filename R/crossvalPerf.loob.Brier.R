@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun  4 2024 (09:16) 
 ## Version: 
-## Last-Updated: Jun 13 2024 (09:45) 
+## Last-Updated: feb 14 2026 (07:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 56
+##     Update #: 70
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,7 +15,6 @@
 ## 
 ### Code:
 crossvalPerf.loob.Brier <- function(times,
-                                    mlevs,
                                     se.fit,
                                     NT,
                                     response.type,
@@ -124,6 +123,15 @@ crossvalPerf.loob.Brier <- function(times,
         score.loob <- DT.B[,list(Brier=sum(residuals)/N), by=byvars]
     }
     if (ipa==TRUE){
+        if (se.fit == TRUE){
+            ipa_vars <- c("riskRegression_ID",byvars,"IF.Brier")
+        }else{
+            ipa_vars <- c("riskRegression_ID",byvars)
+        }
+        IPA <- IPACompute(brier.results = list(score = score.loob,iid.decomp = DT.B[,ipa_vars,with = FALSE]),
+                          response.type = response.type,
+                          se.fit = se.fit,
+                          alpha = alpha)
         if (response.type=="binary")
             score.loob[,IPA:=1-Brier/Brier[model==0]]
         else
@@ -159,39 +167,12 @@ crossvalPerf.loob.Brier <- function(times,
     }
     
     data.table::setkeyv(score.loob,byvars)
-    ## data.table::setkey(DT.B,model,times)
-    ## DT.B <- DT.B[score.loob]
     if (length(dolist)>0L){
-        if (se.fit==FALSE){
-            if (match("times",byvars,nomatch=0))
-                contrasts.Brier <- DT.B[,getComparisons(data.table(x=Brier,model=model),
-                                                        NF=NF,
-                                                        N=N,
-                                                        alpha=alpha,
-                                                        dolist=dolist,
-                                                        se.fit=FALSE),by=list(times)]
-            else
-                contrasts.Brier <- DT.B[,getComparisons(data.table(x=Brier,model=model),
-                                                        NF=NF,
-                                                        N=N,
-                                                        alpha=alpha,
-                                                        dolist=dolist,
-                                                        se.fit=FALSE)]
-        } else{
-            if (match("times",byvars,nomatch=0))
-                contrasts.Brier <- DT.B[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
-                                                        NF=NF,
-                                                        N=N,
-                                                        alpha=alpha,
-                                                        dolist=dolist,
-                                                        se.fit=TRUE),by=list(times)]
-            else
-                contrasts.Brier <- DT.B[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
-                                                        NF=NF,
-                                                        N=N,
-                                                        alpha=alpha,
-                                                        dolist=dolist,
-                                                        se.fit=TRUE)]
+        if ("times"%in% byvars){by_statement <- "times"} else{by_statement <- NULL}
+        if (se.fit){
+            contrasts.Brier <- DT.B[,getComparisons(data.table(x=Brier,model=model,IF = IF.Brier),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=TRUE),by=by_statement]
+        }else{
+            contrasts.Brier <- DT.B[,getComparisons(data.table(x=Brier,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=FALSE),by=by_statement]
         }
         setnames(contrasts.Brier,"delta","delta.Brier")
         output <- list(score=score.loob,contrasts=contrasts.Brier)
@@ -199,7 +180,6 @@ crossvalPerf.loob.Brier <- function(times,
         output <- list(score=score.loob)
     }
     if (keep.residuals) {
-        DT.B[,model:=factor(model,levels=mlevs,mlabels)]
         if (all(c("Wt","WTi")%in%names(DT.B))){
             DT.B[,IPCW:=1/WTi]
             DT.B[riskRegression_time>=times,IPCW:=1/Wt]
@@ -210,14 +190,14 @@ crossvalPerf.loob.Brier <- function(times,
         }
     }
     if (!is.null(output$score)){
-        output$score[,model:=factor(model,levels=mlevs,mlabels)]
         data.table::setkeyv(output$score,byvars)
     }
     ## set model and reference in model comparison results
     if (!is.null(output$contrasts)>0){
-        output$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-        output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
         data.table::setkeyv(output$score,byvars)
+    }
+    if (ipa==TRUE){
+        output[["IPA"]] <- IPA
     }
     attr(output,"n_subjects_never_oob") = never.oob
     return(output)

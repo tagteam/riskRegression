@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun 17 2024 (11:59) 
 ## Version: 
-## Last-Updated: Jul  2 2024 (11:51) 
+## Last-Updated: feb  6 2026 (12:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 15
+##     Update #: 16
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,7 @@ test_that("Missing values in data", {
 test_that("R squared/IPA", { 
     r1 <- rsquared(f1,newdata=d)
     r2 <- IPA(f2,newdata=d)
-    full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+    full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC",keep = "residuals")
     expect_equal(ignore_attr=TRUE,r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
     expect_equal(ignore_attr=TRUE,r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })

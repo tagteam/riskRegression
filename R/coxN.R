@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:34) 
 ## Version: 
-## Last-Updated: May  8 2025 (14:14) 
+## Last-Updated: feb 16 2026 (09:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -46,6 +46,7 @@ coxN.cph <- function(object){
 coxN.coxph <- function(object){
   return(object$n)
 }
+
 
 ## ** coxN.phreg
 #' @rdname coxN

@@ -13,7 +13,7 @@ for(i in 1:m){
   learndat <- sampleData(n,outcome="binary")
   testdat <- sampleData(n,outcome="binary")
   lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
-  x=Score(list("LR(X1+X2+X7+X9)"=lr1),formula=Y~1,data=testdat, summary = "ipa")
+  x=Score(list("LR(X1+X2+X7+X9)"=lr1),formula=Y~1,data=testdat, summary = "ipa",metrics = c("brier","auc"))
   
   IPAest[i] <- x$IPA$score[[2,"IPA"]]
   ciL[i] <- x$IPA$score[[2,"lower"]]

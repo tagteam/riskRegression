@@ -382,7 +382,6 @@ predict.CauseSpecificCox <- function(object,
             attr(eventTimes,"etimes.max") <- apply(do.call(rbind,ls.lastEventTime),2,max)
         }
     }
-
     for(iterC in 1:nModel){ ## iterC <- 1
         ## when surv.type = "hazard" and iterC corresponds to the cause and no se/iid
         ## we could only compute cumhazard (i.e. not compute hazard).
@@ -437,7 +436,6 @@ predict.CauseSpecificCox <- function(object,
                                  productLimit = product.limit>0,
                                  diag = diag,
                                  exportSurv = (se || band || iid || average.iid))
-
     }else if(type == "survival" && object$surv.type=="hazard"){
         
         if(!is.null(outCompress)){

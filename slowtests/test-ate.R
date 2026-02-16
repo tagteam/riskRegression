@@ -2,10 +2,10 @@
 ## (the calculation of the iid was stopped on jump to early when using tau.max)
 library(testthat)
 library(data.table)
+library(mets)
 library(riskRegression)
 library(survival)
 library(rms)
-library(mets)
 verbose <- FALSE
 calcIterm <- function(factor, iid, indexJump, iid.outsideI){
     n <- length(indexJump)

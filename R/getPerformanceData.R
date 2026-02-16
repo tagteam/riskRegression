@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Jun  7 2024 (08:29) 
+## Last-Updated: feb  6 2026 (13:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 77
+##     Update #: 80
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -96,12 +96,12 @@ getPerformanceData <- function(testdata,
             }
         }
         if (response.type%in%c("survival","competing.risks")){
-            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
+            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=factor(f,levels=levs,labels = labels),risk=p,times=rep(times,rep(N,NT)))
             byvars <- c("model","times")
             data.table::setkey(out,model,times,"riskRegression_ID")
             out
         } else {
-            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=f,risk=p)
+            out <- data.table(riskRegression_ID=testdata[["riskRegression_ID"]],model=factor(f,levels=levs,labels = labels),risk=p)
             byvars <- c("model")
             setkey(out,model,riskRegression_ID)
             out
@@ -109,7 +109,6 @@ getPerformanceData <- function(testdata,
     }))
     if (any(is.na(pred$risk))) {
         if (verbose>1){message("Table of missing values in predicted risks:")
-            pred[,model:=factor(model,levels=levs,labels)]
             if (response.type[1] == "binary"){
                 cat("\n")
                 print(pred[is.na(risk),data.table::data.table("Missing values" = .N),by = list(model)])

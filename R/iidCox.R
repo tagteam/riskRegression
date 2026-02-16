@@ -477,6 +477,7 @@ iidCox.coxph <- function(object, newdata = NULL,
 #' @export
 iidCox.cph <- iidCox.coxph
 
+
 ## * iidCox.phreg
 #' @rdname iidCox
 #' @export

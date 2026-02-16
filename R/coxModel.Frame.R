@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:33) 
 ## Version: 
-## Last-Updated: May  8 2025 (13:43) 
+## Last-Updated: feb 16 2026 (09:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,8 +98,9 @@ coxModelFrame.coxph <- function(object, center = FALSE){
     ## ** export
     first.col <- c("start","stop","status")
     data.table::setcolorder(dt, c(first.col,setdiff(names(dt),first.col)))
-    return(dt)
+    dt[]
 }
+
 
 ## ** coxModelFrame.cph
 #' @rdname coxModelFrame
