@@ -12,6 +12,8 @@ test_that("ipa cv5 survival",{
     set.seed(5)
     five <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,B = 1,split.method="cv5",summary = "ipa",se.fit=TRUE,progress.bar=NULL)
     set.seed(5)
+    fiveX2 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,B = 2,split.method="cv5",summary = "ipa",se.fit=TRUE,progress.bar=NULL)
+    set.seed(5)
     loob <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,summary = "ipa",split.method="loob",B=100,se.fit=TRUE,progress.bar=NULL,verbose = 0L)
     set.seed(5)
     loob_sans <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,summary = "ipa",split.method="loob",B=100,se.fit=FALSE,progress.bar=NULL,verbose = 0L)
