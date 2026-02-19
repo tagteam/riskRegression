@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: feb 13 2026 (15:39) 
+## last-updated: feb 19 2026 (15:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 440
+##     Update #: 452
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -195,6 +195,8 @@ plotCalibration <- function(x,
             if (missing(rug) || rug[[1]]==FALSE) showRug <- FALSE else showRug <- TRUE
         }
     pframe <- x$Calibration$plotframe
+    # remove Null model 
+    pframe <- pframe[model != "Null model"]
     if (is.null(pframe))
         stop("Object has no information for calibration plot.\nYou should call the function \"riskRegression::Score\" with plots=\"calibration\".")
     if  (x$response.type %in% c("binary", "competing.risks"))
@@ -207,7 +209,6 @@ plotCalibration <- function(x,
                         paste0(models,collapse = ", "),"."))
         }
         fitted.models <- pframe[,unique(model)]
-        fitted.models <- fitted.models[fitted.models != "Null model"]
         if (all(models%in%fitted.models)){
             pframe <- pframe[model%in%models]
         } else {
@@ -223,7 +224,6 @@ plotCalibration <- function(x,
         }
     }else{
         if (bars) {
-            models <- fitted.models[fitted.models != "Null model"][[1]]
             pframe <- pframe[model == models]
         }
     }
