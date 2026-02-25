@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds and Johan Sebastian Ohlendorff
 ## Created: Jan 11 2022 (17:04) 
 ## Version: 
-## Last-Updated: feb  6 2026 (16:04) 
+## Last-Updated: feb 25 2026 (13:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 99
+##     Update #: 100
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -111,7 +111,7 @@ AUC.binary <- function(DT,
         ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
         delongtest <-  function(risk,score,dolist,response,cause,alpha,se.fit,keep.vcov) {
             cov=lower=upper=p=AUC=se=lower=upper=NULL
-            if (keep.iid == TRUE){warning("Argument 'keep.iid' is ignored. This function does not explicitely calculate the estimated influence function for AUC with binary outcome.")}
+            # if (keep.iid == TRUE){warning("Argument 'keep.iid' is ignored. This function does not explicitely calculate the estimated influence function for AUC with binary outcome.")}
             score <- score[model != "Null model"]
             if (se.fit==1L){
                 Cases <- response == cause

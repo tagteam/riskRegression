@@ -4,7 +4,15 @@
 \alias{CSC}
 \title{Cause-specific Cox proportional hazard regression}
 \usage{
-CSC(formula, data, cause, surv.type = "hazard", fitter = "coxph", ...)
+CSC(
+  formula,
+  data,
+  cause,
+  surv.type = "hazard",
+  fitter = "coxph",
+  fitter_arguments = NULL,
+  ...
+)
 }
 \arguments{
 \item{formula}{Either a single \code{Hist} formula or a list of formulas.
@@ -25,11 +33,28 @@ regression models for all causes to predict the event free survival probabilitie
 a Cox regression model for the hazard function of the combined endpoint (all causes combined with 'or')
 to predict the event-free survival probabilities.}
 
-\item{fitter}{Character string specifying the routine to fit the Cox regression models. Available are
-\code{"coxph"} for \link[survival]{coxph}, \code{"cph"} for \link[rms]{cph},
-\code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.}
+\item{fitter}{Either a single character string specifying the routine to fit all Cox regression models,
+or a list of character strings specifying (potentially different) routines for each model fitted in the
+internal loop.
 
-\item{...}{Arguments given to the function defined by argument \code{fitter}.}
+Available routines are \code{"coxph"} for \link[survival]{coxph}, \code{"cph"} for \link[rms]{cph},
+\code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.
+
+If \code{fitter} is a list, its length must match the number of models fitted:
+\itemize{
+\item \code{surv.type="hazard"}: one model per cause
+\item \code{surv.type="survival"}: two models (cause of interest + overall survival)
+}}
+
+\item{fitter_arguments}{Optional list of per-model argument lists passed to the corresponding fitter.
+Must be either \code{NULL} (default) or a list whose length matches the number of fitted models (see
+\code{fitter}). Each element must itself be a list (named or unnamed) of arguments for the fitter used
+for that model.}
+
+\item{...}{Additional arguments passed to the fitter *for all fitted models*. These arguments are
+appended to each element of \code{fitter_arguments}, i.e., they are used to *augment* the per-model
+arguments. If the same argument name is provided both in \code{fitter_arguments[[k]]} and in \code{...},
+the value in \code{...} takes precedence.}
 }
 \value{
 \item{models }{a list with the fitted (cause-specific) Cox

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: feb 16 2026 (10:35) 
+## last-updated: feb 25 2026 (10:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 644
+##     Update #: 654
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -289,8 +289,7 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 }
             }
         }
-        ## print(sum(abs(attr(out,"average.iid")[[1]])))
-        return(out)
+         return(out)
     } else {
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
     }
@@ -606,52 +605,7 @@ predictRisk.survreg <- function(object,
 }
 
 ## NOTE: add these when mets has removed predictRisk
-if (FALSE){
-    ## * predictRisk.phreg
-    ##' @export
-    ##' @rdname predictRisk
-    ##' @method predictRisk phreg
-    predictRisk.phreg <- function(object,newdata,times=NULL,...){
-        1-predict(object,newdata,times=times,se=FALSE)$surv
-    }
 
-    ## * predictRisk.binreg
-    ##' @export
-    ##' @rdname predictRisk
-    ##' @method predictRisk binreg
-    predictRisk.binreg <- function(object,newdata,times=NULL,cause,...){
-        if (times != object$time)
-            stop(paste0("This binreg object can only predict time ",object$time))
-        if (cause != object$cause)
-            stop(paste0("This binreg object can only predict cause ",object$cause))
-        c(predict(object,newdata,se=FALSE))
-    }
-
-    ## * predictRisk.cifreg
-    ##' @export
-    ##' @rdname predictRisk
-    ##' @method predictRisk cifreg
-    predictRisk.cifreg <- function(object,newdata,times=NULL,cause,...){
-        c(predict(object = object,newdata = newdata,times = times,se=FALSE)$cif)
-    }
-
-    ## * predictRisk.cifregFG
-    ##' @export
-    ##' @rdname predictRisk
-    ##' @method predictRisk cifregFG
-    predictRisk.cifregFG <- function(object,newdata,times=NULL,cause,...){
-        c(predict(object = object,newdata = newdata,times = times,se=FALSE)$cif)
-    }
-
-    ## * predictRisk.recreg
-    ##' @export
-    ##' @rdname predictRisk
-    ##' @method predictRisk recreg
-    predictRisk.recreg <- function(object,newdata,times=NULL,cause,...){
-        c(predict(object = object,newdata = newdata,times = times,se=FALSE)$cumhaz)
-    }
-    
-}
 ## * predictRisk.coxph
 ##' @export
 ##' @rdname predictRisk
@@ -1440,46 +1394,124 @@ predictRisk.GLMnet <- function(object,
                                times,
                                product.limit = FALSE,
                                diag = FALSE,
-                               ...){
-    has_survival <- (inherits(object$fit,"coxnet")||
-                     (inherits(object$fit,"cv.glmnet") && inherits(object$fit$glmnet.fit,"coxnet")))
-    dots <- list(...)
-    type <- dots$type ## hidden argument for ate
-    if (has_survival){
-        pred <- 1-predictCox(object=object,
-                             newdata=newdata,
-                             times=times,
-                             iid = FALSE,
-                             confint = FALSE,
-                             diag = diag,
-                             average.iid = FALSE,
-                             product.limit = product.limit,
-                             type="survival")$survival
-        if(identical(type,"survival")){
-            pred <- 1-pred
-        }
-        if (NROW(pred) != NROW(newdata) || NCOL(pred) != length(times)) {
-            stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(pred), " x ", NCOL(pred), "\n\n", sep = ""))
-        }
-        pred
-    }else{
-        ff <- stats::formula(stats::delete.response(object$terms))
-        newdata <- Publish::specialFrame(formula = ff,
-                                         data = newdata,
-                                         strip.specials = c("unpenalized"),
-                                         strip.arguments = NULL,
-                                         specials = c("unpenalized"),
-                                         unspecials.design = TRUE,
-                                         specials.design = TRUE,
-                                         response = FALSE)
-        if (NCOL(newdata$unpenalized)>0){
-            newX <- cbind(newdata$design,newdata$unpenalized)
-        }else{
-            newX <- newdata$design
-        }
-        p <- predict(object$fit,newx=newX,type = "response", s=object$selected.lambda)
-        p
+                               ...) {
+
+  requireNamespace("Hmisc")
+  requireNamespace("Publish")
+
+  dots <- list(...)
+  hidden_type <- dots$type  ## used by ate etc.
+
+  has_survival <- (inherits(object$fit, "coxnet") ||
+                     (inherits(object$fit, "cv.glmnet") && inherits(object$fit$glmnet.fit, "coxnet")))
+
+  build_newX <- function(newdata) {
+    ff <- stats::formula(stats::delete.response(object$terms))
+
+    nd <- Publish::specialFrame(
+      formula = ff,
+      data = newdata,
+      strip.specials = c("unpenalized", "rcs", "pen"),
+      strip.arguments = NULL,
+      specials = c("unpenalized", "rcs", "pen"),
+      unspecials.design = TRUE,
+      specials.design = TRUE,
+      response = FALSE
+    )
+
+    ## Bring back rcs raw columns (marker rcs() should return x unchanged)
+    rcs_raw <- NULL
+    if (!is.null(nd$rcs) && NCOL(nd$rcs) > 0) {
+      rcs_raw <- nd$rcs
+      if (!is.null(object$rcs.info) && length(object$rcs.info) > 0 &&
+          NCOL(rcs_raw) == length(object$rcs.info)) {
+        colnames(rcs_raw) <- names(object$rcs.info)
+      }
     }
+
+    ## Assemble X: design + rcs_raw + unpenalized
+    X <- nd$design
+    if (!is.null(rcs_raw)) X <- cbind(X, rcs_raw)
+    if (!is.null(nd$unpenalized) && NCOL(nd$unpenalized) > 0) X <- cbind(X, nd$unpenalized)
+    X <- as.matrix(X)
+
+    ## Apply stored spline transforms
+    if (!is.null(object$rcs.info) && length(object$rcs.info)) {
+      for (v in names(object$rcs.info)) {
+        info <- object$rcs.info[[v]]
+        if (!v %in% colnames(X)) {
+          stop("predictRisk.GLMnet: spline variable '", v, "' not found in new design matrix. ",
+               "Did the formula/newdata change or is rcs() not the marker version?")
+        }
+
+        knots <- info$knots
+        if (is.null(knots) || length(knots) < 3) {
+          stop("predictRisk.GLMnet: missing/invalid knots for spline variable '", v, "'.")
+        }
+
+        b <- Hmisc::rcspline.eval(X[, v], knots = knots, inclx = TRUE)
+        b <- as.matrix(b)
+
+        ## Naming convention compatible with your GLMnet(): v, v_rcs1, v_rcs2, ...
+        colnames(b)[1] <- v
+        if (NCOL(b) > 1) colnames(b)[-1] <- paste0(v, "_rcs", seq_len(NCOL(b) - 1))
+
+        keep <- setdiff(colnames(X), v)
+        X <- cbind(X[, keep, drop = FALSE], b)
+      }
+    }
+
+    ## Align columns to training
+    train_cols <- colnames(object$x)
+    if (is.null(train_cols)) stop("predictRisk.GLMnet: object$x has no colnames; cannot align newx.")
+
+    extra_cols <- setdiff(colnames(X), train_cols)
+    if (length(extra_cols)) {
+      X <- X[, setdiff(colnames(X), extra_cols), drop = FALSE]
+    }
+
+    missing_cols <- setdiff(train_cols, colnames(X))
+    if (length(missing_cols)) {
+      Z <- matrix(0, nrow = NROW(X), ncol = length(missing_cols))
+      colnames(Z) <- missing_cols
+      X <- cbind(X, Z)
+    }
+
+    X <- X[, train_cols, drop = FALSE]
+    X
+  }
+
+  if (has_survival) {
+    ## keep existing survival pipeline
+    pred <- 1 - predictCox(
+      object = object,
+      newdata = newdata,
+      times = times,
+      iid = FALSE,
+      confint = FALSE,
+      diag = diag,
+      average.iid = FALSE,
+      product.limit = product.limit,
+      type = "survival"
+    )$survival
+
+    if (identical(hidden_type, "survival")) pred <- 1 - pred
+
+    if (NROW(pred) != NROW(newdata) || NCOL(pred) != length(times)) {
+      stop(paste(
+        "\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",
+        NROW(newdata), " x ", length(times),
+        "\nProvided prediction matrix: ", NROW(pred), " x ", NCOL(pred),
+        "\n\n", sep = ""
+      ))
+    }
+    return(pred)
+  }
+
+    ## Non-survival: predict from glmnet using newx
+    newX <- build_newX(newdata)
+    p <- as.numeric(stats::predict(object$fit, newx = newX, type = "response", s = object$selected.lambda))
+    p
 }
 
 
