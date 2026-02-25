@@ -19,17 +19,16 @@ GLMnet(
 }
 \arguments{
 \item{formula}{Formula where the left hand side specifies either a single variable (continuous, binary or categorical),
-or as a survival outcome (time, event), and the right hand side specifies the linear predictor.
-Survival outcome can either be specified via \link[survival]{Surv} or via \link[prodlim]{Hist}.
-Variables on the right hand side of the formula can be marked as \code{unpenalized}, see examples.
-#' For survival outcome, a penalized Cox regression model is fitted. For this the formula may specify variables for which the baseline hazard function should be stratified, see examples.}
+or a survival outcome (time, event), and the right hand side specifies the linear predictor.
+Survival outcome can either be specified via \link[survival]{Surv} or via \link[prodlim]{Hist}.}
 
 \item{data}{The data used to fit the model.}
 
 \item{lambda}{A hyperparameter passed to glmnet. If set to NULL, then lambda is chosen by cross-validation,
-via the function \link[glmnet]{cv.glmnet}}
+via the function \link[glmnet]{cv.glmnet}.}
 
-\item{alpha}{The elasticnet mixing parameter, with 0<=alpha<= 1. \code{alpha =1} is the lasso penalty, and \code{alpha=0} the ridge penalty.}
+\item{alpha}{The elasticnet mixing parameter, with 0<=alpha<= 1. \code{alpha =1} is the lasso penalty, and \code{alpha=0} the ridge penalty.
+If \code{alpha} is also provided via \code{...}, the value in \code{...} takes precedence.}
 
 \item{cv}{Whether to use cross-validation or not. Default is TRUE.}
 
@@ -37,46 +36,47 @@ via the function \link[glmnet]{cv.glmnet}}
 
 \item{type.measure}{Passed on to \link[glmnet]{cv.glmnet}. Loss to use for cross-validation. Default is deviance.}
 
-\item{selector}{On of \code{'min'}, \code{'1se'}, \code{'undersmooth'} where the first two are described in the help page of \link[glmnet]{cv.glmnet}
-              and the latter is the smallest lambda value where the model could fit. Default is \code{'min'}.
-When \code{'undersmooth'} is specified no cross-validation is performed.}
+\item{selector}{One of \code{'min'}, \code{'1se'}, \code{'undersmooth'} where the first two are described in the help page of \link[glmnet]{cv.glmnet}
+and the latter is the smallest lambda value where the model could fit. Default is \code{'min'}.
+When \code{'undersmooth'} is specified, no cross-validation is performed.}
 
 \item{family}{Passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}. For binary outcome the default is \code{"binomial"} and for survival \code{"cox"}.}
 
-\item{\dots}{Additional arguments that are passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.}
+\item{\dots}{Additional arguments passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.
+To avoid clashes, if \code{alpha} or \code{penalty.factor} are supplied in \code{...}, they are removed from \code{...}
+and handled explicitly. The final penalty vector used by GLMnet (after applying \code{unpenalized()},
+\code{pen()}, and any user-supplied \code{penalty.factor}) is stored as \code{penalty.factor.used}.}
 }
 \value{
-A glmnet object enhanced with the call, the terms to create the design matrix, and in the survival case
-with the Breslow estimate of the baseline hazard function.
+A GLMnet object (class \code{"GLMnet"}) containing:
+\itemize{
+  \item \code{fit}: glmnet or cv.glmnet fit
+  \item \code{x}: design matrix used for fitting
+  \item \code{y}: response used for fitting
+  \item \code{terms}: terms object with specials
+  \item \code{penalty.factor.used}: named vector aligned with \code{colnames(x)}
+  \item \code{rcs.info}: list of spline specs (knots + column mapping) for transforming new data consistently
+}
 }
 \description{
 Fit glmnet models via a formula and a data set for use with \code{\link{predictRisk}}.
+
+Supports special terms on the right-hand side:
+\itemize{
+  \item \code{unpenalized(x)}: exclude variable \code{x} from penalization.
+  \item \code{pen(x, w)}: apply a relative penalty weight \code{w} to variable \code{x}
+        (e.g., \code{pen(x,2)} more penalty; \code{pen(z,0)} unpenalized).
+  \item \code{rcs(x, ...)}: restricted cubic splines for numeric \code{x}. This is handled as a
+        *special marker* (see Details). Knots are estimated from the training data (unless specified)
+        and stored in the fitted object.
+  \item \code{strata(x)} (survival outcome only): stratified baseline hazards.
 }
-\examples{
-library(survival)
-set.seed(8)
-d <- sampleData(87,outcome="survival")
-test <- sampleData(5,outcome="survival")
-
-# penalized logistic regression
-g <- GLMnet(X2~X1+X8,data=d,family="binomial")
-predictRisk(g,newdata=test)
-\dontrun{
-g1 <- GLMnet(X2~X1+X8,data=d,lambda=0,gamma=0.5)
-g2 <- GLMnet(X2~X1+X8,data=d,relax=TRUE)
 }
-# penalized Cox regression
-
-f0 <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d,lambda=0)
-predictRisk(f0,newdata=test,times=3)
-f <- GLMnet(Surv(time,event)~X1+X2+X8+X9,data=d)
-f
-predictCox(f,newdata=test,times=5,product.limit=TRUE)
-predictRisk(f,newdata=test,times=1)
-
-f1 <- GLMnet(Surv(time,event)~X1+X2+unpenalized(X8)+X9,data=d)
-
-predictRisk(f1,newdata=test,times=1)
+\details{
+For \code{rcs()}, GLMnet treats the term as a marker and will compute the spline basis using
+\code{rms::rcspline.eval} with knots derived from the training data (or explicit knots supplied as the
+second argument). To ensure GLMnet controls the knot choice, \code{rcs()} should refer to the marker
+function \code{riskRegression::rcs} (which returns its input unchanged), not \code{rms::rcs}.
 }
 \seealso{
 \link[glmnet]{glmnet}

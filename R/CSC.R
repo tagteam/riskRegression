@@ -19,10 +19,27 @@
 #' regression models for all causes to predict the event free survival probabilities. If \code{"survival"} fit 
 #' a Cox regression model for the hazard function of the combined endpoint (all causes combined with 'or')
 #' to predict the event-free survival probabilities.
-#' @param fitter Character string specifying the routine to fit the Cox regression models. Available are
-#' \code{"coxph"} for \link[survival]{coxph}, \code{"cph"} for \link[rms]{cph},
+#' @param fitter Either a single character string specifying the routine to fit all Cox regression models,
+#' or a list of character strings specifying (potentially different) routines for each model fitted in the
+#' internal loop.
+#'
+#' Available routines are \code{"coxph"} for \link[survival]{coxph}, \code{"cph"} for \link[rms]{cph},
 #' \code{"phreg"} for \link[mets]{phreg}, and \code{"glmnet"} for \link[glmnet]{glmnet}.
-#' @param ... Arguments given to the function defined by argument \code{fitter}.
+#'
+#' If \code{fitter} is a list, its length must match the number of models fitted:
+#' \itemize{
+#' \item \code{surv.type="hazard"}: one model per cause
+#' \item \code{surv.type="survival"}: two models (cause of interest + overall survival)
+#' }
+#' @param fitter_arguments Optional list of per-model argument lists passed to the corresponding fitter.
+#' Must be either \code{NULL} (default) or a list whose length matches the number of fitted models (see
+#' \code{fitter}). Each element must itself be a list (named or unnamed) of arguments for the fitter used
+#' for that model.
+#'
+#' @param ... Additional arguments passed to the fitter *for all fitted models*. These arguments are
+#' appended to each element of \code{fitter_arguments}, i.e., they are used to *augment* the per-model
+#' arguments. If the same argument name is provided both in \code{fitter_arguments[[k]]} and in \code{...},
+#' the value in \code{...} takes precedence.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
 #' regression objects} \item{response }{the event history response }
 #' \item{eventTimes }{the sorted (unique) event times } \item{surv.type }{the
@@ -158,8 +175,19 @@ CSC <- function(formula,
                 cause,
                 surv.type="hazard",
                 fitter="coxph",
+                fitter_arguments = NULL,
                 ...){
-    fitter <- match.arg(fitter,c("coxph","cph","phreg", "glmnet"))
+    allowed_fitters <- c("coxph","cph","phreg","glmnet")
+    dots_args <- list(...)
+    fitter_is_list <- is.list(fitter)
+    if (!fitter_is_list){
+        fitter <- match.arg(fitter, allowed_fitters)
+    } else {
+        ## validate basic structure early; full length check happens after nmodels is known
+        if (!all(vapply(fitter, function(z) is.character(z) && length(z)==1, logical(1)))){
+            stop("If 'fitter' is a list, each element must be a single character string.")
+        }
+    }
     # {{{ type
     surv.type <- match.arg(surv.type,c("hazard","survival"))
     # }}}
@@ -179,11 +207,10 @@ CSC <- function(formula,
     if ("entry" %in% colnames(response))
         entry <- response[, "entry"]
     else{
-        if(fitter=="phreg"){
-            entry <- 0
-        }else{
-            entry <- NULL
-        }
+        ## phreg requires entry (start time) even if not supplied; keep old behavior
+        ## but generalize to the case where 'fitter' is a list
+        any_phreg <- if (fitter_is_list) any(vapply(fitter, identical, logical(1), "phreg")) else identical(fitter, "phreg")
+        entry <- if (any_phreg) 0 else NULL
     }
     if (any(entry>time)) stop("entry > time detected. Entry time into the study must be strictly greater than outcome time.")
     ## remove event history variables from data
@@ -229,8 +256,40 @@ CSC <- function(formula,
     if (surv.type=="hazard"){
         nmodels <- NC
     }else {
-        nmodels <- 2}
+       nmodels <- 2}
+    ## --- normalize fitter to a list of length nmodels ---
+    if (fitter_is_list){
+        if (length(fitter) != nmodels){
+            stop("If 'fitter' is a list, its length must match the number of fitted models (", nmodels, ").")
+        }
+        fitter_list <- lapply(fitter, function(z) match.arg(z, allowed_fitters))
+    } else {
+        fitter_list <- rep(list(fitter), nmodels)
+    }
+
+    ## --- normalize fitter_arguments to a list of length nmodels ---
+    if (is.null(fitter_arguments)){
+        fitter_arguments <- vector("list", nmodels)
+    } else {
+        if (!is.list(fitter_arguments)){
+            stop("'fitter_arguments' must be NULL or a list.")
+        }
+        if (length(fitter_arguments) == 1L && nmodels > 1L){
+            fitter_arguments <- rep(fitter_arguments, nmodels)
+        }
+        if (length(fitter_arguments) != nmodels){
+            stop("'fitter_arguments' must have length 1 or match the number of fitted models (", nmodels, ").")
+        }
+        fitter_arguments <- lapply(fitter_arguments, function(a){
+            if (is.null(a)) return(list())
+            if (!is.list(a)) stop("Each element of 'fitter_arguments' must be a list (or NULL).")
+            if (any("" %in% names(a))) stop("fitter_arguments must be named")
+            a
+        })
+    }
+
     CoxModels <- lapply(1:nmodels,function(x){
+        fitterX <- fitter_list[[x]]
         if (surv.type=="hazard"){
             if (x==1)
                 causeX <- theCause
@@ -279,20 +338,18 @@ CSC <- function(formula,
         ## as.character(delete.response(terms.formula(formulaX)))[[2]],
         ## sep="~"))
         args <- list(formulaXX, data = workData)
-        extra.args <- list(...)
-        if (fitter=="coxph"){
+        ## augment per-model fitter_arguments[[x]] with dots_args (dots take precedence)
+        extra.args <- c(dots_args,fitter_arguments[[x]])
+        extra.args <- extra.args[!duplicated(names(extra.args))]
+        if (fitterX=="coxph"){
             fit <- do.call("coxph",c(args,list(x=TRUE,y=TRUE),extra.args))
-        } else if(fitter=="cph") {
+        } else if (fitterX=="cph") {
             fit <- do.call("cph",c(args,list(surv=TRUE,x=TRUE,y=TRUE),extra.args))
-        } else if(fitter=="phreg") {
+        } else if (fitterX=="phreg") {
             fit <- do.call("phreg",c(args,extra.args))
-        } else if(fitter=="glmnet"){
+        } else if (fitterX=="glmnet"){
             fit <- do.call("GLMnet", c(args, extra.args))
-        } 
-        ## fit$formula <- terms(fit$formula)
-        ## fit$call$formula <- terms(formulaXX)
-        ## fit$call$formula <- fit$formula
-        ## fit$call$data <- NULL
+        }
         fit$call$formula <- formulaXX
         fit$call$data <- workData
         fit
@@ -308,7 +365,7 @@ CSC <- function(formula,
                 response=response,
                 eventTimes=eventTimes,
                 surv.type=surv.type,
-                fitter=fitter,
+                fitter=fitter_list,
                 theCause=theCause,
                 causes=c(theCause,otherCauses))
     class(out) <- "CauseSpecificCox"

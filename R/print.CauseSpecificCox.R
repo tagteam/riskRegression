@@ -14,7 +14,7 @@ print.CauseSpecificCox <- function(x,...){
             cat("\n\n----------> Cause: ",x$causes[c],"\n\n")
             xc <- x$models[[c]]
             xc$call$data <- NULL
-            if (x$fitter=="coxph")
+            if (x$fitter[[c]]=="coxph")
                 print(summary(xc),...)
             else
                 print(xc,...)
@@ -24,11 +24,14 @@ print.CauseSpecificCox <- function(x,...){
         cat("\n\n----------> Cause: ",x$theCause,"\n\n")
         x1 <- x$models[[1]]
         x1$call$data <- NULL
-        print(summary(x1),...)
+        if (x$fitter[[1]]=="coxph")
+            print(summary(x1),...)
+        else
+            print(x1,...)                    
         cat("\n\n----------> Event-free survival:\n\n")
         x2 <- x$models[[2]]
         x2$call$data <- NULL
-        if (x$fitter=="coxph")
+        if (x$fitter[[2]]=="coxph")
             print(summary(x2),...)
         else
             print(x2,...)            

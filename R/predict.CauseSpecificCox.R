@@ -202,7 +202,10 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** prepare    
     n.times <- length(times)
-    if(object$fitter=="phreg"){newdata$entry <- 0} 
+    fitter = object$fitter
+    fitter_is_list <- is.list(fitter)
+    any_phreg <- if (fitter_is_list) any(vapply(fitter, identical, logical(1), "phreg")) else identical(fitter, "phreg")
+    entry <- if (any_phreg) 0 else NULL
     new.n <- NROW(newdata)
     ## if(data.table::is.data.table(newdata)){
     ## newdata <- data.table::copy(newdata)
