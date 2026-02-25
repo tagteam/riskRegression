@@ -101,7 +101,10 @@ GLMnet <- function(formula,
     }
     glmnet_args <- list(...)
     if ("penalty.factor" %in% names(glmnet_args)){
-        penalty.factor <- glmnet_args$penalty
+        if (!is.null(response$unpenalized)){
+            stop("Cannot use unpenalized in formula together with argument penalty.factor:\nSet penalty.factor to zero for the parameters that should be unpenalized.")
+        }
+        penalty.factor <- glmnet_args$penalty.factor
         X <- response$design
     }else{
         if (!is.null(response$unpenalized)){
@@ -113,13 +116,9 @@ GLMnet <- function(formula,
         }
     }
     if (!cv){
-        fit <- glmnet::glmnet(x=X,
-                              y=Y,
-                              lambda=lambda,
-                              alpha= alpha,
-                              penalty.factor = penalty.factor,
-                              family=family,
-                              ...)
+        glmnet_args <- c(list(x=X,y=Y,lambda=lambda,alpha= alpha,penalty.factor = penalty.factor,family=family),glmnet_args)
+        glmnet_args <- glmnet_args[!duplicated(names(glmnet_args))]
+        fit <- do.call(glmnet::glmnet,glmnet_args)
         fit$call$alpha <- alpha
         fit$call$penalty.factor <- penalty.factor
         fit$call$family <- family
@@ -134,15 +133,16 @@ GLMnet <- function(formula,
         }
     } else {
         # forcing cv
-        fit <- glmnet::cv.glmnet(x=X,
-                                 y=Y,
-                                 lambda=lambda,
-                                 nfolds=nfolds,
-                                 type.measure = type.measure,
-                                 alpha=alpha,
-                                 penalty.factor = penalty.factor,
-                                 family=family,
-                                 ...)
+        glmnet_args <- c(list(x=X,
+                              y=Y,
+                              lambda=lambda,
+                              nfolds=nfolds,
+                              type.measure = type.measure,
+                              alpha= alpha,
+                              penalty.factor = penalty.factor,
+                              family=family),glmnet_args)
+        glmnet_args <- glmnet_args[!duplicated(names(glmnet_args))]
+        fit <- do.call(glmnet::cv.glmnet,glmnet_args)
         fit$call$alpha <- alpha
         fit$call$penalty.factor <- penalty.factor
         fit$call$type.measure <- type.measure
