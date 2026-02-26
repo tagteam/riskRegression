@@ -179,7 +179,7 @@ CSC <- function(formula,
                 ...){
     allowed_fitters <- c("coxph","cph","phreg","glmnet")
     dots_args <- list(...)
-    fitter_is_list <- is.list(fitter)
+    fitter_is_list <- is.list(fitter)||length(fitter)>1
     if (!fitter_is_list){
         fitter <- match.arg(fitter, allowed_fitters)
     } else {
@@ -230,6 +230,7 @@ CSC <- function(formula,
         NC <- length(causes)
     else
         NC <- 2 # cause of interest and overall survival
+    if (length(fitter)!=NC[1] && length(fitter)>1) stop("Argument fitter has wrong length. Should be a single fitter or one for each cause ",NC,".")
     if (length(formula)!=NC[1] && length(formula)>1) stop("Wrong number of formulae. Should be one for each cause ",NC,".")
     if (length(formula)==1) {
         ## warning("The same formula used for all causes")
