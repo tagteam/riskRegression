@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 28 2025 (09:31) 
 ## Version: 
-## Last-Updated: feb 26 2026 (14:34) 
+## Last-Updated: feb 26 2026 (14:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 17
+##     Update #: 18
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -62,8 +62,8 @@ test_that("Cox models with block penaly",{
     test <- sampleData(1000)
     # unpenalized
     a <- CSC(list(Hist(time,event)~unpenalized(X1)+X6+pen(X7,3)+X8,Hist(time,event)~X1+X6+X9),data=d,fitter = c("glmnet","coxph"))
-    b <- CSC(list(Hist(time,event)~X1+X6+X7+X8,Hist(time,event)~X1+X6+X9),data=d,fitter = c("glmnet","coxph"),
-             fitter_arguments = list(list(penalty.factor = ),NULL)
+    ## b <- CSC(list(Hist(time,event)~X1+X6+X7+X8,Hist(time,event)~X1+X6+X9),data=d,fitter = c("glmnet","coxph"),
+             ## fitter_arguments = list(list(penalty.factor = ),NULL)
     x = Score(list(a = a,b = b),
               formula = Hist(time,event)~1,
               data = test,
