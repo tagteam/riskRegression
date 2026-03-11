@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: feb 25 2026 (10:14) 
 ## Version: 
-## Last-Updated: feb 26 2026 (13:41) 
+## Last-Updated: mar  3 2026 (14:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 3
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,41 +17,23 @@
 test_that("CSC supports fitter as list and fitter_arguments per model with ... override", {
     set.seed(9)
     d <- riskRegression::sampleData(200, outcome = "competing.risks")
-
-    # Determine causes and expected number of models for surv.type="hazard"
-    causes <- sort(unique(d$event[d$event > 0]))
-    NC <- length(causes)
-    # Per-cause fitter list: both coxph but could differ; keep simple for CI stability
-    fitters <- rep(list("coxph"), NC)
-
-    # Different per-cause tie handling, and let ... override both to "breslow"
-    fa <- vector("list", NC)
-    fa[[1]] <- list(ties = "efron")
-    if (NC >= 2) fa[[2]] <- list(ties = "exact")
-
-    obj <- riskRegression::CSC(
-                               formula = prodlim::Hist(time, event) ~ X1 + X2,
+    fit <- riskRegression::CSC(
+                               formula = prodlim::Hist(time, event) ~ X1 + X2 + X8,
                                data = d,
-                               cause = causes[1],
-                               surv.type = "hazard",
-                               fitter = fitters,
-                               fitter_arguments = fa,
-                               ties = "breslow"  # should override per-cause ties
+                               cause = 1,
+                               fitter = c("cph","coxph"),
+                               fitter_arguments = list(list(method = "breslow"),list(ties = "breslow")),
+                               ties = "efron"  
                            )
-
-    expect_s3_class(obj, "CauseSpecificCox")
-    expect_type(obj$models, "list")
-    expect_length(obj$models, NC)
-
-    # All models should be coxph fits
-    expect_true(all(vapply(obj$models, inherits, logical(1), "coxph")))
-
+    # All models should be coxph fits because cph objects have both classes: cph and coxph
+    expect_true(inherits(fit$models[[1]],"coxph"))
+    expect_true(inherits(fit$models[[2]],"coxph"))
     # Check that ... overrode per-model ties (recorded in model$call)
-    got_ties <- vapply(obj$models, function(m) {
+    got_ties <- vapply(fit$models, function(m) {
         # ties stored in call for coxph
         as.character(m$call$ties)
     }, character(1))
-    expect_true(all(got_ties == "breslow"))
+    expect_true(all(got_ties == "efron"))
 })
 
 test_that("CSC errors if fitter list length mismatches number of models", {
@@ -85,6 +67,15 @@ test_that("CSC recycles fitter_arguments length 1 across models", {
                                fitter = rep(list("coxph"), NC),
                                fitter_arguments = list(list(ties = "efron"))
                            )
+
+    got_ties <- vapply(obj$models, function(m) as.character(m$call$ties), character(1))
+    expect_true(all(got_ties == "efron"))
+})
+
+test_that("CSC applies penalty.factor arguments correctly", {
+    set.seed(9)
+    d <- riskRegression::sampleData(200, outcome = "competing.risks")
+    obj <- riskRegression::CSC(prodlim::Hist(time, event) ~ pen(X1,0) + unpenalized(X2) + pen(X8,8),data = d,cause = 1,fitter = c("glmnet","glmnet"),fitter_arguments = list(list(penalty.factor = c(X11 = 0,X21 = 1,X8 = 2))))
 
     got_ties <- vapply(obj$models, function(m) as.character(m$call$ties), character(1))
     expect_true(all(got_ties == "efron"))

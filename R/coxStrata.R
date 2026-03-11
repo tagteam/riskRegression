@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:35) 
 ## Version: 
-## Last-Updated: feb 16 2026 (09:46) 
+## Last-Updated: mar  4 2026 (10:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 12
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,16 +78,15 @@ coxStrata.coxph <- function(object, data, sterms, strata.vars, strata.levels){
     strata <- as.factor(rep("1", n))
     
   }else{  ## strata variables
-    
-    if(is.null(data)){ ## training dataset
-      strata <- object$strata
-    }else { ## new dataset
-      strata <- prodlim::model.design(sterms,data=data,xlev=strata.levels,specialsFactor=TRUE)$strata[[1]]
-      if (any(unique(strata) %in% strata.levels == FALSE)){
-        stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
+      if(is.null(data)){ ## training dataset
+          strata <- object$strata
+      }else { ## new dataset
+          strata <- prodlim::model.design(sterms,data=data,xlev=strata.levels,specialsFactor=TRUE)$strata[[1]]
+          if (any(unique(strata) %in% strata.levels == FALSE)){
+              stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
+          }
+          strata <- factor(strata, levels = strata.levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
       }
-      strata <- factor(strata, levels = strata.levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
-    }
     
   }
   return(strata)

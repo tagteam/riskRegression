@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2026.02.25
+Version: 2026.03.11
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"), email = "tag@biostat.ku.dk"),
              person("Johan Sebastian", "Ohlendorff", role = "aut"),
              person("Paul", "Blanche", role = "ctb"),
@@ -28,7 +28,7 @@ Imports:
     mvtnorm,
     parallel,
     plotrix,
-    prodlim (>= 2025.4.28),
+    prodlim (>= 2026.3.7),
     Publish,
     ranger,
     Rcpp,

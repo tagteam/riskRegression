@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: feb 16 2026 (09:46) 
+## Last-Updated: mar 11 2026 (12:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 36
+##     Update #: 39
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -201,18 +201,25 @@ coxLP.GLMnet <- function(object, data, center = FALSE){
     } else{
         ## ff <- stats::formula(stats::delete.response(prodlim::strip.terms(object$terms,specials = c("unpenalized","strata"),arguments = NULL)))
         ff <- stats::formula(stats::delete.response(object$terms))
-        newdata <- Publish::specialFrame(formula = ff,
-                                data = data,
-                                strip.specials = c("strata","unpenalized"),
-                                strip.arguments = NULL,
-                                specials = c("strata","unpenalized"),
-                                unspecials.design = TRUE,
-                                specials.design = TRUE,
+        newdata <- prodlim::EventHistory.frame(
+                                formula = ff,
+                                check.formula = FALSE,
+                                data = newdata,
+                                unspecialsDesign = TRUE,
+                                specialsDesign = TRUE,
+                                stripSpecials = c("unpenalized", "strata", "pen", "rcs"),
+                                stripArguments=list("pen"=list("pf" = 1),"unpenalized"=NULL,"rcs"=list("nknots" = 3,"pen" = 2),"strata" = NULL),
+                                specials = c("strata", "unpenalized", "pen", "rcs"),
                                 response = FALSE)
-        if (NCOL(newdata$unpenalized)>0){
-            newX <- cbind(newdata$design,newdata$unpenalized)
-        }else{
-            newX <- newdata$design
+        newX <- cbind(newdata$design,newdata$pen,newdata$unpenalized)
+        if (!is.null(newdata$rcs)) {
+            for (v in colnames(newdata$rcs)){
+                if (!(v %in% names(object$rcs.parameters))){
+                    stop(paste0("riskRegression::predictRisk.GLMnet: cannot find knot parameters to restricted cubic spline terms of variable ",v))
+                }
+                v_X <- Hmisc::rcspline.eval(newdata$rcs[,v],knots = object$rcs.parameters[[v]],inclx = TRUE)
+                newX <- cbind(newX,v_X)
+            }
         }
         if(inherits(object$fit,"cv.glmnet")){
             return(as.numeric(predict(object$fit$glmnet.fit, s = object$selected.lambda, newx = newX)))
