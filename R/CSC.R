@@ -333,11 +333,26 @@ CSC <- function(formula,
         else {
             formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
         }
-        # previous
-        # formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
-        ## as.formula(paste(survresponse,
-        ## as.character(delete.response(terms.formula(formulaX)))[[2]],
-        ## sep="~"))
+        # test if formula contains specials that only work with certain fitters
+        specs <- attributes(terms(formulaXX,specials = c("unpenalized","penalized","pen","strata","strat","rcs","pspline","ridge","tt")))$specials
+        # can you delete NULL elements from specs?
+        specs <- specs[!sapply(specs, is.null)]
+        if (length(intersect(c("unpenalized","penalized","pen"),names(specs))>0)&&fitterX != "glmnet"){
+            stop("Formula specials 'unpenalized', penalized', and 'pen' can only be applied when fitter is 'glmnet'.")
+        }
+        if (length(intersect(c("strat","rcs","pol"),names(specs))>0)&&fitterX != "cph"){
+            if (fitterX == "glmnet") {
+                # we allow rcs for glmnet 
+                if (length(intersect(c("strat","pol"),names(specs))>0)){
+                    stop("Formula specials 'strat' and 'pol' can only be applied when fitter is 'cph'.")
+                }
+            }else{
+                stop("Formula specials 'strat', rcs', and 'pol' can only be applied when fitter is 'cph'.")
+            }
+        }
+        if (length(intersect(c("strata","pspline","ridge","tt"),names(specs))>0)&&fitterX != "coxph"){
+            stop("Formula specials 'strata' and pspline' can only be applied when fitter is 'coxph'.")
+        }
         args <- list(formulaXX, data = workData)
         ## augment per-model fitter_arguments[[x]] with dots_args (dots take precedence)
         extra.args <- c(dots_args,fitter_arguments[[x]])

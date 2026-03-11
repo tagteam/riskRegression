@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: feb 25 2026 (10:04) 
+## last-updated: mar 11 2026 (12:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 654
+##     Update #: 665
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1396,122 +1396,56 @@ predictRisk.GLMnet <- function(object,
                                diag = FALSE,
                                ...) {
 
-  requireNamespace("Hmisc")
-  requireNamespace("Publish")
-
-  dots <- list(...)
-  hidden_type <- dots$type  ## used by ate etc.
-
-  has_survival <- (inherits(object$fit, "coxnet") ||
+    dots <- list(...)
+    has_survival <- (inherits(object$fit, "coxnet") ||
                      (inherits(object$fit, "cv.glmnet") && inherits(object$fit$glmnet.fit, "coxnet")))
-
-  build_newX <- function(newdata) {
-    ff <- stats::formula(stats::delete.response(object$terms))
-
-    nd <- Publish::specialFrame(
-      formula = ff,
-      data = newdata,
-      strip.specials = c("unpenalized", "rcs", "pen"),
-      strip.arguments = NULL,
-      specials = c("unpenalized", "rcs", "pen"),
-      unspecials.design = TRUE,
-      specials.design = TRUE,
-      response = FALSE
-    )
-
-    ## Bring back rcs raw columns (marker rcs() should return x unchanged)
-    rcs_raw <- NULL
-    if (!is.null(nd$rcs) && NCOL(nd$rcs) > 0) {
-      rcs_raw <- nd$rcs
-      if (!is.null(object$rcs.info) && length(object$rcs.info) > 0 &&
-          NCOL(rcs_raw) == length(object$rcs.info)) {
-        colnames(rcs_raw) <- names(object$rcs.info)
-      }
-    }
-
-    ## Assemble X: design + rcs_raw + unpenalized
-    X <- nd$design
-    if (!is.null(rcs_raw)) X <- cbind(X, rcs_raw)
-    if (!is.null(nd$unpenalized) && NCOL(nd$unpenalized) > 0) X <- cbind(X, nd$unpenalized)
-    X <- as.matrix(X)
-
-    ## Apply stored spline transforms
-    if (!is.null(object$rcs.info) && length(object$rcs.info)) {
-      for (v in names(object$rcs.info)) {
-        info <- object$rcs.info[[v]]
-        if (!v %in% colnames(X)) {
-          stop("predictRisk.GLMnet: spline variable '", v, "' not found in new design matrix. ",
-               "Did the formula/newdata change or is rcs() not the marker version?")
+    if (has_survival) {
+        ## keep existing survival pipeline
+        pred <- 1 - predictCox(
+                        object = object,
+                        newdata = newdata,
+                        times = times,
+                        iid = FALSE,
+                        confint = FALSE,
+                        diag = diag,
+                        average.iid = FALSE,
+                        product.limit = product.limit,
+                        type = "survival"
+                    )$survival
+        if (NROW(pred) != NROW(newdata) || NCOL(pred) != length(times)) {
+            stop(paste(
+                "\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",
+                NROW(newdata), " x ", length(times),
+                "\nProvided prediction matrix: ", NROW(pred), " x ", NCOL(pred),
+                "\n\n", sep = ""
+            ))
         }
-
-        knots <- info$knots
-        if (is.null(knots) || length(knots) < 3) {
-          stop("predictRisk.GLMnet: missing/invalid knots for spline variable '", v, "'.")
+        return(pred)
+    }else{
+        ff <- stats::formula(stats::delete.response(object$terms))
+        newdata <- prodlim::EventHistory.frame(
+                                formula = ff,
+                                check.formula = FALSE,
+                                data = newdata,
+                                unspecialsDesign = TRUE,
+                                specialsDesign = TRUE,
+                                stripSpecials = c("unpenalized", "strata", "pen", "rcs"),
+                                stripArguments=list("pen"=list("pf" = 1),"unpenalized"=NULL,"rcs"=list("nknots" = 3,"pen" = 2),"strata" = NULL),
+                                specials = c("strata", "unpenalized", "pen", "rcs"),
+                                response = FALSE)
+        newX <- cbind(newdata$design,newdata$pen,newdata$unpenalized)
+        if (!is.null(newdata$rcs)) {
+            for (v in colnames(newdata$rcs)){
+                if (!(v %in% names(object$rcs.parameters))){
+                    stop(paste0("riskRegression::predictRisk.GLMnet: cannot find knot parameters to restricted cubic spline terms of variable ",v))
+                }
+                v_X <- Hmisc::rcspline.eval(newdata$rcs[,v],knots = object$rcs.parameters[[v]],inclx = TRUE)
+                newX <- cbind(newX,v_X)
+            }
         }
-
-        b <- Hmisc::rcspline.eval(X[, v], knots = knots, inclx = TRUE)
-        b <- as.matrix(b)
-
-        ## Naming convention compatible with your GLMnet(): v, v_rcs1, v_rcs2, ...
-        colnames(b)[1] <- v
-        if (NCOL(b) > 1) colnames(b)[-1] <- paste0(v, "_rcs", seq_len(NCOL(b) - 1))
-
-        keep <- setdiff(colnames(X), v)
-        X <- cbind(X[, keep, drop = FALSE], b)
-      }
+        p <- as.numeric(stats::predict(object$fit, newx = newX, type = "response", s = object$selected.lambda))
+        p
     }
-
-    ## Align columns to training
-    train_cols <- colnames(object$x)
-    if (is.null(train_cols)) stop("predictRisk.GLMnet: object$x has no colnames; cannot align newx.")
-
-    extra_cols <- setdiff(colnames(X), train_cols)
-    if (length(extra_cols)) {
-      X <- X[, setdiff(colnames(X), extra_cols), drop = FALSE]
-    }
-
-    missing_cols <- setdiff(train_cols, colnames(X))
-    if (length(missing_cols)) {
-      Z <- matrix(0, nrow = NROW(X), ncol = length(missing_cols))
-      colnames(Z) <- missing_cols
-      X <- cbind(X, Z)
-    }
-
-    X <- X[, train_cols, drop = FALSE]
-    X
-  }
-
-  if (has_survival) {
-    ## keep existing survival pipeline
-    pred <- 1 - predictCox(
-      object = object,
-      newdata = newdata,
-      times = times,
-      iid = FALSE,
-      confint = FALSE,
-      diag = diag,
-      average.iid = FALSE,
-      product.limit = product.limit,
-      type = "survival"
-    )$survival
-
-    if (identical(hidden_type, "survival")) pred <- 1 - pred
-
-    if (NROW(pred) != NROW(newdata) || NCOL(pred) != length(times)) {
-      stop(paste(
-        "\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",
-        NROW(newdata), " x ", length(times),
-        "\nProvided prediction matrix: ", NROW(pred), " x ", NCOL(pred),
-        "\n\n", sep = ""
-      ))
-    }
-    return(pred)
-  }
-
-    ## Non-survival: predict from glmnet using newx
-    newX <- build_newX(newdata)
-    p <- as.numeric(stats::predict(object$fit, newx = newX, type = "response", s = object$selected.lambda))
-    p
 }
 
 

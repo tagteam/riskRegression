@@ -14,6 +14,7 @@ GLMnet(
   type.measure = "deviance",
   selector = "min",
   family,
+  penalty.factor,
   ...
 )
 }
@@ -42,10 +43,11 @@ When \code{'undersmooth'} is specified, no cross-validation is performed.}
 
 \item{family}{Passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}. For binary outcome the default is \code{"binomial"} and for survival \code{"cox"}.}
 
-\item{\dots}{Additional arguments passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.
-To avoid clashes, if \code{alpha} or \code{penalty.factor} are supplied in \code{...}, they are removed from \code{...}
-and handled explicitly. The final penalty vector used by GLMnet (after applying \code{unpenalized()},
-\code{pen()}, and any user-supplied \code{penalty.factor}) is stored as \code{penalty.factor.used}.}
+\item{penalty.factor}{The penalty factor which is passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}. It must be a named
+vector where the names are the column names of the design matrix. To see the column names of the design matrix perform a dryrun without setting
+argument \code{penalty.factor} and check element \code{fit$penalty.factor}.}
+
+\item{\dots}{Additional arguments passed on to \link[glmnet]{glmnet} and \link[glmnet]{cv.glmnet}.}
 }
 \value{
 A GLMnet object (class \code{"GLMnet"}) containing:
@@ -54,8 +56,8 @@ A GLMnet object (class \code{"GLMnet"}) containing:
   \item \code{x}: design matrix used for fitting
   \item \code{y}: response used for fitting
   \item \code{terms}: terms object with specials
-  \item \code{penalty.factor.used}: named vector aligned with \code{colnames(x)}
-  \item \code{rcs.info}: list of spline specs (knots + column mapping) for transforming new data consistently
+  \item \code{penalty.factor}: named vector aligned with \code{colnames(x)}
+  \item \code{rcs.parameters}: named vector with parameters for the rcs terms
 }
 }
 \description{
@@ -73,10 +75,17 @@ Supports special terms on the right-hand side:
 }
 }
 \details{
-For \code{rcs()}, GLMnet treats the term as a marker and will compute the spline basis using
-\code{rms::rcspline.eval} with knots derived from the training data (or explicit knots supplied as the
-second argument). To ensure GLMnet controls the knot choice, \code{rcs()} should refer to the marker
-function \code{riskRegression::rcs} (which returns its input unchanged), not \code{rms::rcs}.
+For \code{rcs()}, GLMnet will compute the spline basis using
+\link[rms]{rcs} with knots derived from the data. In this application, rcs has
+two arguments: the number of knots \code{nknots} (defaults to 3) and the penalty factor \code{pf} (defaults to 2).
+}
+\examples{
+library(glmnet)
+library(riskRegression)
+library(survival)
+data(Melanoma)
+fit <- GLMnet(Surv(time,status==1)~pen(invasion,4)+epicel+ulcer+logthick+pen(sex,0)+age,
+             data=Melanoma)
 }
 \seealso{
 \link[glmnet]{glmnet}
