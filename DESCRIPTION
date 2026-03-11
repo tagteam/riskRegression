@@ -28,7 +28,7 @@ Imports:
     mvtnorm,
     parallel,
     plotrix,
-    prodlim (>= 2026.3.7),
+    prodlim,
     Publish,
     ranger,
     Rcpp,
