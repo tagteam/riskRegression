@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:32) 
 ## Version: 
-## Last-Updated: mar 11 2026 (12:54) 
+## Last-Updated: mar 11 2026 (14:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 39
+##     Update #: 40
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -204,7 +204,7 @@ coxLP.GLMnet <- function(object, data, center = FALSE){
         newdata <- prodlim::EventHistory.frame(
                                 formula = ff,
                                 check.formula = FALSE,
-                                data = newdata,
+                                data = data,
                                 unspecialsDesign = TRUE,
                                 specialsDesign = TRUE,
                                 stripSpecials = c("unpenalized", "strata", "pen", "rcs"),
