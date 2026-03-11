@@ -30,3 +30,4 @@ prepareData/
 ^pkgdown$
 ^doc$
 ^Meta$
+revdep

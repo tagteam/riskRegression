@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: feb 25 2026 (10:14) 
 ## Version: 
-## Last-Updated: mar  3 2026 (14:01) 
+## Last-Updated: mar 11 2026 (13:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,9 +76,8 @@ test_that("CSC applies penalty.factor arguments correctly", {
     set.seed(9)
     d <- riskRegression::sampleData(200, outcome = "competing.risks")
     obj <- riskRegression::CSC(prodlim::Hist(time, event) ~ pen(X1,0) + unpenalized(X2) + pen(X8,8),data = d,cause = 1,fitter = c("glmnet","glmnet"),fitter_arguments = list(list(penalty.factor = c(X11 = 0,X21 = 1,X8 = 2))))
-
-    got_ties <- vapply(obj$models, function(m) as.character(m$call$ties), character(1))
-    expect_true(all(got_ties == "efron"))
+    expect_equal(obj$models[[1]]$penalty.factor,c(X11 = 0, X8 = 2, X21 = 1))
+    expect_equal(obj$models[[2]]$penalty.factor,c(X11 = 0, X8 = 2, X21 = 1))
 })
 
 
