@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 14 2025 (08:49) 
 ## Version: 
-## Last-Updated: May 14 2025 (15:26) 
-##           By: Thomas Alexander Gerds
-##     Update #: 2
+## Last-Updated: apr 16 2026 (18:10) 
+##           By: Brice Ozenne
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -137,8 +137,13 @@ ate_checkArgs <- function(call,
         }
     }
     
-    ## ** object.treatment    
-    if(!is.null(object.treatment)){
+    ## ** object.treatment
+    if(inherits(object.treatment,"IPWbox")){
+        if(NCOL(object.treatment$proba) != length(unique(mydata[[treatment]]))){
+            stop("Mismatch between the number of weights for each subject (",NCOL(object.treatment$proba),") and the number of possible values of the treatment variable (\"",paste(unique(mydata[[treatment]]), collapse = "\", \""),"\"). \n")
+        }
+    }else if(!is.null(object.treatment)){
+        
         if(!inherits(object.treatment,"multinom") && (!inherits(object.treatment,"glm") || object.treatment$family$family!="binomial")){
             stop("Argument \'treatment\' must be a logistic regression (glm object) or a multinomial regression (nnet::multinom)\n",
                  " or a character variable giving the name of the treatment variable. \n")

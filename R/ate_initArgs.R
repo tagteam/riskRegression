@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 14 2025 (08:49) 
 ## Version: 
-## Last-Updated: maj 27 2025 (10:43) 
+## Last-Updated: apr 16 2026 (17:48) 
 ##           By: Brice Ozenne
-##     Update #: 5
+##     Update #: 24
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,7 +75,7 @@ ate_initArgs <- function(object.event,
     }else if(inherits(object.treatment,"formula")){
         model.treatment <- do.call(stats::glm, args = list(formula = object.treatment, data = mydata, family = stats::binomial(link = "logit")))        
         formula.treatment <- object.treatment
-    }else if(inherits(object.treatment,"glm") || inherits(object.treatment,"nnet")){
+    }else if(inherits(object.treatment,"glm") || inherits(object.treatment,"nnet") || inherits(object.treatment,"IPWbox")){
         formula.treatment <- stats::formula(object.treatment)
         model.treatment <- object.treatment
     }else if(is.character(object.treatment)){
@@ -393,6 +393,7 @@ ate_initArgs <- function(object.event,
                )
 
     ## ** store
+    store.weights <- FALSE
     store.data <- NULL
     store.iid <- "full"
     store.size.split <- NULL
@@ -401,9 +402,9 @@ ate_initArgs <- function(object.event,
             stop("Argument \'store\' should contain at most two elements. \n",
                  "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
-        if(is.null(names(store)) || any(names(store) %in% c("data","iid", "size.split") == FALSE)){
-            stop("Incorrect names for argument \'store\': should be \"data\", \"iid\", \"size.split\". \n",
-                 "For instance store = c(data = \"full\", iid = \"full\") or store = c(data = \"minimal\", iid = \"minimal\").\n")
+        if(is.null(names(store)) || any(names(store) %in% c("data","iid", "size.split","weights") == FALSE)){
+            stop("Incorrect names for argument \'store\': should be \"data\", \"iid\", \"size.split\", \"weights\". \n",
+                 "For instance store = c(weights = TRUE, size.split = NULL) or store = c(data = \"minimal\", iid = \"minimal\").\n")
         }
         if("data" %in% names(store) && !is.null(store[["data"]])){
             if(store[["data"]] %in% c("minimal","full") == FALSE){
@@ -419,15 +420,20 @@ ate_initArgs <- function(object.event,
             }
             store.iid <- store[["iid"]]
         }
-        if("size.split" %in% names(store)){
+        if("size.split" %in% names(store) && !is.null(store$size.split)){
             if(!is.numeric(store[["size.split"]]) || store[["size.split"]] < 0 || (store[["size.split"]] %% 1>0)){
                 stop("Element \"size.split\" in argument \'store\' should be a positive integer.\n")
             }
             store.size.split <- store[["size.split"]]
         }
-        
+        if("weights" %in% names(store)){
+            if(length(store[["weights"]])!=1 || (!is.logical(store[["weights"]]) && store[["weights"]] %in% 0:1 == FALSE)){
+                stop("Element \"weights\" in argument \'store\' should be TRUE or FALSE.\n")
+            }
+            store.weights <- store[["weights"]]
+        }
     }
-    store <- list(data = store.data, iid = store.iid, size.split = store.size.split)
+    store <- list(data = store.data, iid = store.iid, size.split = store.size.split, weights = store.weights)
 
     ## ** output
     return(list(object.event = model.event,
