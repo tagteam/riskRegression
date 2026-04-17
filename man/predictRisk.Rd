@@ -42,6 +42,7 @@
 \alias{predictRisk.GLMnet}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
+\alias{predictRisk.IPWbox}
 \alias{predictRisk.CoxConfidential}
 \title{Extrating predicting risks from regression models}
 \usage{
@@ -181,6 +182,16 @@ predictRisk(object, newdata, ...)
   times = NULL,
   product.limit = NULL,
   diag = FALSE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
+
+\method{predictRisk}{IPWbox}(
+  object,
+  newdata,
+  times = NULL,
+  cause,
   iid = FALSE,
   average.iid = FALSE,
   ...

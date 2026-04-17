@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: aug 28 2025 (10:22) 
+## Last-Updated: apr 17 2026 (16:36) 
 ##           By: Brice Ozenne
-##     Update #: 1144
+##     Update #: 1182
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,6 +52,7 @@ ATE_TI <- function(object.event,
     out <- list(meanRisk = NULL,
                 diffRisk = NULL,
                 ratioRisk = NULL,
+                weights = list(IPTW = NULL, IPCW = NULL),
                 store = NULL)
     if(attr(estimator,"export.GFORMULA")){
         out$meanRisk <- rbind(out$meanRisk,
@@ -64,8 +65,8 @@ ATE_TI <- function(object.event,
     
     if(attr(estimator,"export.IPTW")){
         out$meanRisk <- rbind(out$meanRisk,
-                           as.data.table(cbind(estimator = "IPTW", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
-                           )
+                              as.data.table(cbind(estimator = "IPTW", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
+                              )
 
         out$store$iid.IPTW <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
         names(out$store$iid.IPTW) <- contrasts
@@ -129,14 +130,22 @@ ATE_TI <- function(object.event,
     ## ** compute predictions
     ## *** treatment model
     if(attr(estimator,"IPTW")){
-        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = mydata, levels = iC, iid = (method.iid==2)*return.iid.nuisance)})
+        compute.iid.treatment <- return.iid.nuisance && ((method.iid==2) || (store$weights && (attr(estimator,"export.IPTW") || attr(estimator,"export.AIPTW"))))
+        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = mydata, levels = iC, iid = compute.iid.treatment)})
         pi <- do.call(cbind,iPred)
-        if(return.iid.nuisance && (method.iid==2)){
+        
+        if(compute.iid.treatment){
             out$store$iid.nuisance.treatment <- lapply(iPred,attr,"iid")
         }
-    
+        
         ## weights relative to the treatment
         iW.IPTW <- M.treatment / pi
+        if(any(is.na(pi) & M.treatment==0)){
+            iW.IPTW[is.na(pi) & M.treatment==0] <- 0
+        }
+        if(any(is.infinite(pi) & M.treatment==0)){
+            iW.IPTW[is.infinite(pi) & M.treatment==0] <- 0
+        }
     }
 
     ## *** censoring model
@@ -145,7 +154,7 @@ ATE_TI <- function(object.event,
             1-predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iT]+1],
                           diag = TRUE, product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance, store = store[c("data","iid")])
         })
-            
+        
         G.T_tau <- do.call(cbind,iPred)
 
         if(return.iid.nuisance && (method.iid==2)){
@@ -266,7 +275,7 @@ ATE_TI <- function(object.event,
             if((method.iid==2)*return.iid.nuisance){
                 out$store$iid.nuisance.outcome <- attr(predTempo,"iid")
             }
-        
+            
             ## survival at all jump of the censoring process
             S.jump <- predictRisk(object.event, type = "survival", newdata = mydataIntegral, times = time.jumpC-tol, product.limit = product.limit,
                                   iid = (method.iid==2)*return.iid.nuisance, store = store[c("data","iid")])
@@ -279,7 +288,7 @@ ATE_TI <- function(object.event,
             ## at all times of jump of the censoring process
             G.jump <- 1-predictRisk(object.censor, newdata = mydataIntegral, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
                                     product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance, store = store[c("data","iid")])
-        
+            
             if(return.iid.nuisance && (method.iid==2)){
                 out$store$iid.nuisance.censoring <- -attr(G.jump,"iid")
                 attr(G.jump,"iid") <- NULL
@@ -377,6 +386,20 @@ ATE_TI <- function(object.event,
         }
     }
 
+    if(store$weights && (attr(estimator,"export.IPTW") || attr(estimator,"export.AIPTW"))){
+        out$weights$IPTW <- iW.IPTW
+        colnames(out$weights$IPTW) <- contrasts
+        attr(out$weights$IPTW,"proba") <- pi
+        if(return.iid.nuisance){
+            attr(out$weights$IPTW,"iid.proba") <- out$store$iid.nuisance.treatment
+            ## attr(out$weights$IPTW,"iid")[[1]][,1]/out$store$iid.nuisance.treatment[[1]][,1]
+        }
+        if(attr(estimator,"IPCW")){
+            out$weights$IPCW <- iW.IPCW
+            colnames(out$weights$IPCW) <- times
+        }
+    }
+    
     ## ** save quantities useful for the calculation of iid.nuisance
     if(return.iid.nuisance){
         out$store$n.obs <- n.obs

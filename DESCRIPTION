@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2026.03.11
+Version: 2026.04.17
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"), email = "tag@biostat.ku.dk"),
              person("Johan Sebastian", "Ohlendorff", role = "aut"),
              person("Paul", "Blanche", role = "ctb"),
@@ -49,6 +49,7 @@ Suggests:
     hal9001,
     mgcv,
     mstate,
+    nnet,
     nnls,
     numDeriv,
     party,
@@ -77,7 +78,7 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 VignetteBuilder: R.rsp
 Encoding: UTF-8
 URL: https://github.com/tagteam/riskRegression

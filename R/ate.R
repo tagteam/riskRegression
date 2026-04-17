@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  1 2025 (10:05) 
+## last-updated: apr 17 2026 (18:06) 
 ##           By: Brice Ozenne
-##     Update #: 2597
+##     Update #: 2639
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,10 +17,9 @@
 
 ## * ate (documentation)
 #' @title Average Treatment Effects Computation 
-#' @description Use the g-formula or the IPW or the double robust estimator
-#' to estimate the average treatment
-#'     effect (absolute risk difference or ratio)
-#' based on Cox regression with or without competing risks.
+#' @description Use the G-formula or Inverse Probability Weighting (IPW) or double robust (DR) estimators
+#' to estimate the average treatment effect (absolute risk difference or ratio). 
+#' Can handle right-censoring and/or competing risks via Cox regression, cause-specific Cox regressions, or IPCW logistic regression.
 #' @name ate
 #' 
 #' @param event Outcome model which describes how the probability of experiencing a terminal event depends
@@ -36,8 +35,8 @@
 #' @param contrasts [character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.
 #' @param allContrasts [2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
 #' @param strata [character] Strata variable on which to compute the average risk.
-#' Incompatible with treatment. Experimental.
-#' 
+#' To be used instead of the treatment argument when the interest lies in the average outcome within group
+#' instead of the average counterfactual outcome had all subjects experience the exposure of a specific group. 
 #' @param times [numeric vector] Time points at which to evaluate average treatment effects.
 #' @param cause [integer/character] the cause of interest.
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
@@ -67,6 +66,11 @@
 #' The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.
 #' Only used when \code{handler="foreach"}.
 #' @param verbose [logical] If \code{TRUE} inform about estimated run time.
+#' @param store [list] A list with the following elements: \itemize{
+#' \item \code{"weights"}: [logical] should the IPCW and IPTW be stored with their influence function?
+#' \item \code{"size.split"}: [integer] split the dataset in smaller dataset with at most the indicated number of observation.
+#' The integral term of the AIPTW estimator is computed on one smaller dataset at a time to reduce the memory usage, at the cost of increased computations.
+#' }
 #' @param ... passed to predictRisk
 #'
 #' @author Brice Ozenne \email{broz@@sund.ku.dk}
@@ -95,7 +99,7 @@
 #' In presence of censoring, the computation time and memory usage for the evaluation of the AIPTW estimator and its uncertainty do not scale well with the number of observations (n) or the number of unique timepoints (T).
 #' Point estimation involves n by T matrices, influence function involves n by T by n arrays. \itemize{
 #' \item for large datasets (e.g. n>5000), bootstrap is recommended as the memory need for the influence function is likely prohibitive.
-#' \item it is possible to decrease the memory usage for the point estimation by setting the (hidden) argument \code{store=c(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
+#' \item it is possible to decrease the memory usage for the point estimation by setting the argument \code{store=c(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
 #' \item reducing the number of unique timepoints (e.g. by rounding them) will lead to an approximate estimation procedure that is less demanding both in term of computation and memory. The resulting estimator will be more variable than the one based on the original timepoints (i.e. wider confidence intervals).
 #' }
 #'  
@@ -115,7 +119,8 @@
 #' \code{\link{confint.ate}} to output a list containing all estimates (average & difference & ratio) with their confidence intervals and p-values. \cr
 #' \code{\link{model.tables.ate}} to output a data.frame containing one type of estimates (average or difference or ratio) with its confidence intervals and p-values.   \cr
 #' \code{\link{summary.ate}} for displaying in the console a summary of the results.
-
+#' \code{\link{weights}} to extract IPTW and IPCW weights
+#'
 ## * ate (examples)
 #' @examples 
 #' library(survival)
@@ -259,7 +264,7 @@
 #' #### Survival settings  ####
 #' #### ATE with glm       ####
 #' ############################
-#' 
+#'
 #' ## see wglm for handling right-censoring with glm
 #'
 #' #################################
@@ -267,26 +272,63 @@
 #' #################################
 #' 
 #' \dontrun{
-#' ## generate data
+#' #### generate data ####
 #' n <- 500
 #' set.seed(10)
-#' dt <- sampleData(n, outcome="competing.risks")
+#' dt <- cbind(id=1:n,sampleData(n, outcome="competing.risks"))
 #' dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
 #'
-#' ## working models
+#' #### working models ####
 #' m.event <-  CSC(Hist(time,event)~ X1+X2+X3+X5+X8,data=dt)
 #' m.censor <-  coxph(Surv(time,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
 #' m.treatment <-  glm(X1~X2+X3+X5+X8,data=dt,family=binomial(link="logit"))
 #'
-#' ## prediction + average
+#' #### prediction + average ####
 #' ateRobust <- ate(event = m.event,
 #'                  treatment = m.treatment,
 #'                  censor = m.censor,
 #'                  data = dt, times = 5:10, 
-#'                  cause = 1)
+#'                  cause = 1, store = c(weights = TRUE))
 #' summary(ateRobust)
+#'
+#' #### visualize IPTW ####
+#' weights(ateRobust, type = "IPTW")
+#' dt$IPTW <- rowSums(weights(ateRobust, type = "IPTW"))
 #' 
-#' ## compare various estimators
+#' if(require(ggplot)){ ## visualize propensity score
+#' ggIPTW <- ggplot(dt, aes(x = 1/IPTW, fill = X1)) + geom_boxplot()
+#' ggIPTW + ggtitle("Propensity score for the treatment of the treatment group")
+#'
+#' dtIPTW <- rbind(cbind(dt, treatment = "T0", weight = weights(ateRobust, type = "probaT")[,1]),
+#'                 cbind(dt, treatment = "T1", weight = weights(ateRobust, type = "probaT")[,2]))
+#' 
+#' ggIPTW <- ggplot(dtIPTW, aes(weight, treatment, fill = X1)) + geom_boxplot()
+#' ggIPTW + labs(fill = "Patient from group", y = "Targeted treatment", x = "Propensity score")
+#' }
+#' ## see IPWbox to specify your own IPTW weights
+#' 
+#' #### visualize IPCW ####
+#' dtW.IPCW <- cbind(dt,IPCW = weights(ateRobust, type = "IPCW"))
+#' IPCW.col <- grep("IPCW",names(dtW.IPCW), value = TRUE)
+#' ## move to long format
+#' dtL.IPCW <- reshape(dtW.IPCW, direction = "long", idvar = c("id","X1"),
+#'                     varying = IPCW.col, times = gsub("IPCW.","",IPCW.col))
+#' dtL.IPCW$time <- as.factor(dtL.IPCW$time)
+#' ## percentage of 0 at each timepoint
+#' dtL.IPCW0 <- dtL.IPCW[, .(IPCW=mean(IPCW),
+#'                           label=paste0(round(100*mean(IPCW>0),2),"%")),                           
+#'                       by = c("time","X1")]
+#' 
+#' ggIPCW <- ggplot(mapping  = aes(time, IPCW, fill = X1))
+#' ggIPCW <- ggIPCW + geom_boxplot(data = dtL.IPCW[dtL.IPCW$IPCW>0],
+#'                                 position=position_dodge(.9))
+#' ggIPCW <- ggIPCW + geom_text(data = dtL.IPCW0, 
+#'               mapping = aes(x = time, y = 3.1, color = X1, group = X1, label = label),
+#'               position=position_dodge(.9))
+#' ggIPCW <- ggIPCW + ggtitle("Percentage of non-0 weights and corresponding boxplot")
+#' ggIPCW
+#'
+#' #### compare various estimators ####
 #' system.time( ## about 1.5s
 #' ateRobust2 <- ate(event = m.event,
 #'                  treatment = m.treatment,
@@ -298,7 +340,7 @@
 #' data.table::as.data.table(ateRobust2, type = "meanRisk")
 #' data.table::as.data.table(ateRobust2, type = "diffRisk")
 #'
-#' ## reduce memory load by computing the integral term
+#' #### reduce memory load by computing the integral term ####
 #' ## on only 100 observations at a time (only relevant when iid = FALSE)
 #' ateRobust3 <- ate(event = m.event,
 #'                  treatment = m.treatment,
@@ -320,8 +362,21 @@
 #'                  data = dt, times = c(5:10), cause = 1, se = TRUE)
 #' )
 #' coef(ateRobustFast) - coef(ateRobust) ## inaccuracy
-#' }
 #' 
+#' #### consider more than two treatment groups ####
+#' if(require(nnet)){
+#' dt$group <- paste(dt$X1,dt$X2,sep=".")
+#' m.treatment4 <- multinom(group~X3+X5+X8,data=dt)
+#' ateRobust4 <- ate(event = m.event,
+#'                  treatment = m.treatment4,
+#'                  censor = m.censor,
+#'                  data = dt, times = c(5:10), 
+#'                  cause = 1, store = c(weights = TRUE))
+#' ateRobust4
+#' }
+#' }
+#'
+
 ## * ate (code)
 #' @rdname ate
 #' @export
@@ -346,6 +401,7 @@ ate <- function(event,
                 mc.cores = 1,
                 cl = NULL,
                 verbose = TRUE,
+                store = list(weights = FALSE, size.split = NULL),
                 ...){
 
     dots <- list(...)
@@ -384,7 +440,7 @@ ate <- function(event,
                          cause = cause,
                          handler = handler,
                          product.limit = dots$product.limit,
-                         store = dots$store)
+                         store = store)
 
     object.event <- init$object.event
     object.treatment <- init$object.treatment
@@ -592,6 +648,7 @@ ate <- function(event,
     out$meanRisk <- pointEstimate$meanRisk
     out$diffRisk <- pointEstimate$diffRisk
     out$ratioRisk <- pointEstimate$ratioRisk
+    out$weights <- pointEstimate$weights
     out$computation.time[["point"]] <- tps2-tps1
 
     ## warning when violation in the case of stratified Cox models with not all treatment levels per strata 

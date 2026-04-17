@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: mar 11 2026 (12:55) 
-##           By: Thomas Alexander Gerds
-##     Update #: 665
+## last-updated: apr 17 2026 (17:06) 
+##           By: Brice Ozenne
+##     Update #: 728
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -383,6 +383,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
         informationM1 <- stats::vcov(object)
 
         iid.beta <- score %*% informationM1
+        ## model the probability to be in one of the classes that is not the reference group
         iid.beta.level <- lapply(2:n.class, function(iClass){iid.beta[,(iClass-2) * n.coefperY + 1:n.coefperY,drop=FALSE]})
         names(iid.beta.level) <- object$lev[-1]
 
@@ -407,7 +408,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
                     }else{
                         ## if reference level: 1/(1+\sum_j exp(XB_j))
                         ## derivative of the numerator: 0 because the numerator is 1
-                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k)/(1+\sum_j exp(XB_j))^2
+                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k)/(1+\sum_j exp(XB_j))^2                        
                         iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
                             - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass])/eXbeta_rowSum^2))
                         }))
@@ -422,11 +423,21 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
             }
         }
         if(iid){
-            attr(out,"iid") <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
-                - iid.beta.level[[iClass]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
-            }))
-            if(which(level %in% object$lev)>0){
-                attr(out,"iid") <- attr(out,"iid") + iid.beta.level[[level]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,level])/eXbeta_rowSum))
+            if(level != object$lev[1]){
+                ## if level l which is not the reference level:  exp(XB_l)/(1+\sum_j exp(XB_j))
+                ## derivative of the numerator:  IF_l X exp(XB_l)/(1+\sum_j exp(XB_j))
+                ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k+XB_l)/(1+\sum_j exp(XB_j))^2
+                iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
+                    - iid.beta.level[[iClass]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
+                }))
+                iRes <- iRes + iid.beta.level[[level]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,level])/eXbeta_rowSum))
+            }else{
+                ## if reference level: 1/(1+\sum_j exp(XB_j))
+                ## derivative of the numerator: 0 because the numerator is 1
+                ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k)/(1+\sum_j exp(XB_j))^2                        
+                iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
+                    - iid.beta.level[[iClass]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,iClass])/eXbeta_rowSum^2))
+                }))                
             }
         }
     }
@@ -1702,6 +1713,82 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
     return(out)
 }
 
+## * predictRisk.IPWbox
+#' @rdname predictRisk
+#' @method predictRisk IPWbox
+#' @export
+predictRisk.IPWbox <- function(object, newdata, times = NULL, cause, iid = FALSE, average.iid = FALSE, ...){
+
+    n.newdata <- NROW(newdata)
+    dots <- list(...)    
+    if(n.newdata != NROW(object$proba)){
+        stop("Mismatch between the size of the dataset and the number of weights. \n")
+    }
+
+    if(object$type == "IPTW"){
+        level <- dots$level
+        if(!is.null(object$id)){
+            if(names(object$id) %in% names(newdata) == FALSE){
+                stop("Mismatch between the id in IPWbox and column names in the dataset. \n")
+            }            
+            index <- match(object$id[[1]],newdata[[names(object$id)]])
+            if(any(is.na(index))){
+                stop("Mismatch between the value taken by id in IPWbox and corresponding column in the dataset. \n")
+            }
+            out <- object$proba[index,level]
+        }else{
+            out <- object$proba[,level]
+        }
+        
+    }
+
+    if(iid){
+        if(!is.null(object$id)){
+            attr(out,"iid") <- object$IF[[level]][index,index,drop=FALSE]
+        }else{
+            attr(out,"iid") <- object$IF[[level]]
+        }
+    }
+
+    if(average.iid){
+        if(is.null(attr(average.iid,"factor"))){
+            factor <- list(matrix(1, nrow = n.newdata, ncol = 1))
+        }else{
+            factor <- attr(average.iid, "factor")
+            if(is.matrix(factor)){
+                factor <- list(factor)
+            }
+            if(!is.list(factor)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list \n")
+            }
+            if(any(sapply(factor, is.matrix)==FALSE)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices \n")
+            }
+            if(any(sapply(factor, function(iF){NROW(iF)==NROW(newdata)})==FALSE)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices with ",NROW(newdata)," rows \n")
+            }
+        }
+        n.factor <- NCOL(factor)
+
+        if(!is.null(object$id)){
+            IFproba <- object$IF[[level]][index,index,drop=FALSE]
+        }else{
+            IFproba <- object$IF[[level]]
+        }
+
+        attr(out,"average.iid") <- lapply(factor, function(iFactor){
+            apply(iFactor, 2, function(iiFactor){ ## iiFactor <- factor[[1]][,1]
+                rowMeans(rowMultiply_cpp(IFproba, scale = iiFactor))
+            })
+        })
+        if(is.null(attr(average.iid,"factor"))){
+            attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
+        }
+    }
+
+    ## ** export
+    return(out)
+}
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
 
