@@ -26,7 +26,9 @@
 \item{type}{[character vector] what to displayed.
 Can be \code{"meanRisk"} to display the risks specific to each treatment group,
 \code{"diffRisk"} to display the difference in risks between treatment groups,
-or \code{"ratioRisk"} to display the ratio of risks between treatment groups,.}
+\code{"ratioRisk"} to display the ratio of risks between treatment groups,
+\code{"IPTW"} to display the treatment weights (if any) or \code{"probaT"} to display for each observation the probability of being assigned each treatment level,
+and \code{"IPCW"} to display the censoring weights (if any).}
 
 \item{first.derivative}{[logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
 (confidence intervals are obtained via simulation).}

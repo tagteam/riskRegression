@@ -20,7 +20,7 @@
 
 \item{times}{[numeric vector] The timepoints at which the estimates should be displayed. Default is to consider all timepoints.}
 
-\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed.}
+\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed. Can be \code{"all"} to output all estimators.}
 
 \item{type}{[character] should the average risk per treatment be displayed (\code{"meanRisk"}),
 or the difference in average risk between any two pairs of treatments (\code{"diffRisk"}),

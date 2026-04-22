@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Oct 16 2024 (11:48) 
 ## Version: 
-## Last-Updated: May 14 2025 (15:31) 
-##           By: Thomas Alexander Gerds
-##     Update #: 22
+## Last-Updated: apr 22 2026 (18:03) 
+##           By: Brice Ozenne
+##     Update #: 37
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,12 +37,21 @@
 ##' @export
 model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL, type = NULL, ...){
 
-    ## *** check arguments
+    ## **  normalize user input
+    ## *** estimator
+    ## rename estimator --> user.estimator to avoid confusion with the column names
     if(is.null(estimator)){
-        estimator <- x$estimator[1]
+        user.estimator <- x$estimator[1]
     }else{
-        estimator <- match.arg(estimator, x$estimator)
+        estimator <- toupper(estimator)
+        if(length(estimator) == 1 && estimator == "ALL"){
+            user.estimator <- x$estimator
+        }else{
+            user.estimator <- match.arg(estimator, x$estimator, several.ok = TRUE)
+        }
     }
+
+    ## *** contrasts
     if(is.null(contrasts)){
         contrasts <- x$contrasts
     }else{
@@ -53,6 +62,8 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
                  "Valid values: ",paste(x$contrasts, collapse = ", "),". \n")
         }
     }
+
+    ## *** times
     if(is.null(times)){
         times <- x$eval.times
     }else{
@@ -61,26 +72,29 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
                  "Valid timepoints: ",paste(x$eval.times, collapse = ", "),". \n")
         }
     }
+
+    ## *** type
     if(is.null(type)){
         type <- "meanRisk"
     }else{
         type <- match.arg(type, c("meanRisk","diffRisk","ratioRisk"))
     }
 
-    if(x$inference$se == FALSE){
-        stop("Cannot evaluate the uncertainty about the estimates when the standard error has not been stored. \n",
-             "Set argument \'se\' to TRUE when calling the ate function \n")
+    ## *** dots
+    dots <- list(...)
+    if(length(dots)>0){
+        stop("Unknown argument(s) \'",paste(names(dots),collapse="\' \'"),"\'. \n")
     }
-    
-    ## *** reduce object
+
+    ## ** reduce object
     object.reduce <- x
-    subset.meanRisk <- which(x$meanRisk$estimator %in% estimator & x$meanRisk$time %in% times & x$meanRisk$treatment %in% contrasts)
+    subset.meanRisk <- which(x$meanRisk$estimator %in% user.estimator & x$meanRisk$time %in% times & x$meanRisk$treatment %in% contrasts)
     object.reduce$meanRisk <- x$meanRisk[subset.meanRisk] ## does not work directly due to confusion from data.table between values and column names (e.g. estimator is both)
     if(is.factor(object.reduce$meanRisk$treatment)){
         object.reduce$meanRisk$treatment <- droplevels(object.reduce$meanRisk$treatment)
     }
 
-    subset.diffRisk <- which(x$diffRisk$estimator %in% estimator & x$diffRisk$time %in% times & x$diffRisk$B %in% contrasts & x$diffRisk$A %in% contrasts)
+    subset.diffRisk <- which(x$diffRisk$estimator %in% user.estimator & x$diffRisk$time %in% times & x$diffRisk$B %in% contrasts & x$diffRisk$A %in% contrasts)
     object.reduce$diffRisk <- x$diffRisk[subset.diffRisk] ## does not work directly due to confusion from data.table between values and column names (e.g. estimator is both)
     if(is.factor(object.reduce$diffRisk$A)){
         object.reduce$diffRisk$A <- droplevels(object.reduce$diffRisk$A)
@@ -89,7 +103,7 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
         object.reduce$diffRisk$B <- droplevels(object.reduce$diffRisk$B)
     }
 
-    subset.ratioRisk <- which(x$ratioRisk$estimator %in% estimator & x$ratioRisk$time %in% times & x$ratioRisk$B %in% contrasts & x$ratioRisk$A %in% contrasts)
+    subset.ratioRisk <- which(x$ratioRisk$estimator %in% user.estimator & x$ratioRisk$time %in% times & x$ratioRisk$B %in% contrasts & x$ratioRisk$A %in% contrasts)
     object.reduce$ratioRisk <- x$ratioRisk[subset.ratioRisk] ## does not work directly due to confusion from data.table between values and column names (e.g. estimator is both)
     if(is.factor(object.reduce$ratioRisk$A)){
         object.reduce$ratioRisk$A <- droplevels(object.reduce$ratioRisk$A)
@@ -98,13 +112,13 @@ model.tables.ate <- function(x, contrasts = NULL, times = NULL, estimator = NULL
         object.reduce$ratioRisk$B <- droplevels(object.reduce$ratioRisk$B)
     }
     if(x$inference$iid){
-        object.reduce$iid <- list(lapply(object.reduce$iid[[estimator]][contrasts], function(iIID){iIID[,x$eval.times %in% times, drop = FALSE]}))
-        names(object.reduce$iid) <- estimator
+        object.reduce$iid <- lapply(user.estimator, function(iE){stats::setNames(lapply(contrasts, function(iC){object.reduce$iid[[iE]][[iC]][,x$eval.times %in% times, drop = FALSE]}), contrasts)})
+        names(object.reduce$iid) <- user.estimator
     }else if(x$inference$bootstrap){
         object.reduce$boot$t0 <- x$boot$t0[c(subset.meanRisk,NROW(x$meanRisk)+subset.diffRisk,NROW(x$meanRisk)+NROW(x$diffRisk)+subset.ratioRisk)]
         object.reduce$boot$t <- x$boot$t[,c(subset.meanRisk,NROW(x$meanRisk)+subset.diffRisk,NROW(x$meanRisk)+NROW(x$diffRisk)+subset.ratioRisk),drop=FALSE]
     }
-    object.reduce$estimator <- estimator ## side effect: drop attributes but they are not used by confintIID.ate
+    object.reduce$estimator <- user.estimator ## side effect: drop attributes but they are not used by confintIID.ate
     object.reduce$eval.times <- times
     object.reduce$contrasts <- contrasts
     object.reduce$allContrasts <- utils::combn(contrasts, m = 2)

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: apr 17 2026 (16:36) 
+## Last-Updated: apr 22 2026 (18:59) 
 ##           By: Brice Ozenne
-##     Update #: 1182
+##     Update #: 1251
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,7 +44,15 @@ ATE_TI <- function(object.event,
                    ...){
 
     tol <- 1e-12 ## difference in jump time must be above tol
-    n.obs <- NROW(mydata)
+    if(attr(data.index,"original")){
+        if(!is.null(object.event)){
+            n.obs <- c(train = stats::nobs(object.event), test = NROW(mydata))
+        }else if(!is.null(object.treatment)){
+            n.obs <- c(train = stats::nobs(object.treatment), test = NROW(mydata))
+        }        
+    }else{
+        n.obs <- c(train = NROW(mydata), test = NROW(mydata))
+    }
     n.contrasts <- length(contrasts)
     n.times <- length(times)
 
@@ -52,14 +60,14 @@ ATE_TI <- function(object.event,
     out <- list(meanRisk = NULL,
                 diffRisk = NULL,
                 ratioRisk = NULL,
-                weights = list(IPTW = NULL, IPCW = NULL),
+                weights = list(),
                 store = NULL)
     if(attr(estimator,"export.GFORMULA")){
         out$meanRisk <- rbind(out$meanRisk,
                               as.data.table(cbind(estimator = "GFORMULA", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
                               )
 
-        out$store$iid.GFORMULA <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        out$store$iid.GFORMULA <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs["train"], ncol = n.times)})
         names(out$store$iid.GFORMULA) <- contrasts
     }
     
@@ -68,7 +76,7 @@ ATE_TI <- function(object.event,
                               as.data.table(cbind(estimator = "IPTW", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
                               )
 
-        out$store$iid.IPTW <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        out$store$iid.IPTW <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs["train"], ncol = n.times)})
         names(out$store$iid.IPTW) <- contrasts
     }
     
@@ -77,7 +85,7 @@ ATE_TI <- function(object.event,
                               as.data.table(cbind(estimator = "AIPTW", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
                               )
         
-        out$store$iid.AIPTW <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        out$store$iid.AIPTW <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs["train"], ncol = n.times)})
         names(out$store$iid.AIPTW) <- contrasts
     }
 
@@ -129,11 +137,14 @@ ATE_TI <- function(object.event,
 
     ## ** compute predictions
     ## *** treatment model
-    if(attr(estimator,"IPTW")){
+    if(attr(estimator,"IPTW")){        
         compute.iid.treatment <- return.iid.nuisance && ((method.iid==2) || (store$weights && (attr(estimator,"export.IPTW") || attr(estimator,"export.AIPTW"))))
-        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = mydata, levels = iC, iid = compute.iid.treatment)})
-        pi <- do.call(cbind,iPred)
+        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = mydata, iid = compute.iid.treatment,
+                                                            levels = iC, ## the treatment level with respect to the probability should be computed, e.g. typically P[E=0|X], P[E=1|X]
+                                                            data.index = data.index) ## only relevant for IPWbox to retrieve the right weights when sub-settting
+        })
         
+        pi <- do.call(cbind,iPred)
         if(compute.iid.treatment){
             out$store$iid.nuisance.treatment <- lapply(iPred,attr,"iid")
         }
@@ -145,6 +156,22 @@ ATE_TI <- function(object.event,
         }
         if(any(is.infinite(pi) & M.treatment==0)){
             iW.IPTW[is.infinite(pi) & M.treatment==0] <- 0
+        }
+        
+        if(attr(data.index,"original")){
+            ## when considering a subset, the treatment model may not lead to calibrated weights
+            ## e.g. consider a subset of a data with 125 observations in each group
+            ##      if all observations in one group are kept and 10 are removed in the other group (so 240 instead of 250 observations in total)
+            ##      the treatment model fitted on the 250 observations will lead IPTW summing to 250 in the first group.
+            ##      this will rescale the weights to sum up to 240.
+            rescale.IPTW <- n.obs["train"]/colSums(iW.IPTW)
+            pi <- sweep(pi, FUN = "/", MARGIN = 2, STATS = rescale.IPTW) ## for the user to keep track of the update when extracting the weights
+            iW.IPTW <- sweep(iW.IPTW, FUN = "*", MARGIN = 2, STATS = rescale.IPTW)
+            if(compute.iid.treatment){
+                out$store$iid.nuisance.treatment <- lapply(1:length(levels), function(iT){
+                    out$store$iid.nuisance.treatment[[iT]]/rescale.IPTW[iT]
+                })
+            }            
         }
     }
 
@@ -164,14 +191,20 @@ ATE_TI <- function(object.event,
         ## weights relative to the censoring
         ## - because predictRisk outputs the risk instead of the survival
         iW.IPCW <- C.tau / G.T_tau
+        if(any(is.na(pi) & M.treatment==0)){
+            iW.IPCW[is.na(G.T_tau) & C.tau==0] <- 0
+        }
+        if(any(is.infinite(pi) & M.treatment==0)){
+            iW.IPCW[is.infinite(G.T_tau) & C.tau==0] <- 0
+        }
     }
 
     ## *** outcome model (computation of Prob[T<=t,Delta=1|A,W] = F_1(t|A=a,W))
     if(attr(estimator,"GFORMULA")){
-        n.obs.contrasts <- rep(n.obs, n.contrasts)
-        ls.index.strata <- vector(mode = "list", length = n.obs)
+        n.obs.contrasts <- rep(n.obs["test"], n.contrasts)
+        ls.index.strata <- vector(mode = "list", length = n.obs["test"])
         F1.ctf.tau <- lapply(1:n.contrasts, function(x){
-            matrix(0, nrow = n.obs, ncol = n.times,
+            matrix(0, nrow = n.obs["test"], ncol = n.times,
                    dimnames = list(NULL, times))
         })
         names(F1.ctf.tau) <- contrasts
@@ -180,7 +213,7 @@ ATE_TI <- function(object.event,
             
             if(!is.null(treatment)){
                 ## hypothetical world: in which every subject is treated with the same treatment
-                ls.index.strata[[iC]] <- 1:n.obs
+                ls.index.strata[[iC]] <- 1:n.obs["test"]
                 data.i <- data.table::copy(mydata)
                 data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
             }else{
@@ -231,11 +264,11 @@ ATE_TI <- function(object.event,
         ## this would correspond to index.lastjumpC>0 && any(beforeEvent.jumpC)
         ## the first should be automatically enforced in ate_initArgs when creating attr(estimator,"integral")
         
-        augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
+        augTerm <- matrix(0, nrow = n.obs["test"], ncol = n.times)
 
         ## *** exclude individuals with event before the first censoring as they do not contribute to the integral term
         if(method.iid==2){ ## slow but simple i.e. no subset
-            indexAll.obsIntegral <- 1:n.obs
+            indexAll.obsIntegral <- 1:n.obs["test"]
         }else{ 
             indexAll.obsIntegral <- which(index.obsSINDEXjumpC.int[,n.times]>0) ## WARNING do not use index.obsSINDEXjumpC as it is evaluated just before the jump (i.e. time-tol)
         }
@@ -340,33 +373,33 @@ ATE_TI <- function(object.event,
 
     ## ** Compute individual contribution to the ATE + influence function for the G-formula
     for(iC in 1:n.contrasts){ ## iC <- 1
-        if(attr(estimator,"export.GFORMULA")){
+
+        if(attr(estimator,"export.GFORMULA")){            
             if(!is.null(treatment)){
                 iIID.ate <- F1.ctf.tau[[iC]]
-                iATE <- colSums(iIID.ate)/n.obs
-                out$meanRisk[list("GFORMULA",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")] 
-                out$store$iid.GFORMULA[[iC]][data.index,] <- out$store$iid.GFORMULA[[iC]][data.index,] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs
+                iATE <- colSums(iIID.ate)/n.obs["test"]
+                out$meanRisk[list("GFORMULA",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
+                out$store$iid.GFORMULA[[iC]][data.index,] <- out$store$iid.GFORMULA[[iC]][data.index,,drop=FALSE] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs["test"]
             }else{
                 iIID.ate <- F1.ctf.tau[[iC]][ls.index.strata[[iC]],,drop=FALSE]
                 iATE <- colSums(iIID.ate)/n.obs.contrasts[iC]                
                 out$meanRisk[list("GFORMULA",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
-                out$store$iid.GFORMULA[[iC]][data.index[ls.index.strata[[iC]]],] <- out$store$iid.GFORMULA[[iC]][data.index[ls.index.strata[[iC]]],] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs.contrasts[iC]
+                out$store$iid.GFORMULA[[iC]][data.index[ls.index.strata[[iC]]],] <- out$store$iid.GFORMULA[[iC]][data.index[ls.index.strata[[iC]]],,drop=FALSE] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs.contrasts[iC]
             }
         }
         if(attr(estimator,"export.IPTW")){
-
             if(attr(estimator,"IPCW")){
                 iIID.ate <- colMultiply_cpp(iW.IPCW * Y.tau, scale = iW.IPTW[,iC])
             }else{
                 iIID.ate <- colMultiply_cpp(Y.tau, scale = iW.IPTW[,iC])
             }
-            iATE <- colSums(iIID.ate)/n.obs
+            iATE <- colSums(iIID.ate)/n.obs["test"]
             if(attr(estimator,"monotone")){ ## ensure monotonicity over time (not accounted for in the standard error)
                 out$meanRisk[list("IPTW",contrasts[iC]), c("estimate") := .monotonize(iATE), on = c("estimator","treatment")]
             }else{
                 out$meanRisk[list("IPTW",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
             }
-            out$store$iid.IPTW[[iC]][data.index,] <- out$store$iid.IPTW[[iC]][data.index,]  + rowCenter_cpp(iIID.ate, center = iATE)/n.obs
+            out$store$iid.IPTW[[iC]][data.index,] <- out$store$iid.IPTW[[iC]][data.index,,drop=FALSE] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs["test"]
         }
         if(attr(estimator,"export.AIPTW")){
             if(attr(estimator,"integral")){ ## full augmentation
@@ -376,27 +409,25 @@ ATE_TI <- function(object.event,
             }else{
                 iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = iW.IPTW[,iC])
             }
-            iATE <- colSums(iIID.ate)/n.obs
+            iATE <- colSums(iIID.ate)/n.obs["test"]
             if(attr(estimator,"monotone")){ ## ensure monotonicity over time (not accounted for in the standard error)
                 out$meanRisk[list("AIPTW",contrasts[iC]), c("estimate") := .monotonize(iATE), on = c("estimator","treatment")]
             }else{
                 out$meanRisk[list("AIPTW",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
             }
-            out$store$iid.AIPTW[[iC]][data.index,] <- out$store$iid.AIPTW[[iC]][data.index,] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs
+            out$store$iid.AIPTW[[iC]][data.index,] <- out$store$iid.AIPTW[[iC]][data.index,,drop=FALSE] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs["test"]
         }
     }
 
     if(store$weights && (attr(estimator,"export.IPTW") || attr(estimator,"export.AIPTW"))){
-        out$weights$IPTW <- iW.IPTW
-        colnames(out$weights$IPTW) <- contrasts
-        attr(out$weights$IPTW,"proba") <- pi
+        out$weights$probaT <- pi
+        out$weights$indicatorT <- M.treatment
         if(return.iid.nuisance){
-            attr(out$weights$IPTW,"iid.proba") <- out$store$iid.nuisance.treatment
-            ## attr(out$weights$IPTW,"iid")[[1]][,1]/out$store$iid.nuisance.treatment[[1]][,1]
+            out$weights$probaT.iid <- out$store$iid.nuisance.treatment
         }
         if(attr(estimator,"IPCW")){
-            out$weights$IPCW <- iW.IPCW
-            colnames(out$weights$IPCW) <- times
+            out$weights$probaC <- G.T_tau
+            out$weights$indicatorC <- C.tau
         }
     }
     

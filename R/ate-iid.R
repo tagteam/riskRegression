@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: apr 16 2026 (18:23) 
+## Last-Updated: apr 22 2026 (18:58) 
 ##           By: Brice Ozenne
-##     Update #: 1399
+##     Update #: 1402
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -197,7 +197,7 @@ iidATE <- function(estimator,
         term.intF1_tau <- attr(predictRisk(object.event, newdata = mydataIntegral, times = times, cause = cause,
                                            average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]),"average.iid")
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]*n.obsIntegral/n.obs
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]*n.obsIntegral/n.obs["train"]
         }
         ## ## at t
         factor <- TRUE
@@ -209,7 +209,7 @@ iidATE <- function(estimator,
                                           average.iid = factor, product.limit = product.limit, store = store[c("data","iid")]), "average.iid")
 
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]])*n.obsIntegral/n.obs,
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]])*n.obsIntegral/n.obs["train"],
                                                              index = beforeTau.nJumpC,
                                                              default = 0, col = TRUE)
         }
@@ -227,7 +227,7 @@ iidATE <- function(estimator,
                                                level = contrasts[iC]), "average.iid")
 
             ## print(colSums(term.treatment[["AIPTW"]]^2))
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.treatment[["AIPTW"]]*n.obsIntegral/n.obs
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.treatment[["AIPTW"]]*n.obsIntegral/n.obs["train"]
         }
         ## cat("Augmentation treatment (method=1) \n")
         ## print(sapply(lapply(iid.AIPTW,abs),colSums))
@@ -246,7 +246,7 @@ iidATE <- function(estimator,
             iC <- grid[iGrid,"contrast"]
                         
             if(beforeTau.nJumpC[iTau]>0){
-                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])*n.obsIntegral/n.obs
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])*n.obsIntegral/n.obs["train"]
             }
         }
         ## cat("Augmentation survival (method=1) \n")
@@ -278,7 +278,7 @@ iidATE <- function(estimator,
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
             if(beforeTau.nJumpC[iTau]>0){
-                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])*n.obsIntegral/n.obs
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])*n.obsIntegral/n.obs["train"]
             }
         }
     } ## end attr(estimator,"integral")
@@ -415,13 +415,13 @@ iidATE2 <- function(estimator,
             integral.F1tau <- calcItermOut(factor = dM_SG,
                                            iid = iid.nuisance.outcome[,iTau,,drop=FALSE],
                                            indexJump = index.obsSINDEXjumpC.int[,iTau],
-                                           n = n.obs)
+                                           n = n.obs["train"])
 
             ## at t
             integral.F1t <- calcItermIn(factor = -dM_SG,
                                         iid = iid.nuisance.outcome[, n.times+(1:n.jumps),,drop=FALSE],
                                         indexJump = index.obsSINDEXjumpC.int[,iTau],
-                                        n = n.obs)
+                                        n = n.obs["train"])
 
             ## assemble
             for(iC in 1:n.contrasts){ ## iC <- 1
@@ -448,7 +448,7 @@ iidATE2 <- function(estimator,
             integral.Surv <- calcItermIn(factor = -ls.F1tau_F1t[[iTau]]*dM_SG/S.jump,
                                          iid = iid.nuisance.survival,
                                          indexJump = index.obsSINDEXjumpC.int[,iTau],
-                                         n = n.obs)
+                                         n = n.obs["train"])
 
             for(iC in 1:n.contrasts){ ## iC <- 1
                 iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowMeans(rowMultiply_cpp(integral.Surv, scale = iW.IPTW[,iC]))
@@ -463,13 +463,13 @@ iidATE2 <- function(estimator,
             integral.G <- calcItermIn(factor = -ls.F1tau_F1t[[iTau]]*dM_SG/G.jump,
                                       iid = iid.nuisance.censoring,
                                       indexJump = index.obsSINDEXjumpC.int[,iTau],
-                                      n = n.obs)
+                                      n = n.obs["train"])
 
             ## integral censoring martingale
             integral.dLambda <- calcItermIn(factor = -ls.F1tau_F1t[[iTau]]/SG,
                                             iid = iid.nuisance.martingale,
                                             indexJump = index.obsSINDEXjumpC.int[,iTau],
-                                            n = n.obs)
+                                            n = n.obs["train"])
 
             ## collect
             for(iC in 1:n.contrasts){ ## iC <- 1
