@@ -133,7 +133,7 @@ i.e. using the notation of Ozenne et al. (2020) an AIPTW,IPCW estimator instead 
 In presence of censoring, the computation time and memory usage for the evaluation of the AIPTW estimator and its uncertainty do not scale well with the number of observations (n) or the number of unique timepoints (T).
 Point estimation involves n by T matrices, influence function involves n by T by n arrays. \itemize{
 \item for large datasets (e.g. n>5000), bootstrap is recommended as the memory need for the influence function is likely prohibitive.
-\item it is possible to decrease the memory usage for the point estimation by setting the argument \code{store=c(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
+\item it is possible to decrease the memory usage for the point estimation by setting the argument \code{store=list(size.split=1000)}. The integral term of the AIPTW estimator is then evaluated for 1000 observations at a time, i.e. involing matrices of size 1000 by T instead of n by T. This may lead to increased computation time.
 \item reducing the number of unique timepoints (e.g. by rounding them) will lead to an approximate estimation procedure that is less demanding both in term of computation and memory. The resulting estimator will be more variable than the one based on the original timepoints (i.e. wider confidence intervals).
 }
 }
@@ -206,6 +206,7 @@ ateFit1d <- ate(fit.Cox, treatment = "X1", times = 5:8, data = dtS,
 
 ## manually defining the cluster to be used
 ## useful when specific packages need to be loaded in each cluster
+if(require(rms)){
 fit.CoxNL <- coxph(Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
 
 cl <- parallel::makeCluster(2)
@@ -214,6 +215,7 @@ parallel::clusterEvalQ(cl, library(rms))
 ateFit1e <- ate(fit.CoxNL, treatment = "X1", times = 5:8, data = dtS, 
                 se = TRUE, B = 50, handler = "foreach", cl = cl)
 parallel::stopCluster(cl)
+}
 }
 
 
@@ -307,41 +309,22 @@ ateRobust <- ate(event = m.event,
 summary(ateRobust)
 
 #### visualize IPTW ####
-weights(ateRobust, type = "IPTW")
-dt$IPTW <- rowSums(weights(ateRobust, type = "IPTW"))
+head(weights(ateRobust, type = "IPTW"))
+colSums(weights(ateRobust, type = "IPTW"))
 
-if(require(ggplot)){ ## visualize propensity score
-ggIPTW <- ggplot(dt, aes(x = 1/IPTW, fill = X1)) + geom_boxplot()
-ggIPTW + ggtitle("Propensity score for the treatment of the treatment group")
-
-dtIPTW <- rbind(cbind(dt, treatment = "T0", weight = weights(ateRobust, type = "probaT")[,1]),
-                cbind(dt, treatment = "T1", weight = weights(ateRobust, type = "probaT")[,2]))
-
-ggIPTW <- ggplot(dtIPTW, aes(weight, treatment, fill = X1)) + geom_boxplot()
-ggIPTW + labs(fill = "Patient from group", y = "Targeted treatment", x = "Propensity score")
+if(require(ggplot2)){
+autoplot(ateRobust, type = "IPTW")
+autoplot(ateRobust, type = "probaT")
 }
 ## see IPWbox to specify your own IPTW weights
 
 #### visualize IPCW ####
-dtW.IPCW <- cbind(dt,IPCW = weights(ateRobust, type = "IPCW"))
-IPCW.col <- grep("IPCW",names(dtW.IPCW), value = TRUE)
-## move to long format
-dtL.IPCW <- reshape(dtW.IPCW, direction = "long", idvar = c("id","X1"),
-                    varying = IPCW.col, times = gsub("IPCW.","",IPCW.col))
-dtL.IPCW$time <- as.factor(dtL.IPCW$time)
-## percentage of 0 at each timepoint
-dtL.IPCW0 <- dtL.IPCW[, .(IPCW=mean(IPCW),
-                          label=paste0(round(100*mean(IPCW>0),2),"\%")),                           
-                      by = c("time","X1")]
+head(weights(ateRobust, type = "IPCW"))
+colSums(weights(ateRobust, type = "IPCW"))
 
-ggIPCW <- ggplot(mapping  = aes(time, IPCW, fill = X1))
-ggIPCW <- ggIPCW + geom_boxplot(data = dtL.IPCW[dtL.IPCW$IPCW>0],
-                                position=position_dodge(.9))
-ggIPCW <- ggIPCW + geom_text(data = dtL.IPCW0, 
-              mapping = aes(x = time, y = 3.1, color = X1, group = X1, label = label),
-              position=position_dodge(.9))
-ggIPCW <- ggIPCW + ggtitle("Percentage of non-0 weights and corresponding boxplot")
-ggIPCW
+if(require(ggplot2)){
+autoplot(ateRobust, type = "IPCW")
+}
 
 #### compare various estimators ####
 system.time( ## about 1.5s
@@ -362,7 +345,7 @@ ateRobust3 <- ate(event = m.event,
                  censor = m.censor,
                  data = dt, times = 5:10, 
                  cause = 1, se = FALSE,
-                 store = c("size.split" = 100), verbose = 2)
+                 store = list("size.split" = 100), verbose = 2)
 coef(ateRobust3) - coef(ateRobust) ## same
 
 ## approximation to speed up calculations
@@ -377,7 +360,6 @@ ateRobustFast <- ate(event = mRound.event, treatment = m.treatment,
                  data = dt, times = c(5:10), cause = 1, se = TRUE)
 )
 coef(ateRobustFast) - coef(ateRobust) ## inaccuracy
-}
 
 #### consider more than two treatment groups ####
 if(require(nnet)){
@@ -389,6 +371,7 @@ ateRobust4 <- ate(event = m.event,
                  data = dt, times = c(5:10), 
                  cause = 1, store = c(weights = TRUE))
 ateRobust4
+}
 }
 
 }

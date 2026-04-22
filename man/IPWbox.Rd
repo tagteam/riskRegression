@@ -4,7 +4,7 @@
 \alias{IPWbox}
 \title{Encapsulate Weights}
 \usage{
-IPWbox(variable, proba, IF = NULL, id = NULL)
+IPWbox(variable, proba, IF = NULL, indicator = NULL, id = NULL)
 }
 \arguments{
 \item{variable}{[character vector] name of the treatment variable or (time,censoring) variables .}
@@ -13,10 +13,12 @@ IPWbox(variable, proba, IF = NULL, id = NULL)
 
 \item{IF}{[array] value of the influence function for each observation (rows) relative to each weight (columns,slice).}
 
+\item{indicator}{[matrix] indicator of the observed treatment assignement. Should have the same dimension as argument proba.}
+
 \item{id}{[list of a single vector ] optional id variable.}
 }
 \value{
-An object
+An IPWbox object
 }
 \description{
 Object containing user-defined weights that can be used with the \code{ate} function.
@@ -28,7 +30,13 @@ For instance if one wants to truncate the weights or restrict the population to 
 \examples{
 
 library(data.table)
-
+library(survival)
+\dontrun{
+estimator <- "all"
+}
+\dontshow{
+estimator <- "IPTW"
+}
 #############################################
 #### Survival settings without censoring ####
 #### ATE with glm                        ####
@@ -36,25 +44,66 @@ library(data.table)
 
 #### generate data ####
 n <- 250
+set.seed(2)
 dt <- sampleData(n, outcome="binary")
+dt[, id := paste0("id",1:.N)]
 dt[, X2 := as.numeric(X2)]
 
-#### compute the ATE ####
+#### working models ####
 m.event <- glm(formula = Y ~ X1+X2+X3, data=dt, family = "binomial")
 m.treatment <- glm(X3~X1+X2+X5+X8, data=dt,family=binomial(link="logit"))
-ateFit <- ate(m.event, treatment = m.treatment, data = dt, store = c(weights = TRUE))
-model.tables(ateFit)
 
-range(weights(ateFit, type = "IPTW"))
+#### compute the ATE ####
+## A) usual
+ateFit1 <- ate(m.event, treatment = m.treatment, 
+               data = dt, store = c(weights = TRUE),
+               estimator = estimator)
+model.tables(ateFit1, estimator = "all")
+colSums(weights(ateFit1))
 
+
+## B) same except that the IPTW sum up to exactly NROW(dt)
+ateFit2 <- ate(m.event, treatment = m.treatment,
+               data = dt, store = c(weights = TRUE), data.index = 1:NROW(dt),
+               estimator = estimator)
+model.tables(ateFit2, estimator = "all")
+colSums(weights(ateFit2))
+
+## C) same as version 1 but 'manually' providing weights values + influence function
 manualWeights <- weights(ateFit, type = "IPTWbox")
-manualWeights$proba
-ateFit.bis <- ate(m.event, treatment = manualWeights, data = dt)
-model.tables(ateFit.bis) ## same as when providing the logistic model
+ateFit3 <- ate(m.event, treatment = manualWeights,
+               data = dt, store = c(weights = TRUE),
+               estimator = estimator)
+model.tables(ateFit3, estimator = "all")
+colSums(weights(ateFit3))
 
-#### set weights above 5 to 0
-manualWeights.trim <- drop1(manualWeights, scope = 5)
-ateFit.trim <- ate(m.event, treatment = manualWeights.trim, data = dt)
-model.tables(ateFit.trim)
+\dontrun{
+## D) set observations with high weight to 0 weight (only affect IPTW and AIPTW not GFORMULA)
+manualWeights.trim <- drop1(manualWeights, method = "trim", scope = 5)
+ateFit.trim <- ate(m.event, treatment = manualWeights.trim,
+                   data = dt, store = c(weights = TRUE),
+                   estimator = estimator)
+model.tables(ateFit.trim, estimator = "all")
+colSums(weights(ateFit.trim))
 
+## E) set observations with high weight to 5 weight (only affect IPTW and AIPTW not GFORMULA)
+manualWeights.threshold <- drop1(manualWeights, method = "threshold", scope = 5)
+ateFit.threshold <- ate(m.event, treatment = manualWeights.threshold,
+                        data = dt, store = c(weights = TRUE),
+                        estimator = estimator)
+model.tables(ateFit.threshold, estimator = "all")
+colSums(weights(ateFit.threshold))
+
+## F) evaluate on a subset
+index.rm <- which(rowSums(weights(ateFit, type = "IPTW"))<=5)
+dt.rm <- dt[index.rm]
+ateFit.rm <- ate(m.event, treatment = m.treatment,
+                 data = dt.rm, data.index = index.rm, store = c(weights = TRUE),
+                 estimator = estimator)
+model.tables(ateFit.rm, estimator = "all")
+colSums(weights(ateFit.rm))
+}
+}
+\seealso{
+\code{\link{drop1.IPWbox}} to modify the weights.
 }

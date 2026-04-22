@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 14 2025 (08:49) 
 ## Version: 
-## Last-Updated: apr 16 2026 (17:48) 
+## Last-Updated: apr 22 2026 (11:21) 
 ##           By: Brice Ozenne
-##     Update #: 24
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,12 @@ ate_initArgs <- function(object.event,
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
     ## data.index
-    if(is.null(data.index)){data.index <- 1:NROW(mydata)}
+    if(is.null(data.index)){
+        data.index <- 1:NROW(mydata)
+        attr(data.index,"original") <- FALSE
+    }else{
+        attr(data.index,"original") <- TRUE
+    }
 
     ## ** fit a regression model when the user specifies a formula
     ## Event
@@ -148,7 +153,7 @@ ate_initArgs <- function(object.event,
     }else{ ## G-formula or IPTW (no censoring)
         censorVar.status <- NA
         censorVar.time <- NA
-                
+        
         if(inherits(model.event,"CauseSpecificCox")){
             test.censor <- model.event$response[,"status"] == 0        
             n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] < t))})
@@ -297,16 +302,23 @@ ate_initArgs <- function(object.event,
     }else{
         estimator <- toupper(estimator)
 
-        ## should montonicity constraint be enforced on estimators based on IPW
-        mestimator <- estimator
-        estimator <- gsub("MONOTONE","",estimator)
-        
-        index.westimator <- which(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW"))
-        if(length(index.westimator)>0){
-            test.monotone <- unique(grepl(pattern = "MONOTONE",mestimator[index.westimator]))
-        }else{
+        if(length(estimator)==1 && estimator == "ALL"){
+            estimator <- c("GFORMULA","IPTW","AIPTW")
             test.monotone <- FALSE
+        }else if(length(estimator)==1 && trimws(gsub("MONOTONE","",estimator), which = "both") == "ALL"){
+            estimator <- c("GFORMULA","IPTW","AIPTW")
+            test.monotone <- TRUE
+        }else{            
+            mestimator <- estimator
+            estimator <- trimws(gsub("MONOTONE","",estimator), which = "both")
+            index.westimator <- which(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW"))
+            if(length(index.westimator)>0){ ## should montonicity constraint be enforced on estimators based on IPW
+                test.monotone <- any(grepl(pattern = "MONOTONE",mestimator[index.westimator]))
+            }else{
+                test.monotone <- FALSE
+            }
         }
+
         if(any(estimator == "IPTW") && any(n.censor>0)){
             estimator[estimator == "IPTW"] <- "IPTW,IPCW"
         }

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: apr 17 2026 (17:06) 
+## last-updated: apr 22 2026 (09:57) 
 ##           By: Brice Ozenne
-##     Update #: 728
+##     Update #: 741
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1720,9 +1720,18 @@ predictRisk.wglm <- function(object, newdata, times = NULL,
 predictRisk.IPWbox <- function(object, newdata, times = NULL, cause, iid = FALSE, average.iid = FALSE, ...){
 
     n.newdata <- NROW(newdata)
-    dots <- list(...)    
-    if(n.newdata != NROW(object$proba)){
-        stop("Mismatch between the size of the dataset and the number of weights. \n")
+    dots <- list(...)
+
+    if(!is.null(object$id)){
+        if(names(object$id) %in% names(newdata) == FALSE){
+            stop("Argument \'newdata\' is missing the column \"",names(object$id),"\". \n")
+        }
+        if(any(object$id[[1]] != newdata[[names(object$id)]])){
+            stop("Mismatch between the ordering of the weights in the object and argument \'newdata\' according to column ",names(object$id),". \n")
+        }
+    }else if(n.newdata != NROW(object$proba)){
+        stop("Mismatch between the size of the dataset and the number of weights. \n",
+             "Consider specifying the argument \'id\' when calling IPWbox. \n")
     }
 
     if(object$type == "IPTW"){

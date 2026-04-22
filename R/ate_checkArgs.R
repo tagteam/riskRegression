@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 14 2025 (08:49) 
 ## Version: 
-## Last-Updated: apr 16 2026 (18:10) 
+## Last-Updated: apr 22 2026 (18:16) 
 ##           By: Brice Ozenne
-##     Update #: 8
+##     Update #: 11
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -253,14 +253,19 @@ ate_checkArgs <- function(call,
                            "Set argument \'B\' to a positive integer to use a bootstrap instead \n",sep=""))
             }
         }
-        if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
-            stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
-                 "(discrepancy found in number of rows) \n")
-        }
 
-        if(!is.null(object.censor) && coxN(object.censor)!=NROW(mydata)){ ## note: only check that the datasets have the same size
+        if(attr(data.index,"original")==FALSE){ ## unless data.index is specified the data used to fit the model and compute ate should be the same
+            if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
+                stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
+                     "(discrepancy found in number of rows) \n",
+                     "Consider specifying argument \'data.index\' when computing the average treatment effect on a subset. \n")
+            }
+
+            if(!is.null(object.censor) && coxN(object.censor)!=NROW(mydata)){ ## note: only check that the datasets have the same size
                 stop("Argument \'censor\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
-                     "(discrepancy found in number of rows) \n")
+                     "(discrepancy found in number of rows) \n",
+                     "Consider specifying argument \'data.index\' when computing the average treatment effect on a subset. \n")
+            }
         }
 
     }
@@ -285,7 +290,7 @@ ate_checkArgs <- function(call,
             stop("Incorrect values for the argument \'contrasts\' \n",
                  "Possible values: \"",paste(unique(mydata[[treatment]]),collapse="\" \""),"\" \n")
         }
-    
+        
     }
     if(!is.null(allContrasts)){
         if(any(allContrasts %in% unique(mydata[[treatment]]) == FALSE)){

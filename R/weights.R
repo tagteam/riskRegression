@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 15 2026 (17:19) 
 ## Version: 
-## Last-Updated: apr 17 2026 (17:36) 
+## Last-Updated: apr 22 2026 (17:48) 
 ##           By: Brice Ozenne
-##     Update #: 51
+##     Update #: 75
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,33 +44,47 @@ weights.ate <- function(object, type = "IPTW", ...){
              "Consider providing a treatment model, possibly also a censoring model when calling ate. \n",
              "If already done, set the argument \'estimator\' to \"IPTW\" or \"AIPTW\". \n")
     }
-    if(is.null(object$weights$IPTW)){
+    if(is.null(object$weights$probaT)){
         stop("No weight has been stored in the object. \n",
              "Consider setting the argument \'store\' to c(weights = TRUE) to store the weights. \n")
     }
-    
+
+    if(type %in% c("probaT","IPTW","IPTWbox")){
+        proba <- object$weights$probaT
+        indicator <- object$weights$indicatorT
+        colnames(indicator) <- object$contrasts
+        colnames(proba) <- object$contrasts
+    }else if(type %in% c("probaC","IPCW")){
+        proba <- object$weights$probaC
+        indicator <- object$weights$indicatorC
+        colnames(indicator) <- object$eval.times
+        colnames(proba) <- object$eval.times
+    }
+
     ## ** extract
     if(type == "IPTWbox"){
-        proba <- attr(object$weights$IPTW,"proba")
-        colnames(proba) <- object$contrasts
-
-        iid.proba <- attr(object$weights$IPTW,"iid.proba")
+        iid.proba <- object$weights$probaT.iid
         if(!is.null(iid.proba)){
             names(iid.proba) <- object$contrasts
         }
         out <- IPWbox(variable = object$variables["treatment"],
                       id = NULL,
                       proba = proba,
+                      indicator = indicator,
                       IF = iid.proba)
 
     }else if(type %in% c("IPTW","IPCW")){
-        out <- object$weights[[type]]
-        attr(out,"proba") <- NULL
-        attr(out,"iid.proba") <- NULL
-    }else if(type == "probaT"){
-        out <- attr(object$weights$IPTW, "proba")
-    }else if(type == "probaC"){
-        out <- attr(object$weights$IPCW, "proba")
+
+        out <- indicator/proba
+        if(any(is.na(proba) & indicator==0)){
+            out[is.na(proba) & indicator==0] <- 0
+        }
+        if(any(is.infinite(proba) & indicator==0)){
+            out[is.infinite(proba) & indicator==0] <- 0
+        }
+
+    }else if(type %in% c("probaT","probaC")){
+        out <- proba
     }
 
     ## ** export
