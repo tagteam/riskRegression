@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Oct 16 2024 (09:24) 
+## last-updated: Apr 23 2026 (12:13) 
 ##           By: Brice Ozenne
-##     Update #: 1299
+##     Update #: 1304
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -512,7 +512,7 @@ predict2plot <- function(dataL, name.outcome,
                          smoother = NULL, formula.smoother = NULL, first.derivative = FALSE,
                          size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, shape.point = c(3,18), n.sim = 250){
     
-    .GRP <- NULL ## [:: for CRAN CHECK::]
+    .GRP <- .data <- NULL ## [:: for CRAN CHECK::]
     if(first.derivative && (smooth==FALSE)){
         stop("Set argument \'smooth\' to TRUE when \'first.derivative\' is TRUE. \n")
     }
@@ -610,30 +610,27 @@ predict2plot <- function(dataL, name.outcome,
     labelCI <- paste0(conf.level*100,"% pointwise \n confidence interval")
     labelBand <- paste0(conf.level*100,"% simulaneous \n confidence interval \n")
 
-    gg.base <- ggplot2::ggplot(data = dataL, mapping = ggplot2::aes(group = row))
+    gg.base <- ggplot2::ggplot(data = dataL, mapping = ggplot2::aes(group = .data$row))
     if(band){ ## confidence band
         if(smooth>0){
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_ribbon(eval(parse(text = paste0(
-                                                                         "ggplot2::aes(x = time, ymin = lowerBand.smooth, ymax = upperBand.smooth, group = ",group.by,")"))),
+                gg.base <- gg.base + ggplot2::geom_ribbon(ggplot2::aes(x = .data$time, ymin = .data$lowerBand.smooth, ymax = .data$upperBand.smooth, group = .data[[group.by]]),
                                                           alpha = alpha)
             }else{
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
-                                                                       "ggplot2::aes(x = time, y = lowerBand.smooth, group = ",group.by,", color = ",group.by,", linetype = \"band\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$lowerBand.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "band"),
                                                         linewidth = size.band)
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
-                                                                       "ggplot2::aes(x = time, y = upperBand.smooth, group = ",group.by, ", color = ",group.by,", linetype = \"band\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$upperBand.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "band"),
                                                         linewidth = size.band)
             }
         }else{
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes_string(xmin = "time", xmax = "timeRight", ymin = "lowerBand", ymax = "upperBand",
-                                                                            fill = "labelBand"), linetype = 0, alpha = alpha)
+                gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes(xmin = .data$time, xmax = .data$timeRight, ymin = .data$lowerBand, ymax = .data$upperBand,
+                                                                     fill = "band"), linetype = 0, alpha = alpha)
                 gg.base <- gg.base + scale_fill_manual("", values="grey12")        
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerBand", xend = "timeRight", yend = "lowerBand", color = "\"band\""),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$lowerBand, xend = .data$timeRight, yend = .data$lowerBand, color = "band"),
                                                            linewidth = size.band)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperBand", xend = "timeRight", yend = "upperBand", color = "\"band\""),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$upperBand, xend = .data$timeRight, yend = .data$upperBand, color = "band"),
                                                            linewidth = size.band)
             }
         }
@@ -641,47 +638,45 @@ predict2plot <- function(dataL, name.outcome,
     if(ci){ ## confidence interval
         if(smooth>0){
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI.smooth", ymax = "upperCI.smooth", linetype = "labelCI"),
+                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes(x = .data$time, ymin = .data$lowerCI.smooth, ymax = .data$upperCI.smooth, linetype = "ci"),
                                                             width = size.ci)
                 gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
             }else{
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
-                                                                       "ggplot2::aes(x = time, y = lowerCI.smooth, group = ",group.by,", color = ",group.by,", linetype = \"ci\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$lowerCI.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "ci"),
                                                         linewidth = size.ci)
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
-                                                                       "ggplot2::aes(x = time, y = upperCI.smooth, group = ",group.by,", color = ",group.by,", linetype = \"ci\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$upperCI.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "ci"),
                                                         linewidth = size.ci)
 
             }
         }else{
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI", ymax = "upperCI", linetype = "labelCI"),
+                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes(x = .data$time, ymin = .data$lowerCI, ymax = .data$upperCI, linetype = "ci"),
                                                             width = size.ci)
                 gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
 
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerCI", xend = "timeRight", yend = "lowerCI", color = "\"ci\""),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$lowerCI, xend = .data$timeRight, yend = .data$lowerCI, color = "ci"),
                                                            linewidth = size.ci)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperCI", xend = "timeRight", yend = "upperCI", color = "\"ci\""),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$upperCI, xend = .data$timeRight, yend = .data$upperCI, color = "ci"),
                                                            linewidth = size.ci)
             }
         }
     }
     ## estimate
     if(smooth>0){
-        gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes_string(x = "time", y = paste0(name.outcome,".smooth"), group = group.by, color = group.by),
+        gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes(x = .data$time, y = .data[[paste0(name.outcome,".smooth")]], group = .data[[group.by]], color = .data[[group.by]]),
                                                 linewidth = size.estimate)
     }else{
-        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes_string(x = "timeRight", y = name.outcome, xend = "time", yend = name.outcome, color = group.by),
+        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes(x = .data$timeRight, y = .data[[name.outcome]], xend = .data$time, yend = .data[[name.outcome]], color = .data[[group.by]]),
                                                    linewidth = size.estimate)
         if("status" %in% names(dataL)){
             dataL$status <- as.character(dataL$status)
             gg.base <- gg.base + ggplot2::geom_point(data = na.omit(dataL),
-                                                     mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by, shape = "status"), size = size.point)
+                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], shape = .data$status), size = size.point)
             gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values = shape.point, labels = c("censoring","event"))
         }else{
             gg.base <- gg.base + ggplot2::geom_point(data = dataL,
-                                                     mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by), size = size.point)
+                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]]), size = size.point)
         }
     }
     
