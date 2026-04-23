@@ -70,7 +70,7 @@ model.tables(ateFit2, estimator = "all")
 colSums(weights(ateFit2))
 
 ## C) same as version 1 but 'manually' providing weights values + influence function
-manualWeights <- weights(ateFit, type = "IPTWbox")
+manualWeights <- weights(ateFit1, type = "IPTWbox")
 ateFit3 <- ate(m.event, treatment = manualWeights,
                data = dt, store = c(weights = TRUE),
                estimator = estimator)
@@ -95,7 +95,7 @@ model.tables(ateFit.threshold, estimator = "all")
 colSums(weights(ateFit.threshold))
 
 ## F) evaluate on a subset
-index.rm <- which(rowSums(weights(ateFit, type = "IPTW"))<=5)
+index.rm <- which(rowSums(weights(ateFit1, type = "IPTW"))<=5)
 dt.rm <- dt[index.rm]
 ateFit.rm <- ate(m.event, treatment = m.treatment,
                  data = dt.rm, data.index = index.rm, store = c(weights = TRUE),
