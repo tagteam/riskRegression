@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Apr 23 2026 (11:15) 
+## last-updated: Apr 23 2026 (11:56) 
 ##           By: Brice Ozenne
-##     Update #: 252
+##     Update #: 264
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -117,6 +117,7 @@ autoplot.ate <- function(object,
                          alpha = NA,
                          ylab = NULL,
                          ...){
+    .data <- NULL ## [:: for CRAN CHECK::]
 
     ## ** initialize and check
     estimator <- match.arg(estimator, choices =  object$estimator, several.ok = FALSE)
@@ -200,11 +201,11 @@ autoplot.ate <- function(object,
         
         gg <- ggplot2::ggplot(mapping  = ggplot2::aes(.data$time, .data$values, fill = .data$group))
         gg <- gg + ggplot2::geom_boxplot(data = IPCW.long[IPCW.long$values>0,,drop=FALSE],
-                                         position=position_dodge(.9))
+                                         position = ggplot2::position_dodge(.9))
 
-        gg <- gg + geom_text(data = IPCW.long0, 
+        gg <- gg + ggplot2::geom_text(data = IPCW.long0, 
                              mapping = ggplot2::aes(x = .data$time, y = .data$y, color = .data$group, group = .data$group, label = .data$label),
-                             position=position_dodge(.9))
+                             position = ggplot2::position_dodge(.9))
         gg <- gg + ggplot2::labs(color = "Observations from", fill = "Observations from", y = "Inverse Probability of Censoring Weight (IPCW) \n (proportion of non-zero weights)")
 
         gg.res <- list(data = IPCW.long,
