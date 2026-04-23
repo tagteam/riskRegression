@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: apr 22 2026 (18:09) 
+## last-updated: Apr 23 2026 (11:15) 
 ##           By: Brice Ozenne
-##     Update #: 250
+##     Update #: 252
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -178,8 +178,8 @@ autoplot.ate <- function(object,
                                 group = object$contrasts[max.col(object$weights$indicatorT)],
                                 weight = rowSums(weights(object, type = "IPTW")))
         IPTW.wide$group <- as.factor(paste0(object$variable["treatment"],"=",IPTW.wide$group))
-n
-        gg <- ggplot2::ggplot(IPTW.wide, ggplot2::aes(x = weight, fill = group)) + ggplot2::geom_boxplot()
+
+        gg <- ggplot2::ggplot(IPTW.wide, ggplot2::aes(x = .data$weight, fill = .data$group)) + ggplot2::geom_boxplot()
         gg <- gg + ggplot2::labs(fill = "Observations from", x = "Inverse Probability of Treatment Weight (IPTW)")
 
         gg.res <- list(data = IPTW.wide,
@@ -198,12 +198,12 @@ n
                                                                          by = c("time","group")])
         IPCW.long0$y <- 0.9
         
-        gg <- ggplot2::ggplot(mapping  = ggplot2::aes(time, values, fill = group))
+        gg <- ggplot2::ggplot(mapping  = ggplot2::aes(.data$time, .data$values, fill = .data$group))
         gg <- gg + ggplot2::geom_boxplot(data = IPCW.long[IPCW.long$values>0,,drop=FALSE],
                                          position=position_dodge(.9))
 
         gg <- gg + geom_text(data = IPCW.long0, 
-                             mapping = ggplot2::aes(x = time, y = y, color = group, group = group, label = label),
+                             mapping = ggplot2::aes(x = .data$time, y = .data$y, color = .data$group, group = .data$group, label = .data$label),
                              position=position_dodge(.9))
         gg <- gg + ggplot2::labs(color = "Observations from", fill = "Observations from", y = "Inverse Probability of Censoring Weight (IPCW) \n (proportion of non-zero weights)")
 
@@ -221,7 +221,7 @@ n
         IPTW.long$target <- as.factor(IPTW.long$target)
         IPTW.long$group <- as.factor(paste0(object$variable["treatment"],"=",IPTW.long$group))
 
-        gg <- ggplot2::ggplot(IPTW.long, ggplot2::aes(value, target, fill = group)) + ggplot2::geom_boxplot()
+        gg <- ggplot2::ggplot(IPTW.long, ggplot2::aes(.data$value, .data$target, fill = .data$group)) + ggplot2::geom_boxplot()
         gg <- gg + ggplot2::labs(fill = "Observations from", y = paste0("Targeted ",object$variable["treatment"]), x = "Propensity score (1/IPTW)")
 
         gg.res <- list(data = IPTW.long,
@@ -270,14 +270,16 @@ n
                     if(band==1){ylab <- paste0(ylab, " (simultaneous ci over time)")}
                     if(band==2){ylab <- paste0(ylab, " (simultaneous ci over time and treatment)")}
                 }
-                gg.res$plot <- ggplot2::ggplot(data = dataL, ggplot2::aes(x = time, y = estimate, ymin = lowerBand, ymax = upperBand, color = .data[[name.treatment]]))
+                gg.res$plot <- ggplot2::ggplot(data = dataL, ggplot2::aes(x = .data$time, y = .data$estimate,
+                                                                          ymin = .data$lowerBand, ymax = .data$upperBand, color = .data[[name.treatment]]))
                 gg.res$plot <- gg.res$plot + ggplot2::geom_pointrange(position = ggplot2::position_dodge(width = 0.5))
             }else if(ci){
                 if(test.ylab){ylab <- paste0(ylab, " (pointwise ci)")}
-                gg.res$plot <- ggplot2::ggplot(data = dataL, ggplot2::aes(x = time, y = estimate, ymin = lowerCI, ymax = upperCI, color = .data[[name.treatment]]))
+                gg.res$plot <- ggplot2::ggplot(data = dataL, ggplot2::aes(x = .data$time, y = .data$estimate,
+                                                                          ymin = .data$lowerCI, ymax = .data$upperCI, color = .data[[name.treatment]]))
                 gg.res$plot <- gg.res$plot + ggplot2::geom_pointrange(position = ggplot2::position_dodge(width = 0.5))
             }else{
-                gg.res$plot <- ggplot(data = dataL, ggplot2::aes(x = time, y = estimate, color = .data[[name.treatment]]))
+                gg.res$plot <- ggplot(data = dataL, ggplot2::aes(x = .data$time, y = .data$estimate, color = .data[[name.treatment]]))
                 gg.res$plot <- gg.res$plot + ggplot2::geom_point()
             }
             gg.res$plot <- gg.res$plot + ggplot2::labs(y = ylab)
