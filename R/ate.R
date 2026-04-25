@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 22 2026 (19:12) 
+## last-updated: Apr 23 2026 (19:28) 
 ##           By: Brice Ozenne
-##     Update #: 2649
+##     Update #: 2651
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -114,7 +114,7 @@
 #'    (3):751--763, 2020.
 #' 
 #' @seealso
-#' \code{\link{autoplot.ate}} for a graphical representation the standardized risks. \cr
+#' \code{\link{plot.ate}} or \code{\link{autoplot.ate}} for a graphical representation the standardized risks. \cr
 #' \code{\link{coef.ate}} to output estimates for the the average risk, or difference in average risks, or ratio between average risks. \cr
 #' \code{\link{confint.ate}} to output a list containing all estimates (average & difference & ratio) with their confidence intervals and p-values. \cr
 #' \code{\link{model.tables.ate}} to output a data.frame containing one type of estimates (average or difference or ratio) with its confidence intervals and p-values.   \cr
@@ -297,19 +297,14 @@
 #' head(weights(ateRobust, type = "IPTW"))
 #' colSums(weights(ateRobust, type = "IPTW"))
 #' 
-#' if(require(ggplot2)){
-#' autoplot(ateRobust, type = "IPTW")
-#' autoplot(ateRobust, type = "probaT")
-#' }
+#' plot(ateRobust, type = "IPTW")
+#' plot(ateRobust, type = "probaT")
 #' ## see IPWbox to specify your own IPTW weights
 #' 
 #' #### visualize IPCW ####
 #' head(weights(ateRobust, type = "IPCW"))
 #' colSums(weights(ateRobust, type = "IPCW"))
-#' 
-#' if(require(ggplot2)){
-#' autoplot(ateRobust, type = "IPCW")
-#' }
+#' plot(ateRobust, type = "IPCW")
 #' 
 #' #### compare various estimators ####
 #' system.time( ## about 1.5s

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: Mar  3 2025 (13:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 178
+## Last-Updated: Apr 23 2026 (21:46) 
+##           By: Brice Ozenne
+##     Update #: 184
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,8 +42,16 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
         stop("Cannot convert to a data.table object when times is missing in object \n",
              "set the argument \'keep.times\' to TRUE when calling the predict method \n")
     }
+
     if(!is.matrix(x[[x$type[1]]])){ ## baseline hazard
-        out <- as.data.table(x[c("times",x$type)])
+        keep.cols <- c("times",x$type)
+        if(x$se){
+            keep.cols <- c(keep.cols, unlist(lapply(x$type, paste, c("se","lower","upper"), sep = ".")))
+        }
+        if(x$band){
+            keep.cols <- c(keep.cols, unlist(lapply(x$type, paste, c("quantileBand","lowerBand","upperBand"), sep = ".")))
+        }
+        out <- as.data.table(x[keep.cols])
         if (!is.null(nd)){
             out <- cbind(nd,out)
         }
