@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Apr 25 2026 (09:51) 
+## last-updated: Apr 25 2026 (15:15) 
 ##           By: Brice Ozenne
-##     Update #: 1567
+##     Update #: 1716
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -208,34 +208,24 @@ autoplot.predictCox <- function(object,
     
 
     if(group.by[[1]] == "covariates" && ("newdata" %in% names(object)) == FALSE){
-        stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
+        stop("Argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
     }
 
     if(group.by[[1]] %in% c("strata") && ("strata" %in% names(object) == FALSE)){
-        stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
+        stop("Argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling the predictCox function \n")
     }
     if(group.by[[1]] %in% c(object$var.lp,object$var.strata) && ("newdata" %in% names(object) == FALSE)){
-        stop("argument \'group.by\' cannot be \"",group.by[[1]],"\" when newdata is missing in the object \n",
+        stop("Argument \'group.by\' cannot be \"",group.by[[1]],"\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
     }
-    if(!is.null(object$newdata$strata) && !is.null(object$var.strata)){
-        if(any(object$var.strata %in% colnames(object$newdata))){
-            stop("cannot handle covariate \"",paste(object$var.strata[object$var.strata %in% colnames(object$newdata)],collapse ="\" \""),"\" as this name is used internally.\n",
-                 "consider refit the model using another name for the covariate. \n")
-        }
-        splitStrata <- do.call(rbind,strsplit(split = ",", x = as.character(object$newdata$strata), fixed = TRUE))
-        colnames(splitStrata) <- object$infoVar$stratavars.original
-        object$newdata <- cbind(object$newdata,splitStrata)
-    }
-        
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
-        stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
+        stop("Argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling the predictCox function \n")
     }
     if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
-        stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
+        stop("Argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling the predictCox function \n")
     }
     if(object$nTimes!= 0 && any(rank(object$times) != 1:length(object$times))){
@@ -302,95 +292,108 @@ autoplot.predictCox <- function(object,
     }else{
 
         if(!is.matrix(object[[type]])){
-        
+
             ## baseline hazard/survival
-            if(is.null(object[["strata"]])){
-                object[[type]] <- rbind(object[[type]])
+            object[[type]] <- rbind(object[[type]])
+            if(ci){
+                object[[paste0(type,".lower")]] <- rbind(object[[paste0(type,".lower")]])
+                object[[paste0(type,".upper")]] <- rbind(object[[paste0(type,".upper")]])
+            }
+            if(band){
+                object[[paste0(type,".lowerBand")]] <- rbind(object[[paste0(type,".lowerBand")]])
+                object[[paste0(type,".upperBand")]] <- rbind(object[[paste0(type,".upperBand")]])
+            }
+            if(0 %in% object$times == FALSE){ ## add baseline
+                
+                n.strata <- ifelse(is.null(object$strata), 1 ,length(levels(object$strata)))
+                object[[type]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
+                                        object[[type]]) ## 0 if cumhazard 1 if survival
                 if(ci){
-                    object[[paste0(type,".lower")]] <- rbind(object[[paste0(type,".lower")]])
-                    object[[paste0(type,".upper")]] <- rbind(object[[paste0(type,".upper")]])
+                    object[[paste0(type,".lower")]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
+                                                             object[[paste0(type,".lower")]])
+                    object[[paste0(type,".upper")]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
+                                                             object[[paste0(type,".upper")]])
                 }
                 if(band){
-                    object[[paste0(type,".lowerBand")]] <- rbind(object[[paste0(type,".lowerBand")]])
-                    object[[paste0(type,".upperBand")]] <- rbind(object[[paste0(type,".upperBand")]])
+                    object[[paste0(type,".lowerBand")]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
+                                                                 object[[paste0(type,".lowerBand")]])
+                    object[[paste0(type,".upperBand")]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
+                                                                 object[[paste0(type,".upperBand")]])
                 }
-                if(object$nTimes==0){
-                    if(0 %in% object$times == FALSE){ ## add baseline
-                        object[[type]] <- cbind((type=="survival"),object[[type]]) ## 0 if cumhazard 1 if survival
-                        if(ci){
-                            object[[paste0(type,".lower")]] <- cbind((type=="survival"),object[[paste0(type,".lower")]])
-                            object[[paste0(type,".upper")]] <- cbind((type=="survival"),object[[paste0(type,".upper")]])
-                        }
-                        if(band){
-                            object[[paste0(type,".lowerBand")]] <- cbind((type=="survival"),object[[paste0(type,".lowerBand")]])
-                            object[[paste0(type,".upperBand")]] <- cbind((type=="survival"),object[[paste0(type,".upperBand")]])
-                        }
-                        object$times <- c(0,object$times)
-                        if(!is.null(object$newdata)){
-                            object$newdata <- rbind(data.table(start = 0, stop = 0, status = NA, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
-                                                    object$newdata)
-                        }
-                    }
-                    if(object$lastEventTime %in% object$times == FALSE){ ##  add value at last observation time
-                        object[[type]] <- cbind(object[[type]],object[[type]][length(object[[type]])])
-                        if(ci){
-                            object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]], object[[paste0(type,".lower")]][length(object[[type]])])
-                            object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]], object[[paste0(type,".upper")]][length(object[[type]])])
-                        }
-                        if(band){
-                            object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]], object[[paste0(type,".lowerBand")]][length(object[[type]])])
-                            object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]], object[[paste0(type,".upperBand")]][length(object[[type]])])
-                        }
-                        object$times <- c(object$times,pmin(object$lastEventTime,max(object$times)+1e-12))
-                        if(!is.null(object$newdata)){
-                            object$newdata <- rbind(data.table(start = 0, stop = object$lastEventTime, status = 0, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
-                                                    object$newdata)
-                        }
-                    }
-                    if(ci && !is.null(object$newdata) && !is.na(alpha)){
-                        object[[paste0(type,".lower")]][,is.na(object$newdata$status)] <- NA
-                        object[[paste0(type,".upper")]][,is.na(object$newdata$status)] <- NA
-                        object[[paste0(type,".lower")]][,object$newdata$status==0] <- NA
-                        object[[paste0(type,".upper")]][,object$newdata$status==0] <- NA
-                    }
+                object$times <- c(rep(0, n.strata), object$times)
+                if(!is.null(object$strata)){
+                    object$strata <- c(factor(levels(object$newdata$strata), levels = levels(object$newdata$strata)), object$strata)
+                }                
+
+                if(!is.null(object$newdata)){
+                    newdata0 <- object$newdata[1:n.strata]
+                    newdata0$start <- 0
+                    newdata0$stop <- 0
+                    newdata0$status <- NA
+                    newdata0$strata[] <- factor(levels(object$newdata$strata), levels = levels(object$newdata$strata))
+                    newdata0$strata.num <- 1:n.strata
+                    newdata0$eXb <- NA
+                    newdata0$statusM1 <- NA
+                    newdata0$XXXindexXXX <- NA
+                    object$newdata <- rbind(newdata0, object$newdata)
                 }
 
-            }else{
-                index.unique <- !duplicated(object$strata)
-                strata <- object$strata[index.unique]
-                if(!is.null(attr(object$strata,"covariates"))){
-                    attr(strata,"covariates") <- attr(object$strata,"covariates")[index.unique]
-                }
-                n.strata <- length(strata)
-                time <- unique(sort(object[["times"]])) 
-                n.time <- length(time)
-                type.tempo <- matrix(NA, nrow = n.strata, ncol = n.time)
-
-                init <- switch(type,
-                               "cumhazard" = 0,
-                               "survival" = 1)
-
-                for(iStrata in 1:n.strata){ ## iStrata <- 1
-                    index.strata <- which(object[["strata"]]==strata[iStrata])
-                    type.tempo[iStrata,]  <- stats::approx(x = object[["times"]][index.strata],
-                                                           y = object[[type]][index.strata],
-                                                           yleft = init,
-                                                           yright = NA,
-                                                           xout = time,
-                                                           method = "constant")$y
-                
-                }
-                object[[type]] <- type.tempo
-                object[["strata"]] <- strata
-                object[["times"]] <- time
             }
 
+            if(!is.null(object$strata)){
+                if(any(tapply(object$time, object$strata, max) < object$lastEventTime & tapply(object$time, object$strata, max) < max(object$time))){ ##
+                
+                    index.strata <- which(tapply(object$time, object$strata, max) < object$lastEventTime)
+                    nIndex.strata <- length(index.strata)
+
+                    index.strataLast <-  which(rev(!duplicated(rev(object$strata))))[index.strata]
+                    object[[type]] <- cbind(object[[type]], object[[type]][,index.strataLast]) 
+                    if(ci){
+                        object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]],
+                                                                 matrix(object[[paste0(type,".lower")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
+                        object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]],
+                                                                 matrix(object[[paste0(type,".lower")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
+                    }
+                    if(band){
+                        object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]],
+                                                                     matrix(object[[paste0(type,".lowerBand")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
+                        object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]],
+                                                                     matrix(object[[paste0(type,".upperBand")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
+                    }
+                    object$times <- c(object$times, rep(max(object$time),n.strata))
+                    if(!is.null(object$strata)){
+                        object$strata <- c(object$strata, factor(levels(object$newdata$strata)[index.strata], levels = levels(object$newdata$strata)))
+                    }                
+
+                    if(!is.null(object$newdata)){
+                        newdataF <- object$newdata[1:nIndex.strata]
+                        newdataF$start <- 0
+                        newdataF$stop <- max(object$time)
+                        newdataF$status <- NA
+                        newdataF$strata[] <- factor(levels(object$newdata$strata)[index.strata], levels = levels(object$newdata$strata))
+                        newdataF$strata.num <- index.strata
+                        newdataF$eXb <- NA
+                        newdataF$statusM1 <- NA
+                        newdataF$XXXindexXXX <- NA
+                        object$newdata <- rbind(object$newdata, newdataF)
+                    }
+                }
+            }
+
+            if(ci && !is.null(object$newdata) && !is.na(alpha)){
+                object[[paste0(type,".lower")]][,is.na(object$newdata$status)] <- NA
+                object[[paste0(type,".upper")]][,is.na(object$newdata$status)] <- NA
+                object[[paste0(type,".lower")]][,object$newdata$status==0] <- NA
+                object[[paste0(type,".upper")]][,object$newdata$status==0] <- NA
+            }
+            
             newdata <- NULL
             if(object$nTimes==0){
                 status <- object$newdata
             }else{
                 status <- NULL
             }
+
         }else{
             newdata <- data.table::copy(object$newdata) ## can be NULL
             if(!is.null(newdata) && reduce.data[[1]]==TRUE){
@@ -431,7 +434,9 @@ autoplot.predictCox <- function(object,
                               times = object$times,
                               name.outcome = type,
                               group.by = group.by,
-                              digits = digits
+                              digits = digits,
+                              diag = object$diag,
+                              baseline = object$baseline
                               )
     }
 
@@ -473,89 +478,100 @@ predict2melt <- function(outcome, name.outcome,
                          ci, outcome.lower, outcome.upper,
                          band, outcome.lowerBand, outcome.upperBand,
                          newdata, status, strata, times, 
-                         group.by, digits){
+                         group.by, digits, diag, baseline){
 
     patterns <- NULL ## [:CRANtest:] data.table
-    n.time <- NCOL(outcome)
-    if(!is.null(time)){
-        time.names <- times 
+
+    ## ** unique name for each observation
+    if(!is.null(strata) && baseline){ 
+        n.strata <- length(levels(strata))
+        index.obs <- unlist(tapply(1:length(strata), strata, FUN = identity, simplify = FALSE))
+        index.strata <- unlist(tapply(strata, strata, FUN = function(iVec){1:length(iVec)}, simplify = FALSE))
+        name.obs <- paste0("strata",formatC(as.numeric(strata), width = log10(n.strata) + 1, flag = 0),
+                           "time",formatC(index.strata[order(index.obs)], width = log10(length(strata)) + 1, flag = 0))
     }else{
-        time.names <- 1:n.time
+        name.obs <- paste0("time",formatC(1:length(times), width = log10(length(times)) + 1, flag = 0))
     }
-    colnames(outcome) <- paste0(name.outcome,"_",time.names)
 
-    ## merge outcome with CI and band ####
+    ## ** move estimate, CI, Band to a long format
     pattern <- paste0(name.outcome,"_")
-    if(!is.null(status)){
-        Ustrata <- unique(status$strata)
-        M.status <- matrix(as.numeric(NA), nrow = NROW(outcome), ncol = NCOL(outcome),
-                           dimnames = list(NULL, paste0("status_",time.names)))
-        status[,c("index") := match(.SD$stop, times)]
-
-        for(iS in 1:length(Ustrata)){ ## iS <- 1
-            iIndex <- which(status$strata == Ustrata[iS])
-            iStatus <- status[iIndex, list("nevent" = sum(.SD$status), "index" = unique(.SD$index)),by="stop"]
-            M.status[iS, iStatus$index] <- (iStatus$nevent>0)
-        }
-        ## M.status[1,times[]] <- status[strata==Ustrata[1]]
-        ## times
-        outcome <- cbind(outcome, M.status)
-        pattern <- c(pattern,"status")
+    if(diag){
+        outcome <- t(outcome)
     }
-    if(ci){
-        pattern <- c(pattern,"lowerCI_","upperCI_")
+    colnames(outcome) <- paste0(name.outcome,"_",name.obs)
+    n.obs <- NROW(outcome)
 
-        colnames(outcome.lower) <- paste0("lowerCI_",time.names)
-        colnames(outcome.upper) <- paste0("upperCI_",time.names)
+    if(ci){
+        if(diag){
+            outcome.lower <- t(outcome.lower)
+            outcome.upper <- t(outcome.upper)
+        }
+        pattern <- c(pattern,"lowerCI_","upperCI_")
+        colnames(outcome.lower) <- paste0("lowerCI_",name.obs)
+        colnames(outcome.upper) <- paste0("upperCI_",name.obs)
     }
     if(band){
-        pattern <- c(pattern,"lowerBand_","upperBand_")
-        
-        colnames(outcome.lowerBand) <- paste0("lowerBand_",time.names)
-        colnames(outcome.upperBand) <- paste0("upperBand_",time.names)
+        if(diag){
+            outcome.lowerBand <- t(outcome.lowerBand)
+            outcome.upperBand <- t(outcome.upperBand)
+        }
+        pattern <- c(pattern,"lowerBand_","upperBand_")        
+        colnames(outcome.lowerBand) <- paste0("lowerBand_",name.obs)
+        colnames(outcome.upperBand) <- paste0("upperBand_",name.obs)
 
     }
-    outcome <- data.table::data.table(
-                               cbind(outcome,
-                                     outcome.lower, outcome.upper,
-                                     outcome.lowerBand,outcome.upperBand)
-                           )
 
-    ## merge with covariates ####
-    outcome[, row := 1:.N]
-    keep.col <- "row"
+    dataW <- data.table::data.table(
+                                cbind(row = 1:n.obs, outcome,
+                                      outcome.lower, outcome.upper,
+                                      outcome.lowerBand,outcome.upperBand)
+                         )
+    dataL <- data.table::melt(dataW, id.vars = "row",
+                              measure = patterns(pattern),
+                              variable.name = "time.factor", value.name = gsub("_","",pattern))
+    dataL$time <- times[dataL$time.factor]
+    if(diag){
+        dataL$row <- 1:length(name.obs)
+    }else if(!is.null(strata) && baseline){
+        dataL$row <- as.numeric(strata)
+    }
+
+    ## ** add variables
+    ## *** strata
+    if(!is.null(strata)){ 
+
+        if(diag || baseline){
+            dataL[, strata := strata]
+        }else{
+            dataL[, strata := strata[row]]
+        }
+        
+        ## if(!is.null(attr(strata,"covariates"))){
+        ##     dataW[,c(names(attr(strata,"covariates"))) := attr(strata,"covariates") ]
+        ## }
+    }
+
+    ## *** covariates from newdata
     if(!is.null(newdata)){ ## predicted survival/risk/average treatment effect
-        cov.names <- names(newdata)
+        dataL <- merge(dataL, cbind(row = 1:NROW(newdata), newdata), by = "row")
 
-        ## used individually
-        newdata <- newdata[, (cov.names) := lapply(cov.names,function(col){
-            if (is.numeric(.SD[[col]]))
-                round(.SD[[col]],digits) else .SD[[col]]})]
-        outcome <- cbind(outcome,newdata)
+        ## round numeric variables
+        if(any(sapply(newdata, is.numeric))){
+            col.num <- names(newdata)[sapply(newdata, is.numeric)]
+            dataL[, (col.num) := lapply(.SD, round, digits =  digits), .SDcols = col.num]
+        }
 
         ## keep name of the covariate for when merging all covariates together
-        newdata <- newdata[, (cov.names) := lapply(cov.names,function(col){
-            paste0(col,"=",.SD[[col]])})]
-        outcome[, c("covariates") := interaction(newdata,sep = " ")]
-        
-        keep.col <- c(keep.col,if(!is.null(cov.names)){"covariates"},cov.names)
+        dataL[, c("covariates") := interaction(.SD,sep = " "), .SDcols = names(newdata)]
     }
 
-    if(!is.null(strata)){ ##  baseline survival/risk
-        outcome[, strata := strata]
-        if(!is.null(attr(strata,"covariates"))){
-            outcome[,c(names(attr(strata,"covariates"))) := attr(strata,"covariates") ]
-        }
-        keep.col <- c(keep.col,"strata",names(attr(strata,"covariates")))
+
+    ## *** status + covariates from original data
+    if(!is.null(status)){ 
+        dataL$status <- status$status        
     }
 
-    ## reshape to long format ####
-    dataL <- data.table::melt(outcome, id.vars = keep.col,
-                              measure = patterns(pattern),
-                              variable.name = "time", value.name = gsub("_","",pattern))
-
-    dataL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
-    dataL <- dataL[!is.na(dataL[[name.outcome]])]
+    ## ** export
     return(dataL)    
 }
 
@@ -824,7 +840,7 @@ predict2plot <- function(dataL, name.outcome,
         if(!is.null(ylim)){
             yatRisk <- max(min(ylim), -space.text[1])
         }else{
-            yatRisk <- round(min(range(unlist(lapply(ggBUILD.base$data, "[[", "y"))), na.rm = TRUE) - 0.05,2)
+            yatRisk <- round(min(range(c(unlist(lapply(ggBUILD.base$data, "[[", "y")),unlist(lapply(ggBUILD.base$data, "[[", "ymin")))), na.rm = TRUE) - 0.05,2)
         }
         if(length(atRisk)==1){
             atRisk <- ggBUILD.base$layout$panel_params[[1]]$x$breaks
@@ -847,7 +863,7 @@ predict2plot <- function(dataL, name.outcome,
         }
         if(is.null(ylim)){
             ggBUILD.base <- ggplot2::ggplot_build(gg.base)
-            gg.base <- gg.base + ggplot2::coord_cartesian(ylim = round(range(unlist(lapply(ggBUILD.base$data, "[[", "y")), na.rm = TRUE),2))
+            gg.base <- gg.base + ggplot2::coord_cartesian(ylim = round(range(c(unlist(lapply(ggBUILD.base$data, "[[", "y")), unlist(lapply(ggBUILD.base$data, "[[", "ymin"))), na.rm = TRUE),2))
         }
         
     }

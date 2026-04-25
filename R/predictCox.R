@@ -567,7 +567,7 @@ predictCox <- function(object,
     }
 
     ## *** special case: return baseline hazard/cumulative hazard/survival
-    if (is.null(newdata) && (se[[1]] || band[[1]])){ 
+    if (is.null(newdata) && (se[[1]] || band[[1]])){
         if(is.strata || nVar.lp>0){ ## add strata and covariates values
             lpvars.num <- intersect(names(object.modelFrame), infoVar$lpvars.original)
             if(length(lpvars.num)>0){ ## set numeric covariates at their reference level
@@ -584,19 +584,20 @@ predictCox <- function(object,
                 toFactor <- NULL
             }
             if(is.strata){ ## remove strata(.) or strat(.) from the name
-                object.modelFrame <- cbind(object.modelFrame, stats::model.frame(object)[,infoVar$stratavars,drop=FALSE])
+                object.modelFrame <- cbind(object.modelFrame, stats::model.frame(object)[object.modelFrame$XXXindexXXX,infoVar$stratavars,drop=FALSE])
                 names(object.modelFrame)[match(infoVar$stratavars,names(object.modelFrame))] <- infoVar$stratavars.original
             }
         }else{
             lpvars.num <- NULL
             lpvars.factor <- NULL
-        }        
+        }
+
         Lambda0.se <- predictCox(object, times = Lambda0$times, newdata = object.modelFrame, diag = TRUE, se = se, iid = band, band = band,
-                                 product.limit = product.limit, type = type, keep.times = keep.times, keep.strata = keep.strata, keep.infoVar = keep.infoVar)
-        
-        if(any(abs(Lambda0$cumhazard-Lambda0.se$cumhazard)>1e-12)){ ## type must contain cumhazard or survival for se or band to be valid. survival involves getting cumhazard
+                                 product.limit = product.limit, type = union("cumhazard",type), keep.times = keep.times, keep.strata = keep.strata, keep.infoVar = keep.infoVar)
+        ## SANITY CHECK (note: type must contain cumhazard or survival for se or band to be valid. survival involves getting cumhazard)
+        if(any(abs(Lambda0$cumhazard-Lambda0.se$cumhazard[,1])>1e-12)){ 
             warning("Discrepancy between the baseline cumulative hazard and the one used to obtain the standard error.",
-                    "Max. discrepancy: ",max(abs(Lambda0$cumhazard-Lambda0.se$cumhazard)),".\n")
+                    "Max. discrepancy: ",max(abs(Lambda0$cumhazard-Lambda0.se$cumhazard[,1])),".\n")
         }
         Lambda0.se$var.lp <- infoVar$lpvars.original
         if(nVar.lp>0 && length(lpvars.num)){
@@ -605,11 +606,14 @@ predictCox <- function(object,
         Lambda0.se$var.strata <- infoVar$stratavars.original
         ## flatten matrix into vector
         keep.col <- type
+        if("cumhazard" %in% type == FALSE){Lambda0.se$cumhazard <- NULL}
         if(se[[1]]){
             keep.col <- c(keep.col, unlist(lapply(type,paste,c("se","lower","upper"), sep = ".")))
+            if("cumhazard" %in% type == FALSE){Lambda0.se$cumhazard.se <- Lambda0.se$cumhazard.lower <- Lambda0.se$cumhazard.upper <- NULL}
         }
         if(band[[1]]){
             keep.col <- c(keep.col, unlist(lapply(type,paste,c("lowerBand","upperBand"), sep = ".")))
+            if("cumhazard" %in% type == FALSE){Lambda0.se$cumhazard.quantileBand <- Lambda0.se$cumhazard.lowerBand <- Lambda0.se$cumhazard.upperBand <- NULL}
         }
         Lambda0.se[keep.col] <- lapply(keep.col, function(iName){Lambda0.se[[iName]][,1]})
         Lambda0.se[intersect(names(Lambda0.se),unlist(lapply(type,paste0,".iid")))] <- NULL 
@@ -663,6 +667,7 @@ predictCox <- function(object,
                          type = type,
                          nTimes = nTimes,
                          baseline = TRUE,
+                         diag = FALSE,
                          var.lp = infoVar$lpvars.original,
                          var.strata = infoVar$stratavars.original)
         if(keep.infoVar){
