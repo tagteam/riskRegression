@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Apr 23 2026 (19:24) 
 ## Version: 
-## Last-Updated: Apr 24 2026 (11:44) 
+## Last-Updated: Apr 25 2026 (12:46) 
 ##           By: Brice Ozenne
-##     Update #: 13
+##     Update #: 14
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,7 @@ plot.predictCox <- function(x, ...){
         ## otherwise the graph has already been displayed but could not be stored in the object (e.g. when using qqtest)
         print(out$plot)
     }
-    return(invisible(out$plot))
+    return(invisible(out))
 
 }
 
@@ -39,7 +39,7 @@ plot.predictCSC <- function(x, ...){
         ## otherwise the graph has already been displayed but could not be stored in the object (e.g. when using qqtest)
         print(out$plot)
     }
-    return(invisible(out$plot))
+    return(invisible(out))
 
 }
 

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Apr 25 2026 (09:34) 
+## last-updated: Apr 25 2026 (15:36) 
 ##           By: Brice Ozenne
-##     Update #: 110
+##     Update #: 114
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -132,7 +132,9 @@ autoplot.predictCSC <- function(object,
                           times = object$times,
                           name.outcome = "absRisk",
                           group.by = group.by,
-                          digits = digits
+                          digits = digits,
+                          diag = object$diag,
+                          baseline = FALSE
                           )
 
     gg.res <- predict2plot(dataL = dataL,

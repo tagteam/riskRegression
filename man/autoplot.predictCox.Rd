@@ -54,6 +54,8 @@ or \code{"survival"} the survival function.}
 \item{first.derivative}{[logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
 (confidence intervals are obtained via simulation).}
 
+\item{atRisk}{[logical] Should the number at risk be diplayed at the bottom of the plot?}
+
 \item{...}{Additional parameters to cutomize the display.}
 }
 \value{
