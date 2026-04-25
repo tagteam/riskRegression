@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Apr 23 2026 (12:13) 
+## last-updated: Apr 25 2026 (09:51) 
 ##           By: Brice Ozenne
-##     Update #: 1304
+##     Update #: 1567
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,7 @@
 #' @description Plot predictions from a Cox model.
 #' @name autoplot.predictCox
 #'  
-#' @param object Object obtained with the function \code{predictCox}.
+#' @param object,x Object obtained with the function \code{predictCox}.
 #' @param type [character] The type of predicted value to display.
 #' Choices are:
 #' \code{"hazard"} the hazard function,
@@ -37,6 +37,7 @@
 #' (confidence intervals are obtained via simulation).
 #' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
+#' @param atRisk [logical] Should the number at risk be diplayed at the bottom of the plot? 
 #' @param ... Additional parameters to cutomize the display.
 #'
 #' @return Invisible. A list containing:
@@ -76,7 +77,7 @@
 #' \dontrun{
 #' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard")
-#' autoplot(e.basehaz, type = "cumhazard", shape.point = c(3,NA))
+#' autoplot(e.basehaz, type = "cumhazard", shape.point = c(3,20))
 #' }
 #'
 #' ## display predicted survival
@@ -96,8 +97,8 @@
 #'   times = seqTau, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
 #' res <- autoplot(pred.cox, ci = TRUE, band = TRUE, plot = FALSE)
 #' res$plot + facet_wrap(~row)
-#' res2 <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1, plot = FALSE)
-#' res2$plot + facet_wrap(~row)
+#' res2 <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = NA, plot = FALSE)
+#' res2$plot + facet_wrap(~row, labeller = label_both) + guides(color = FALSE)
 #' }
 #' 
 #' #### Stratified Cox model ####
@@ -152,10 +153,11 @@ autoplot.predictCox <- function(object,
                                 smooth = NULL,
                                 digits = 2,
                                 alpha = NA,
-                                group.by = "row",
+                                group.by = NULL,
                                 reduce.data = FALSE,
                                 ylab = NULL,
                                 first.derivative = FALSE,
+                                atRisk = FALSE,
                                  ...){
   
     ## initialize and check    
@@ -167,7 +169,7 @@ autoplot.predictCox <- function(object,
         if(length(possibleType) == 1){
             type <- possibleType
         }else{
-            stop("argument \'type\' must be specified to choose between ",paste(possibleType, collapse = " "),"\n")
+            type <- utils::tail(possibleType,1)
         }
     }else{
         type <- match.arg(type, possibleType)  
@@ -182,23 +184,26 @@ autoplot.predictCox <- function(object,
     if(is.null(ylab)){
         if(first.derivative){
             ylab <- switch(type,
-                           "cumhazard" = if(object$baseline && nVar.lp>0){"instantaneous baseline hazard"}else{"instantaneous hazard"},
-                           "survival" = if(object$baseline && nVar.lp>0){"derivative of the baseline survival"}else{"derivative of the survival"})
+                           "cumhazard" = if(object$baseline && nVar.lp>0){"Instantaneous baseline hazard"}else{"Instantaneous hazard"},
+                           "survival" = if(object$baseline && nVar.lp>0){"Derivative of the baseline survival"}else{"Derivative of the survival"})
         }else{
             ylab <- switch(type,
                            "lp" = "linear predictor",
-                           "cumhazard" = if(object$baseline && nVar.lp>0){"cumulative baseline hazard"}else{"cumulative hazard"},
-                           "survival" = if(object$baseline && nVar.lp>0){"baseline survival"}else{"survival"})
+                           "cumhazard" = if(object$baseline && nVar.lp>0){"Cumulative baseline hazard"}else{"Cumulative hazard"},
+                           "survival" = if(object$baseline && nVar.lp>0){"Baseline survival"}else{"Survival"})
         }
     }
 
     if(type=="lp"){
         group.by <- match.arg(group.by, object$var.lp, several.ok = TRUE)
     }else{
-        if(length(group.by)>1){
+        if(is.null(group.by)){
+            group.by <- ifelse(object$baseline & length(object$var.strata)>0, "strata", "row")
+        }else if(length(group.by)>1){
             stop("Argument \'group.by\' must have length 1.\n")
+        }else{
+            group.by <- match.arg(group.by, c("row","covariates","strata",object$var.lp,object$var.strata))
         }
-        group.by <- match.arg(group.by, c("row","covariates","strata",object$var.lp,object$var.strata))
     }
     
 
@@ -236,13 +241,25 @@ autoplot.predictCox <- function(object,
     if(object$nTimes!= 0 && any(rank(object$times) != 1:length(object$times))){
         stop("Invalid object. The prediction times must be strictly increasing \n")
     }
-    ## dots <- list(...)
-    ## if(length(dots)>0){
-    ##     txt <- names(dots)
-    ##     txt.s <- if(length(txt)>1){"s"}else{""}
-    ##     stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-    ## }
-
+    dots <- list(...)
+    if("shape.point" %in% names(dots) && !object$baseline){
+        message("Argument \'shape.points\' is ignored when predictCox has been called with \'newdata\' argument. \n",
+                "Only relevant when displaying 'baseline' cumulative hazard or 'baseline' survival. \n")
+    }else  if("shape.point" %in% names(dots) && is.null(object$newdata)){
+        message("Argumet \'shape.points\' is ignored. \n",
+                "Consider setting the argument \"keep.newdata\" to TRUE when calling predictCox. \n")
+    }
+    if(any(atRisk>0) & is.null(object$newdata)){
+        if(!object$baseline){
+            message("Argument \'atRisk\' is only relevant when displaying baseline cumulative hazard or survival. \n",
+                    "(i.e. when argument \'newdata\' was not used when calling predictCox) \n")
+            atRisk <- FALSE
+        }else{
+            message("Argument \'atRisk\' is ignored unless argument \'keep.newdata\' was set to TRUE when calling predictCox. \n")
+            atRisk <- FALSE
+        }
+    }
+    
     ## ** reshape data
     if(type == "lp"){
         if(first.derivative){
@@ -289,26 +306,52 @@ autoplot.predictCox <- function(object,
             ## baseline hazard/survival
             if(is.null(object[["strata"]])){
                 object[[type]] <- rbind(object[[type]])
+                if(ci){
+                    object[[paste0(type,".lower")]] <- rbind(object[[paste0(type,".lower")]])
+                    object[[paste0(type,".upper")]] <- rbind(object[[paste0(type,".upper")]])
+                }
+                if(band){
+                    object[[paste0(type,".lowerBand")]] <- rbind(object[[paste0(type,".lowerBand")]])
+                    object[[paste0(type,".upperBand")]] <- rbind(object[[paste0(type,".upperBand")]])
+                }
                 if(object$nTimes==0){
-                    if(0 %in% object$times == FALSE){
-                        if(type=="cumhazard"){
-                            object[[type]] <- cbind(0,object[[type]])
-                        }else if(type=="survival"){
-                            object[[type]] <- cbind(1,object[[type]])
-                        }                   
+                    if(0 %in% object$times == FALSE){ ## add baseline
+                        object[[type]] <- cbind((type=="survival"),object[[type]]) ## 0 if cumhazard 1 if survival
+                        if(ci){
+                            object[[paste0(type,".lower")]] <- cbind((type=="survival"),object[[paste0(type,".lower")]])
+                            object[[paste0(type,".upper")]] <- cbind((type=="survival"),object[[paste0(type,".upper")]])
+                        }
+                        if(band){
+                            object[[paste0(type,".lowerBand")]] <- cbind((type=="survival"),object[[paste0(type,".lowerBand")]])
+                            object[[paste0(type,".upperBand")]] <- cbind((type=="survival"),object[[paste0(type,".upperBand")]])
+                        }
                         object$times <- c(0,object$times)
                         if(!is.null(object$newdata)){
                             object$newdata <- rbind(data.table(start = 0, stop = 0, status = NA, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
                                                     object$newdata)
                         }
                     }
-                    if(object$lastEventTime %in% object$times == FALSE){
+                    if(object$lastEventTime %in% object$times == FALSE){ ##  add value at last observation time
                         object[[type]] <- cbind(object[[type]],object[[type]][length(object[[type]])])
+                        if(ci){
+                            object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]], object[[paste0(type,".lower")]][length(object[[type]])])
+                            object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]], object[[paste0(type,".upper")]][length(object[[type]])])
+                        }
+                        if(band){
+                            object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]], object[[paste0(type,".lowerBand")]][length(object[[type]])])
+                            object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]], object[[paste0(type,".upperBand")]][length(object[[type]])])
+                        }
                         object$times <- c(object$times,pmin(object$lastEventTime,max(object$times)+1e-12))
                         if(!is.null(object$newdata)){
                             object$newdata <- rbind(data.table(start = 0, stop = object$lastEventTime, status = 0, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
                                                     object$newdata)
                         }
+                    }
+                    if(ci && !is.null(object$newdata) && !is.na(alpha)){
+                        object[[paste0(type,".lower")]][,is.na(object$newdata$status)] <- NA
+                        object[[paste0(type,".upper")]][,is.na(object$newdata$status)] <- NA
+                        object[[paste0(type,".lower")]][,object$newdata$status==0] <- NA
+                        object[[paste0(type,".upper")]][,object$newdata$status==0] <- NA
                     }
                 }
 
@@ -323,9 +366,9 @@ autoplot.predictCox <- function(object,
                 n.time <- length(time)
                 type.tempo <- matrix(NA, nrow = n.strata, ncol = n.time)
 
-            init <- switch(type,
-                           "cumhazard" = 0,
-                           "survival" = 1)
+                init <- switch(type,
+                               "cumhazard" = 0,
+                               "survival" = 1)
 
                 for(iStrata in 1:n.strata){ ## iStrata <- 1
                     index.strata <- which(object[["strata"]]==strata[iStrata])
@@ -336,11 +379,11 @@ autoplot.predictCox <- function(object,
                                                            xout = time,
                                                            method = "constant")$y
                 
+                }
+                object[[type]] <- type.tempo
+                object[["strata"]] <- strata
+                object[["times"]] <- time
             }
-            object[[type]] <- type.tempo
-            object[["strata"]] <- strata
-            object[["times"]] <- time
-        }
 
             newdata <- NULL
             if(object$nTimes==0){
@@ -404,8 +447,19 @@ autoplot.predictCox <- function(object,
                            xlab = if(is.null(object$infoVar)){"time"}else{object$infoVar$time},
                            ylab = ylab,
                            first.derivative = first.derivative,
+                           atRisk = atRisk,
                            ...
                            )
+
+    if(object$baseline){
+        if(nVar.lp>0){
+            vec.center <- sapply(attr(object$var.lp,"center"), function(iE){ifelse(is.numeric(iE),round(iE,digits),as.character(iE))})
+            gg.res$plot <- gg.res$plot + ggplot2::ggtitle(paste0("Baseline: ",paste(paste(object$var.lp, vec.center, sep = "="), collapse = ", ")))
+        }
+        if(is.null(object$strata) && (ci || band)){
+            gg.res$plot <- gg.res$plot + ggplot2::guides(color = "none")
+        }
+    }
   
     if(plot){
         print(gg.res$plot)
@@ -450,7 +504,7 @@ predict2melt <- function(outcome, name.outcome,
     }
     if(ci){
         pattern <- c(pattern,"lowerCI_","upperCI_")
-    
+
         colnames(outcome.lower) <- paste0("lowerCI_",time.names)
         colnames(outcome.upper) <- paste0("upperCI_",time.names)
     }
@@ -508,17 +562,17 @@ predict2melt <- function(outcome, name.outcome,
 ## * predict2plot
 predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by, smooth,                        
-                         conf.level, alpha, xlab, ylab,
-                         smoother = NULL, formula.smoother = NULL, first.derivative = FALSE,
-                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, shape.point = c(3,18), n.sim = 250){
-    
+                         conf.level, alpha, xlab, ylab, xlim = NULL, ylim = NULL,
+                         smoother = NULL, formula.smoother = NULL, first.derivative = FALSE, atRisk = FALSE,
+                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, size.text = 5, space.text = 0.05, shape.point = c(3,18), n.sim = 250){
+
     .GRP <- .data <- NULL ## [:: for CRAN CHECK::]
     if(first.derivative && (smooth==FALSE)){
         stop("Set argument \'smooth\' to TRUE when \'first.derivative\' is TRUE. \n")
     }
     dataL <- data.table::copy(dataL)
 
-    ## set at t- the value of t-1
+    ## ** set at t- the value of t-1
     vec.outcome <- name.outcome
     if(ci){
         vec.outcome <- c(vec.outcome,"lowerCI","upperCI")
@@ -529,8 +583,8 @@ predict2plot <- function(dataL, name.outcome,
     group.by2 <- unique(c(group.by,"row"))
     dataL[,c("timeRight") := c(.SD$time[2:.N]-1e-12,.SD$time[.N]+1e-12), by = group.by2] 
     dataL[,c(group.by) := as.factor(.SD[[group.by]])]
-    
-    ## smooth ####
+
+    ## ** smooth
     if(smooth>=1){
         requireNamespace("mgcv",quietly=FALSE)
         if(is.null(smoother)){
@@ -589,109 +643,144 @@ predict2plot <- function(dataL, name.outcome,
                 stop("Confidence bands are not available when argument \'first.derivative\' is TRUE \n")
             }
         }else{
-            dataL[, c(paste0(name.outcome,".smooth")) := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            mysmoother <- function(formula, data){
+                data.NNA <- data[!is.na(data[[all.vars(formula)[1]]])]
+                fit <- do.call(smoother, args = list(formula = ff,data = data.NNA))
+                predict(fit, newdata = data)
+            }
+            dataL[, c(paste0(name.outcome,".smooth")) := do.call(mysmoother, args = list(formula = ff,data = .SD)), by = "row"]
             if(ci){
                 ff <- update(as.formula("lowerCI~."),formula.smoother)
-                dataL[, c("lowerCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                dataL[, c("lowerCI.smooth") := do.call(mysmoother, args = list(formula = ff,data = .SD)), by = "row"]
                 ff <- update(as.formula("upperCI~."),formula.smoother)
-                dataL[, c("upperCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                dataL[, c("upperCI.smooth") := do.call(mysmoother, args = list(formula = ff,data = .SD)), by = "row"]
             }
             if(band){
                 ff <- update(as.formula("lowerBand~."),formula.smoother)
-                dataL[, c("lowerBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                dataL[, c("lowerBand.smooth") := do.call(mysmoother, args = list(formula = ff,data = .SD)), by = "row"]
                 ff <- update(as.formula("upperBand~."),formula.smoother)
-                dataL[, c("upperBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                dataL[, c("upperBand.smooth") := do.call(mysmoother, args = list(formula = ff,data = .SD)), by = "row"]
             }
         }
         
     }
-
-    ## display ####
+    ## ** display
     labelCI <- paste0(conf.level*100,"% pointwise \n confidence interval")
     labelBand <- paste0(conf.level*100,"% simulaneous \n confidence interval \n")
 
-    gg.base <- ggplot2::ggplot(data = dataL, mapping = ggplot2::aes(group = .data$row))
-    if(band){ ## confidence band
+    gg.base <- ggplot2::ggplot(data = dataL)
+
+    ## *** confidence band
+    if(band){ 
         if(smooth>0){
             if(!is.na(alpha)){
                 gg.base <- gg.base + ggplot2::geom_ribbon(ggplot2::aes(x = .data$time, ymin = .data$lowerBand.smooth, ymax = .data$upperBand.smooth, group = .data[[group.by]]),
                                                           alpha = alpha)
             }else{
-                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$lowerBand.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "band"),
+                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$lowerBand.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = labelBand),
                                                         linewidth = size.band)
-                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$upperBand.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "band"),
+                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$upperBand.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = labelBand),
                                                         linewidth = size.band)
+                gg.base <- gg.base + ggplot2::labs(linetype = "")
             }
         }else{
             if(!is.na(alpha)){
                 gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes(xmin = .data$time, xmax = .data$timeRight, ymin = .data$lowerBand, ymax = .data$upperBand,
-                                                                     fill = "band"), linetype = 0, alpha = alpha)
+                                                                     fill = labelBand, group = .data[[group.by]]), linetype = 0, alpha = alpha)
                 gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+                gg.base <- gg.base + ggplot2::labs(fill = "")
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$lowerBand, xend = .data$timeRight, yend = .data$lowerBand, color = "band"),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$lowerBand, xend = .data$timeRight, yend = .data$lowerBand, color = labelBand, linetype = labelBand, group = .data[[group.by]]),
                                                            linewidth = size.band)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$upperBand, xend = .data$timeRight, yend = .data$upperBand, color = "band"),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$upperBand, xend = .data$timeRight, yend = .data$upperBand, color = labelBand, linetype = labelBand, group = .data[[group.by]]),
                                                            linewidth = size.band)
+                gg.base <- gg.base + ggplot2::labs(color = "", linetype = "")
             }
         }
     }
-    if(ci){ ## confidence interval
-        if(smooth>0){
-            if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes(x = .data$time, ymin = .data$lowerCI.smooth, ymax = .data$upperCI.smooth, linetype = "ci"),
-                                                            width = size.ci)
-                gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
-            }else{
-                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$lowerCI.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "ci"),
-                                                        linewidth = size.ci)
-                gg.base <- gg.base + ggplot2::geom_line(ggplot2::aes(x = .data$time, y = .data$upperCI.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = "ci"),
-                                                        linewidth = size.ci)
 
+    ## *** confidence interval
+    if(ci){
+
+        if(smooth>0){
+            if(!is.na(alpha) && band){
+                gg.base <- gg.base + ggplot2::geom_errorbar(data = dataL[!is.na(dataL$lowerCI.smooth) & !is.na(dataL$upperCI.smooth)],
+                                                            ggplot2::aes(x = .data$time, ymin = .data$lowerCI.smooth, ymax = .data$upperCI.smooth, linetype = labelCI, group = .data[[group.by]]),
+                                                            width = size.ci)
+                gg.base <- gg.base + ggplot2::labs(linetype = "")
+            }else if(!is.na(alpha) && !band){
+                gg.base <- gg.base + ggplot2::geom_ribbon(data = dataL[!is.na(dataL$lowerCI.smooth) & !is.na(dataL$upperCI.smooth)],
+                                                          ggplot2::aes(x = .data$time, ymin = .data$lowerCI.smooth, ymax = .data$upperCI.smooth, group = .data[[group.by]]),
+                                                          alpha = alpha)
+            }else{
+                gg.base <- gg.base + ggplot2::geom_line(data = dataL[!is.na(dataL$lowerCI.smooth) & !is.na(dataL$upperCI.smooth)],
+                                                        ggplot2::aes(x = .data$time, y = .data$lowerCI.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = labelCI, group = .data[[group.by]]),
+                                                        linewidth = size.ci)
+                gg.base <- gg.base + ggplot2::geom_line(data = dataL[!is.na(dataL$lowerCI.smooth) & !is.na(dataL$upperCI.smooth)],
+                                                        ggplot2::aes(x = .data$time, y = .data$upperCI.smooth, group = .data[[group.by]], color = .data[[group.by]], linetype = labelCI, group = .data[[group.by]]),
+                                                        linewidth = size.ci)
+                gg.base <- gg.base + ggplot2::labs(linetype = "")
             }
         }else{
-            if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes(x = .data$time, ymin = .data$lowerCI, ymax = .data$upperCI, linetype = "ci"),
+            if(!is.na(alpha) && band){
+                gg.base <- gg.base + ggplot2::geom_errorbar(data = dataL[!is.na(dataL$lowerCI) & !is.na(dataL$upperCI)],
+                                                            ggplot2::aes(x = .data$time, ymin = .data$lowerCI, ymax = .data$upperCI, linetype = labelCI, group = .data[[group.by]]),
                                                             width = size.ci)
-                gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
-
+                gg.base <- gg.base + ggplot2::labs(linetype = "")
+            }else if(!is.na(alpha) && !band){
+                
+                ## count the numbers of censored observations after each event
+                dataL$following <- stats::ave(is.na(dataL$lowerCI), ## count the numbers of NA
+                                              cumsum(!is.na(dataL$lowerCI)), ## between two consecutive TRUE
+                                              FUN = function(x){rep(sum(x),length(x))})
+                ## update the event time to the one at the latest censored observation before the next jump
+                dataL$timeRightFollowing <- dataL$timeRight[(1:NROW(dataL))+dataL$following]
+                ## remove lines corresponding to censored observations
+                dataL.NNA <- dataL[!is.na(dataL$lowerCI) & !is.na(dataL$upperCI),.SD,.SDcols = c("time","lowerCI","upperCI",group.by,"timeRightFollowing")]
+                ## second dataset corresponding to the the latest censored observation before the next jump (just before jump)
+                dataL.NNA2 <- cbind(time = dataL.NNA$timeRightFollowing, dataL.NNA[,.SD,.SDcols = c("lowerCI","upperCI",group.by,"timeRightFollowing")])                
+                ## update display
+                gg.base <- gg.base + ggplot2::geom_ribbon(data = rbind(dataL.NNA,dataL.NNA2),
+                                                          ggplot2::aes(x = .data$time, ymin = .data$lowerCI, ymax = .data$upperCI, group = .data[[group.by]]),
+                                                          alpha = alpha)
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$lowerCI, xend = .data$timeRight, yend = .data$lowerCI, color = "ci"),
+                gg.base <- gg.base + ggplot2::geom_segment(data = dataL[!is.na(dataL$lowerCI) & !is.na(dataL$upperCI)],
+                                                           mapping = ggplot2::aes(x = .data$time, y = .data$lowerCI, xend = .data$timeRight, yend = .data$lowerCI, color = labelCI, linetype = labelCI, group = .data[[group.by]]),
                                                            linewidth = size.ci)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = .data$time, y = .data$upperCI, xend = .data$timeRight, yend = .data$upperCI, color = "ci"),
+                gg.base <- gg.base + ggplot2::geom_segment(data = dataL[!is.na(dataL$lowerCI) & !is.na(dataL$upperCI)],
+                                                           mapping = ggplot2::aes(x = .data$time, y = .data$upperCI, xend = .data$timeRight, yend = .data$upperCI, color = labelCI, linetype = labelCI, group = .data[[group.by]]),
                                                            linewidth = size.ci)
+                gg.base <- gg.base + ggplot2::labs(color = "", linetype = "")
             }
         }
     }
-    ## estimate
+
+    ## *** estimate
     if(smooth>0){
         gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes(x = .data$time, y = .data[[paste0(name.outcome,".smooth")]], group = .data[[group.by]], color = .data[[group.by]]),
                                                 linewidth = size.estimate)
     }else{
-        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes(x = .data$timeRight, y = .data[[name.outcome]], xend = .data$time, yend = .data[[name.outcome]], color = .data[[group.by]]),
+        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes(x = .data$timeRight, y = .data[[name.outcome]], xend = .data$time, yend = .data[[name.outcome]], color = .data[[group.by]], group = .data[[group.by]]),
                                                    linewidth = size.estimate)
         if("status" %in% names(dataL)){
             dataL$status <- as.character(dataL$status)
-            gg.base <- gg.base + ggplot2::geom_point(data = na.omit(dataL),
-                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], shape = .data$status), size = size.point)
+            gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL$status)],
+                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], shape = .data$status, group = .data[[group.by]]), size = size.point)
             gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values = shape.point, labels = c("censoring","event"))
         }else{
             gg.base <- gg.base + ggplot2::geom_point(data = dataL,
-                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]]), size = size.point)
+                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], group = .data[[group.by]]), size = size.point)
         }
     }
-    
+
+    ## *** fix legend
     if(group.by=="row"){
         gg.base <- gg.base + ggplot2::labs(color="observation") + ggplot2::theme(legend.key.height=unit(0.1,"npc"),
                                                                                  legend.key.width=unit(0.08,"npc"))
-        
-        # display only integer values
-        uniqueObs <- unique(dataL$row)
-
-        if(length(uniqueObs)==1){
+        if(length(unique(dataL$row))==1){
             gg.base <- gg.base + ggplot2::scale_color_discrete(guide="none")
         }
     }
-
     if(is.na(alpha)[[1]] && (band[[1]] || ci[[1]])){
         indexTempo <- which(c(ci,band)==1)
         if(smooth == FALSE){
@@ -712,11 +801,58 @@ predict2plot <- function(dataL, name.outcome,
                                              group = ggplot2::guide_legend(order = 3)
                                              )
     }
-    gg.base <- gg.base + ggplot2::xlab(xlab) + ggplot2::ylab(ylab)
-    if(name.outcome != "lp"){
+    gg.base <- gg.base + ggplot2::labs(x = xlab, y = ylab)
+
+    ## *** coordinates
+    if(!is.null(xlim)){
+        gg.base <- gg.base + ggplot2::coord_cartesian(xlim = xlim)
+    }else if(name.outcome != "lp"){
         gg.base <- gg.base + ggplot2::coord_cartesian(xlim = c(0,max(dataL$timeRight)))
     }
-    ## export
+    if(!is.null(ylim)){
+        gg.base <- gg.base + ggplot2::coord_cartesian(ylim = ylim)
+    }
+    
+    ## *** add atRisk table
+    if(any(atRisk>0)){
+        if(length(space.text)==1){
+            space.text <- rep(space.text,2)
+        }
+        ggBUILD.base <- ggplot2::ggplot_build(gg.base)
+        
+        ybreaks <- ggBUILD.base$layout$panel_params[[1]]$y$breaks
+        if(!is.null(ylim)){
+            yatRisk <- max(min(ylim), -space.text[1])
+        }else{
+            yatRisk <- round(min(range(unlist(lapply(ggBUILD.base$data, "[[", "y"))), na.rm = TRUE) - 0.05,2)
+        }
+        if(length(atRisk)==1){
+            atRisk <- ggBUILD.base$layout$panel_params[[1]]$x$breaks
+        }
+
+        df.atRisk <- do.call(rbind,lapply(atRisk, function(iT){ ## iT <- 1
+            if("strata" %in% names(dataL)){
+                iOut <- data.frame(time = iT, y = yatRisk - space.text[2] * 0:(length(levels(dataL$strata))-1), strata = levels(dataL$strata), atRisk = tapply(dataL$time>=iT,dataL$strata,sum))
+            }else{
+                iOut <- data.frame(time = iT, y = yatRisk, atRisk = sum(dataL$time>=iT))
+            }
+            return(iOut)
+        }))
+        gg.base <- gg.base + scale_y_continuous(breaks = unique(c(yatRisk, ybreaks)), ## in case yatRisk matches a break
+                                                labels = c("at risk",ybreaks)[!duplicated(c(yatRisk, ybreaks))])
+        if("strata" %in% names(dataL)){
+            gg.base <- gg.base + ggplot2::geom_text(data = df.atRisk, ggplot2::aes(x = .data$time, y = .data$y, label = .data$atRisk, color = .data$strata), size = size.text)
+        }else{
+            gg.base <- gg.base + ggplot2::geom_text(data = df.atRisk, ggplot2::aes(x = .data$time, y = .data$y, label = .data$atRisk), size = size.text)
+        }
+        if(is.null(ylim)){
+            ggBUILD.base <- ggplot2::ggplot_build(gg.base)
+            gg.base <- gg.base + ggplot2::coord_cartesian(ylim = round(range(unlist(lapply(ggBUILD.base$data, "[[", "y")), na.rm = TRUE),2))
+        }
+        
+    }
+
+    ## ** export
     ls.export <- list(plot = gg.base,
                       data = dataL)
     

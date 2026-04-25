@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: feb 24 2021 (23:07) 
+## last-updated: Apr 25 2026 (09:34) 
 ##           By: Brice Ozenne
-##     Update #: 109
+##     Update #: 110
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,7 @@
 #' @description Plot predictions from a Cause-specific Cox proportional hazard regression.
 #' @name autoplot.predictCSC
 #' 
-#' @param object Object obtained with the function \code{predictCox}.
+#' @param object,x Object obtained with the function \code{predictCox}.
 #' @param ci [logical] If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band [logical] If \code{TRUE} display the confidence bands for the predictions.
 #' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 

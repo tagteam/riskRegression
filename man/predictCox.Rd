@@ -137,12 +137,34 @@ nd <- cbind(nd,d[sample(NROW(d),replace=TRUE,size=NROW(nd)),c("U","V")])
 #### Kaplan Meier ####
 ######################
 
-#### no ties
+#### no ties ####
 fit.KM <- coxph(Surv(time,event)~ 1, data=d, x = TRUE, y = TRUE)
-predictCox(fit.KM) ## exponential approximation
-ePL.KM <- predictCox(fit.KM, product.limit = TRUE) ## product-limit
-as.data.table(ePL.KM)
 
+## survival: exponential approximation
+eEXP.KM <- predictCox(fit.KM)
+plot(eEXP.KM) ## one point = at least observation
+
+## survival: product-limit estimator
+ePL.KM <- predictCox(fit.KM, product.limit = TRUE, se = TRUE,
+                     keep.newdata = TRUE) ## keep type of event
+as.data.table(ePL.KM) ## combine all information into a data.table
+plot(ePL.KM, atRisk = TRUE) ## graphical display
+plot(ePL.KM, atRisk = TRUE, alpha = 0.1) 
+plot(ePL.KM, atRisk = c(0,2.5,5,10,12,14), ylim = c(-0.05,1))
+
+## customise plot
+if(require(ggplot2)){ 
+lsPL.KM <- autoplot(ePL.KM, atRisk = TRUE)
+lsPL.KM$data ## dataset used to generate the plot
+ggPL.KM <- lsPL.KM$plot ## ggplot2 object
+
+ggPL.KM <- ggPL.KM + scale_y_continuous(breaks = c(0.07,0.25,0.5,0.75,1),
+                                        labels = c("at risk","25\%","50\%","75\%","100\%"))
+ggPL.KM
+}
+
+## minor difference between the survival estimators
+range(ePL.KM$survival - eEXP.KM$survival)
 range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM$survival) ## same
 
 #### with ties (exponential approximation, Efron estimator for the baseline hazard)
@@ -160,10 +182,13 @@ range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM.ties$survival) ## same
 #################################
 
 fit.SKM <- coxph(Surv(time,event)~strata(X2), data=d, x = TRUE, y = TRUE)
-ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE)
+ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE, se = TRUE, keep.newdata = TRUE)
 ePL.SKM
 
 range(survfit(Surv(time,event)~X2, data = d)$surv - ePL.SKM$survival) ## same
+
+plot(ePL.SKM) 
+plot(ePL.SKM, atRisk = TRUE) ## graphical display
 
 ###################
 #### Cox model ####
@@ -231,7 +256,7 @@ The R Journal (2017) 9:2, pages 440-460.
 }
 \seealso{
 \code{\link{confint.predictCox}} to compute confidence intervals/bands.
-\code{\link{autoplot.predictCox}} to display the predictions.
+\code{\link{plot.predictCox}} or \code{\link{autoplot.predictCox}} to display the predictions.
 }
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk

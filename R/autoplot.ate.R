@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Apr 23 2026 (11:56) 
+## last-updated: Apr 25 2026 (09:34) 
 ##           By: Brice Ozenne
-##     Update #: 264
+##     Update #: 265
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,7 @@
 #' @description Plot average risks.
 #' @name autoplot.ate
 #' 
-#' @param object Object obtained with the function \code{ate}.
+#' @param object,x Object obtained with the function \code{ate}.
 #' @param type [character vector] what to displayed.
 #' Can be \code{"meanRisk"} to display the risks specific to each treatment group,
 #' \code{"diffRisk"} to display the difference in risks between treatment groups,
