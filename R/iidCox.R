@@ -185,7 +185,8 @@ iidCox.coxph <- function(object, newdata = NULL,
     lambda0 <- predictCox(object,
                           type = "hazard",
                           centered = FALSE,
-                          keep.strata = TRUE)
+                          keep.strata = TRUE,
+                          keep.newdata = FALSE)
     if(is.null(etimes.max)){
         etimes.max <- lambda0$lastEventTime
     }

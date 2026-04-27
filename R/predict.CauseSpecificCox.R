@@ -378,7 +378,7 @@ predict.CauseSpecificCox <- function(object,
     if(length(unlist(coef(object)))==0){
         ## if there is not covariates (only strata) then set the last eventtime to \infty when the last observation is an event
         ls.lastEventTime <- lapply(object$models, function(iM){ ## iM <- object$models[[1]]
-            iTempo <- predictCox(iM, times = 0, keep.infoVar = TRUE)
+            iTempo <- predictCox(iM, times = 0, keep.infoVar = TRUE, keep.newdata = FALSE)
             return(setNames(iTempo$lastEventTime, iTempo$infoVar$strata.levels))
         })
         if(length(unique(lapply(ls.lastEventTime,names)))<=1){
@@ -393,11 +393,12 @@ predict.CauseSpecificCox <- function(object,
                                centered = FALSE,
                                times = eventTimes,
                                newdata = NULL,
-                               type = c("hazard","cumhazard"), 
+                               type = c("hazard","cumhazard"),
+                               se = FALSE,
                                keep.strata = TRUE,
                                keep.times = TRUE,
-                               se = FALSE,
-                               keep.infoVar = TRUE)
+                               keep.infoVar = TRUE,
+                               keep.newdata = FALSE)
         ls.infoVar[[iterC]] <- baseline$infoVar
 
         ## baseline hazard from the Cox model

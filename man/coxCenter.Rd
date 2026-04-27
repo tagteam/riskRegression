@@ -7,18 +7,20 @@
 \alias{coxCenter.phreg}
 \title{Extract the mean value of the covariates}
 \usage{
-coxCenter(object)
+coxCenter(object, as.factor)
 
-\method{coxCenter}{cph}(object)
+\method{coxCenter}{cph}(object, as.factor = FALSE)
 
-\method{coxCenter}{coxph}(object)
+\method{coxCenter}{coxph}(object, as.factor = FALSE)
 
-\method{coxCenter}{phreg}(object)
+\method{coxCenter}{phreg}(object, as.factor = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package), \code{cph}
 (rms package), or \code{phreg} (mets package).}
+
+\item{as.factor}{[logical] should the original factor level be returned instead of the corresponding dummy variables? Will return a data.frame instead of a matrix as side effect.}
 }
 \description{
 Extract the mean value of the covariates

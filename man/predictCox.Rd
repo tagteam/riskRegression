@@ -12,7 +12,7 @@ predictCox(
   type = c("cumhazard", "survival"),
   keep.strata = TRUE,
   keep.times = TRUE,
-  keep.newdata = FALSE,
+  keep.newdata = NULL,
   keep.infoVar = FALSE,
   se = FALSE,
   band = FALSE,
@@ -133,20 +133,18 @@ d$U <- sample(letters[1:3],replace=TRUE,size=NROW(d))
 d$V <- sample(letters[5:8],replace=TRUE,size=NROW(d))
 nd <- cbind(nd,d[sample(NROW(d),replace=TRUE,size=NROW(nd)),c("U","V")])
 
-######################
-#### Kaplan Meier ####
-######################
+################################
+#### Kaplan Meier (no ties) ####
+################################
 
-#### no ties ####
 fit.KM <- coxph(Surv(time,event)~ 1, data=d, x = TRUE, y = TRUE)
 
-## survival: exponential approximation
+## exponential approximation for the survival
 eEXP.KM <- predictCox(fit.KM)
 plot(eEXP.KM) ## one point = at least observation
 
-## survival: product-limit estimator
-ePL.KM <- predictCox(fit.KM, product.limit = TRUE, se = TRUE,
-                     keep.newdata = TRUE) ## keep type of event
+## Kaplan Meier product-limit estimator for the survival
+ePL.KM <- predictCox(fit.KM, product.limit = TRUE, se = TRUE)
 as.data.table(ePL.KM) ## combine all information into a data.table
 plot(ePL.KM, atRisk = TRUE) ## graphical display
 plot(ePL.KM, atRisk = TRUE, alpha = 0.1) 
@@ -167,11 +165,15 @@ ggPL.KM
 range(ePL.KM$survival - eEXP.KM$survival)
 range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM$survival) ## same
 
-#### with ties (exponential approximation, Efron estimator for the baseline hazard)
-fit.KM.ties <- coxph(Surv(time.round,event)~ 1, data=d, x = TRUE, y = TRUE)
+################################
+#### Kaplan Meier (ties)    ####
+################################
+
+## Ties: Efron estimator for the baseline hazard
+fit.KM.ties <- coxph(Surv(time.round,event) ~ 1, data=d, x = TRUE, y = TRUE)
 predictCox(fit.KM)
 
-## retrieving survfit results with ties
+## Ties: Breslow estimator for the baseline hazard
 fit.KM.ties <- coxph(Surv(time.round,event)~ 1, data=d,
                      x = TRUE, y = TRUE, ties = "breslow")
 ePL.KM.ties <- predictCox(fit.KM, product.limit = TRUE)
@@ -182,30 +184,39 @@ range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM.ties$survival) ## same
 #################################
 
 fit.SKM <- coxph(Surv(time,event)~strata(X2), data=d, x = TRUE, y = TRUE)
-ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE, se = TRUE, keep.newdata = TRUE)
+
+## Kaplan Meier product-limit estimator for the survival
+ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE, se = TRUE)
 ePL.SKM
 
 range(survfit(Surv(time,event)~X2, data = d)$surv - ePL.SKM$survival) ## same
 
-plot(ePL.SKM) 
-plot(ePL.SKM, atRisk = TRUE) ## graphical display
+## graphical display
+plot(ePL.SKM, atRisk = TRUE, alpha = 0.1) 
+plot(ePL.SKM, alpha = 0.1, atRisk = TRUE, 
+     ylim = c(0.1,1), space.atRisk = 0.025) ## customize at risk display
 
 ###################
 #### Cox model ####
 ###################
 
-fit.Cox <- coxph(Surv(time,event)~X1 + X2 + X6, data=d, x = TRUE, y = TRUE)
+fit.Cox <- coxph(Surv(time,event) ~ X1 + X2 + X6, data=d, x = TRUE, y = TRUE)
 
-#### compute the baseline cumulative hazard
+#### baseline hazard and survival  ####
+## exponential approximation for the survival
 Cox.haz0 <- predictCox(fit.Cox)
 Cox.haz0
 
 range(survival::basehaz(fit.Cox)$hazard-Cox.haz0$cumhazard) ## same
 
-#### compute individual specific cumulative hazard and survival probabilities
+## graphical display of the survival for the reference level
+plot(predictCox(fit.Cox, se = TRUE), alpha = 0.1) 
+
+#### individual specific hazard and survival probabilities  ####
+
 ## exponential approximation
 fit.predCox <- predictCox(fit.Cox, newdata=nd, times=c(3,8),
-                          se = TRUE, band = TRUE)
+                          se = TRUE)
 fit.predCox
 
 ## product-limit
@@ -220,7 +231,7 @@ range(fitPL.predCox$survival.se - fit.predCox$survival.se) ## different
 fitPL.predCox$survival.se - fitPL.predCox$cumhazard.se * fitPL.predCox$survival
 
 
-#### left truncation
+#### left truncation ####
 test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
               stop=c(2,3,6,7,8,9,9,9,14,17), 
               event=c(1,1,1,1,1,1,1,0,0,0), 
@@ -230,23 +241,39 @@ as.data.table(predictCox(m.cph))
 
 basehaz(m.cph)
 
-##############################
-#### Stratified Cox model ####
-##############################
+##############################################
+#### Stratified Cox model (single strata) ####
+##############################################
 
-#### one strata variable
 fit.SCox <- coxph(Surv(time,event)~X1+strata(X2)+X6, data=d, x = TRUE, y = TRUE)
+
+#### baseline hazard and survival  ####
+## exponential approximation for the survival
+plot(predictCox(fit.SCox, se = TRUE, keep.newdata = TRUE),
+     alpha = 0.1, atRisk = TRUE)
+
+
+#### individual specific hazard and survival probabilities  ####
 predictCox(fit.SCox, newdata=nd, times = c(3,12))
 predictCox(fit.SCox, newdata=nd, times = c(3,12), product.limit = TRUE)
 ## NA: timepoint is beyond the last observation in the strata and censoring
-tapply(d$time,d$X2,max)
 
-#### two strata variables
+################################################
+#### Stratified Cox model (multiple strata) ####
+################################################
+
 fit.S2Cox <- coxph(Surv(time,event)~X1+strata(U)+strata(V)+X2,
                    data=d, x = TRUE, y = TRUE)
 
+#### baseline hazard and survival  ####
+## exponential approximation for the survival
+plot(predictCox(fit.S2Cox, se = TRUE, keep.newdata = TRUE),
+     alpha = 0.1, atRisk = TRUE)
+
 base.S2Cox <- predictCox(fit.S2Cox)
 range(survival::basehaz(fit.S2Cox)$hazard - base.S2Cox$cumhazard) ## same
+
+#### individual specific hazard and survival probabilities  ####
 predictCox(fit.S2Cox, newdata=nd, times = 3)
 }
 \references{

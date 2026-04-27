@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Apr 25 2026 (15:15) 
+## last-updated: Apr 27 2026 (08:22) 
 ##           By: Brice Ozenne
-##     Update #: 1716
+##     Update #: 1784
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,16 @@
 #' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param atRisk [logical] Should the number at risk be diplayed at the bottom of the plot? 
-#' @param ... Additional parameters to cutomize the display.
+#' @param xlim,ylim [numeric vector of length 2] limits for the x and y axes.
+#' @param ... Additional parameters to cutomize the display: \itemize{
+#' \item size.estimate: thickness of the line used to represent the estimated survival/hazard.
+#' \item size.point: size of the points used to represent obsevations (if any).
+#' \item size.ci: thickness of the line used to represent the confidence intervals for the survival/hazard.
+#' \item size.band: thickness of the line used to represent the confidence bands for the survival/hazard.
+#' \item size.atRisk: font size used to display the number at risk.
+#' \item space.atRisk: vertical space used between the  display of the number at risk across strata. 
+#' \item shape.point: shape of the points used to represent obsevations (if any).
+#' }
 #'
 #' @return Invisible. A list containing:
 #' \itemize{
@@ -158,7 +167,9 @@ autoplot.predictCox <- function(object,
                                 ylab = NULL,
                                 first.derivative = FALSE,
                                 atRisk = FALSE,
-                                 ...){
+                                xlim = NULL,
+                                ylim = NULL,
+                                ...){
   
     ## initialize and check    
     possibleType <- c("cumhazard","survival","lp")
@@ -251,7 +262,7 @@ autoplot.predictCox <- function(object,
     }
     
     ## ** reshape data
-    if(type == "lp"){
+    if(type == "lp"){ ## linear predictor
         if(first.derivative){
             stop("Argument \'first.derivative\' should be FALSE when argument \'type\' equals \"lp\". \n")
         }
@@ -291,9 +302,8 @@ autoplot.predictCox <- function(object,
         group.by <- if(length(group.by[-1])==0){"row"}else{group.by[-1]}
     }else{
 
-        if(!is.matrix(object[[type]])){
-
-            ## baseline hazard/survival
+        if(!is.matrix(object[[type]])){ ## baseline hazard/survival
+            
             object[[type]] <- rbind(object[[type]])
             if(ci){
                 object[[paste0(type,".lower")]] <- rbind(object[[paste0(type,".lower")]])
@@ -303,7 +313,9 @@ autoplot.predictCox <- function(object,
                 object[[paste0(type,".lowerBand")]] <- rbind(object[[paste0(type,".lowerBand")]])
                 object[[paste0(type,".upperBand")]] <- rbind(object[[paste0(type,".upperBand")]])
             }
-            if(0 %in% object$times == FALSE){ ## add baseline
+
+            ## *** add time 0
+            if((0 %in% object$times == FALSE) && (is.null(xlim) || xlim[1]<=0)){
                 
                 n.strata <- ifelse(is.null(object$strata), 1 ,length(levels(object$strata)))
                 object[[type]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
@@ -322,7 +334,7 @@ autoplot.predictCox <- function(object,
                 }
                 object$times <- c(rep(0, n.strata), object$times)
                 if(!is.null(object$strata)){
-                    object$strata <- c(factor(levels(object$newdata$strata), levels = levels(object$newdata$strata)), object$strata)
+                    object$strata <- c(factor(levels(object$strata), levels = levels(object$strata)), object$strata)
                 }                
 
                 if(!is.null(object$newdata)){
@@ -330,53 +342,67 @@ autoplot.predictCox <- function(object,
                     newdata0$start <- 0
                     newdata0$stop <- 0
                     newdata0$status <- NA
-                    newdata0$strata[] <- factor(levels(object$newdata$strata), levels = levels(object$newdata$strata))
-                    newdata0$strata.num <- 1:n.strata
+                    if(!is.null(object$strata)){
+                        newdata0$strata[] <- factor(levels(object$strata), levels = levels(object$strata))
+                        newdata0$strata.num <- 1:n.strata
+                    }
                     newdata0$eXb <- NA
-                    newdata0$statusM1 <- NA
-                    newdata0$XXXindexXXX <- NA
                     object$newdata <- rbind(newdata0, object$newdata)
                 }
 
             }
+            ## *** extrapolate beyond last observations when last observation is an event
+            ## NOTE: survival may not be 0 when using exponential approximation
+            time.beyond <- max(c(xlim, max(object$time)))
+            if(is.null(object$strata)){
+                time.maxStrata <- max(object$time)
+            }else{
+                time.maxStrata <- tapply(object$time, object$strata, max)
+            }            
+            if(any(time.maxStrata < time.beyond & time.beyond < object$lastEventTime)){
 
-            if(!is.null(object$strata)){
-                if(any(tapply(object$time, object$strata, max) < object$lastEventTime & tapply(object$time, object$strata, max) < max(object$time))){ ##
-                
-                    index.strata <- which(tapply(object$time, object$strata, max) < object$lastEventTime)
-                    nIndex.strata <- length(index.strata)
+                ## identify which strata needs update and what is the last observation in each strata
+                if(is.null(object$strata)){
+                    strata.beyond <- 1
+                    n.strataBeyond <- 1
+                    index.strataBeyond <-  length(object$time)
+                }else{
+                    strata.beyond <- which(time.maxStrata < time.beyond & time.beyond < object$lastEventTime)
+                    n.strataBeyond <- length(strata.beyond)
+                    index.strataBeyond <-  which(rev(!duplicated(rev(object$strata))))[strata.beyond]
+                }
+                ## update: add a ficticious observation
+                object[[type]] <- cbind(object[[type]], matrix(NA, nrow = 1, ncol = n.strataBeyond)) ## NA instead of object[[type]][,index.strataBeyond] so no point is displayed (but the plot function will extend the line)
+                if(ci){
+                    object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]],
+                                                             matrix(object[[paste0(type,".lower")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+                    object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]],
+                                                             matrix(object[[paste0(type,".lower")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+                }
+                if(band){
+                    object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]],
+                                                                 matrix(object[[paste0(type,".lowerBand")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+                    object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]],
+                                                                 matrix(object[[paste0(type,".upperBand")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+                }
+                object$times <- c(object$times, rep(time.beyond, n.strataBeyond))
+                if(!is.null(object$strata)){
+                    object$strata <- c(object$strata, factor(levels(object$strata)[strata.beyond], levels = levels(object$strata)))
+                }                
 
-                    index.strataLast <-  which(rev(!duplicated(rev(object$strata))))[index.strata]
-                    object[[type]] <- cbind(object[[type]], object[[type]][,index.strataLast]) 
-                    if(ci){
-                        object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]],
-                                                                 matrix(object[[paste0(type,".lower")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
-                        object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]],
-                                                                 matrix(object[[paste0(type,".lower")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
-                    }
-                    if(band){
-                        object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]],
-                                                                     matrix(object[[paste0(type,".lowerBand")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
-                        object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]],
-                                                                     matrix(object[[paste0(type,".upperBand")]][,index.strataLast], nrow = 1, ncol = nIndex.strata))
-                    }
-                    object$times <- c(object$times, rep(max(object$time),n.strata))
+                if(!is.null(object$newdata)){
+                    newdataF <- object$newdata[1:n.strataBeyond]
+                    newdataF$start <- 0
+                    newdataF$stop <- time.beyond
+                    newdataF$status <- NA
                     if(!is.null(object$strata)){
-                        object$strata <- c(object$strata, factor(levels(object$newdata$strata)[index.strata], levels = levels(object$newdata$strata)))
-                    }                
-
-                    if(!is.null(object$newdata)){
-                        newdataF <- object$newdata[1:nIndex.strata]
-                        newdataF$start <- 0
-                        newdataF$stop <- max(object$time)
-                        newdataF$status <- NA
-                        newdataF$strata[] <- factor(levels(object$newdata$strata)[index.strata], levels = levels(object$newdata$strata))
-                        newdataF$strata.num <- index.strata
-                        newdataF$eXb <- NA
-                        newdataF$statusM1 <- NA
-                        newdataF$XXXindexXXX <- NA
-                        object$newdata <- rbind(object$newdata, newdataF)
+                        newdataF$strata[] <- factor(levels(object$strata)[strata.beyond], levels = levels(object$strata))
+                        newdataF$strata.num <- strata.beyond
                     }
+                    newdataF$eXb <- NA
+                    newdataF$statusM1 <- NA
+                    newdataF$XXXindexXXX <- NA
+                    object$newdata <- rbind(object$newdata, newdataF)
                 }
             }
 
@@ -388,11 +414,6 @@ autoplot.predictCox <- function(object,
             }
             
             newdata <- NULL
-            if(object$nTimes==0){
-                status <- object$newdata
-            }else{
-                status <- NULL
-            }
 
         }else{
             newdata <- data.table::copy(object$newdata) ## can be NULL
@@ -429,7 +450,7 @@ autoplot.predictCox <- function(object,
                               outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
                               outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
                               newdata = newdata,
-                              status = status,
+                              status = object$newdata$status,
                               strata = object$strata,
                               times = object$times,
                               name.outcome = type,
@@ -453,13 +474,15 @@ autoplot.predictCox <- function(object,
                            ylab = ylab,
                            first.derivative = first.derivative,
                            atRisk = atRisk,
+                           xlim = xlim,
+                           ylim = ylim,                           
                            ...
                            )
 
     if(object$baseline){
         if(nVar.lp>0){
             vec.center <- sapply(attr(object$var.lp,"center"), function(iE){ifelse(is.numeric(iE),round(iE,digits),as.character(iE))})
-            gg.res$plot <- gg.res$plot + ggplot2::ggtitle(paste0("Baseline: ",paste(paste(object$var.lp, vec.center, sep = "="), collapse = ", ")))
+            gg.res$plot <- gg.res$plot + ggplot2::ggtitle(paste0("Baseline: ",paste(paste(names(vec.center), vec.center, sep = "="), collapse = ", ")))
         }
         if(is.null(object$strata) && (ci || band)){
             gg.res$plot <- gg.res$plot + ggplot2::guides(color = "none")
@@ -565,10 +588,9 @@ predict2melt <- function(outcome, name.outcome,
         dataL[, c("covariates") := interaction(.SD,sep = " "), .SDcols = names(newdata)]
     }
 
-
     ## *** status + covariates from original data
     if(!is.null(status)){ 
-        dataL$status <- status$status        
+        dataL$status <- status        
     }
 
     ## ** export
@@ -580,7 +602,7 @@ predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by, smooth,                        
                          conf.level, alpha, xlab, ylab, xlim = NULL, ylim = NULL,
                          smoother = NULL, formula.smoother = NULL, first.derivative = FALSE, atRisk = FALSE,
-                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, size.text = 5, space.text = 0.05, shape.point = c(3,18), n.sim = 250){
+                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, size.atRisk = 5, space.atRisk = 0.05, shape.point = c(3,18), n.sim = 250){
 
     .GRP <- .data <- NULL ## [:: for CRAN CHECK::]
     if(first.derivative && (smooth==FALSE)){
@@ -776,15 +798,17 @@ predict2plot <- function(dataL, name.outcome,
         gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes(x = .data$time, y = .data[[paste0(name.outcome,".smooth")]], group = .data[[group.by]], color = .data[[group.by]]),
                                                 linewidth = size.estimate)
     }else{
-        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes(x = .data$timeRight, y = .data[[name.outcome]], xend = .data$time, yend = .data[[name.outcome]], color = .data[[group.by]], group = .data[[group.by]]),
+        gg.base <- gg.base + ggplot2::geom_segment(data = dataL[!is.na(dataL[[name.outcome]])],
+                                                   mapping = ggplot2::aes(x = .data$timeRight, y = .data[[name.outcome]], xend = .data$time, yend = .data[[name.outcome]], color = .data[[group.by]], group = .data[[group.by]]),
                                                    linewidth = size.estimate)
+
         if("status" %in% names(dataL)){
             dataL$status <- as.character(dataL$status)
             gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL$status)],
                                                      mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], shape = .data$status, group = .data[[group.by]]), size = size.point)
             gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values = shape.point, labels = c("censoring","event"))
         }else{
-            gg.base <- gg.base + ggplot2::geom_point(data = dataL,
+            gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL[[name.outcome]])],
                                                      mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], group = .data[[group.by]]), size = size.point)
         }
     }
@@ -831,14 +855,14 @@ predict2plot <- function(dataL, name.outcome,
     
     ## *** add atRisk table
     if(any(atRisk>0)){
-        if(length(space.text)==1){
-            space.text <- rep(space.text,2)
+        if(length(space.atRisk)==1){
+            space.atRisk <- rep(space.atRisk,2)
         }
         ggBUILD.base <- ggplot2::ggplot_build(gg.base)
         
         ybreaks <- ggBUILD.base$layout$panel_params[[1]]$y$breaks
         if(!is.null(ylim)){
-            yatRisk <- max(min(ylim), -space.text[1])
+            yatRisk <- max(min(ylim), -space.atRisk[1])
         }else{
             yatRisk <- round(min(range(c(unlist(lapply(ggBUILD.base$data, "[[", "y")),unlist(lapply(ggBUILD.base$data, "[[", "ymin")))), na.rm = TRUE) - 0.05,2)
         }
@@ -848,7 +872,7 @@ predict2plot <- function(dataL, name.outcome,
 
         df.atRisk <- do.call(rbind,lapply(atRisk, function(iT){ ## iT <- 1
             if("strata" %in% names(dataL)){
-                iOut <- data.frame(time = iT, y = yatRisk - space.text[2] * 0:(length(levels(dataL$strata))-1), strata = levels(dataL$strata), atRisk = tapply(dataL$time>=iT,dataL$strata,sum))
+                iOut <- data.frame(time = iT, y = yatRisk - space.atRisk[2] * 0:(length(levels(dataL$strata))-1), strata = levels(dataL$strata), atRisk = tapply(dataL$time>=iT,dataL$strata,sum))
             }else{
                 iOut <- data.frame(time = iT, y = yatRisk, atRisk = sum(dataL$time>=iT))
             }
@@ -857,9 +881,9 @@ predict2plot <- function(dataL, name.outcome,
         gg.base <- gg.base + scale_y_continuous(breaks = unique(c(yatRisk, ybreaks)), ## in case yatRisk matches a break
                                                 labels = c("at risk",ybreaks)[!duplicated(c(yatRisk, ybreaks))])
         if("strata" %in% names(dataL)){
-            gg.base <- gg.base + ggplot2::geom_text(data = df.atRisk, ggplot2::aes(x = .data$time, y = .data$y, label = .data$atRisk, color = .data$strata), size = size.text)
+            gg.base <- gg.base + ggplot2::geom_text(data = df.atRisk, ggplot2::aes(x = .data$time, y = .data$y, label = .data$atRisk, color = .data$strata), size = size.atRisk)
         }else{
-            gg.base <- gg.base + ggplot2::geom_text(data = df.atRisk, ggplot2::aes(x = .data$time, y = .data$y, label = .data$atRisk), size = size.text)
+            gg.base <- gg.base + ggplot2::geom_text(data = df.atRisk, ggplot2::aes(x = .data$time, y = .data$y, label = .data$atRisk), size = size.atRisk)
         }
         if(is.null(ylim)){
             ggBUILD.base <- ggplot2::ggplot_build(gg.base)

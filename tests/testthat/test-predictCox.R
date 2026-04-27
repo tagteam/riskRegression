@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep 10 2024 (13:24) 
+## last-updated: Apr 26 2026 (23:52) 
 ##           By: Brice Ozenne
-##     Update #: 182
+##     Update #: 183
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,8 +47,9 @@ test_that("baseline hazard (no strata): compare to survival::basehaz",{
 
   ## consistency cph coxph
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
-  expect_equal(ignore_attr=TRUE,predictCox(fit.cph, centered = FALSE),
-               predictCox(fit.coxph, centered = FALSE), 
+  expect_equal(ignore_attr=TRUE,
+               as.data.table(predictCox(fit.cph, centered = FALSE)),
+               as.data.table(predictCox(fit.coxph, centered = FALSE)), 
                tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
   ## note centered = TRUE will no give same results as coxph do not center all variables
 })

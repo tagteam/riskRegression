@@ -82,7 +82,7 @@
 
 ## * predictCox (examples)
 #' @examples
-##' 
+#' 
 #' library(survival)
 #' library(data.table)
 #'
@@ -103,20 +103,18 @@
 #' d$V <- sample(letters[5:8],replace=TRUE,size=NROW(d))
 #' nd <- cbind(nd,d[sample(NROW(d),replace=TRUE,size=NROW(nd)),c("U","V")])
 #' 
-#' ######################
-#' #### Kaplan Meier ####
-#' ######################
+#' ################################
+#' #### Kaplan Meier (no ties) ####
+#' ################################
 #' 
-#' #### no ties ####
 #' fit.KM <- coxph(Surv(time,event)~ 1, data=d, x = TRUE, y = TRUE)
 #' 
-#' ## survival: exponential approximation
+#' ## exponential approximation for the survival
 #' eEXP.KM <- predictCox(fit.KM)
 #' plot(eEXP.KM) ## one point = at least observation
 #' 
-#' ## survival: product-limit estimator
-#' ePL.KM <- predictCox(fit.KM, product.limit = TRUE, se = TRUE,
-#'                      keep.newdata = TRUE) ## keep type of event
+#' ## Kaplan Meier product-limit estimator for the survival
+#' ePL.KM <- predictCox(fit.KM, product.limit = TRUE, se = TRUE)
 #' as.data.table(ePL.KM) ## combine all information into a data.table
 #' plot(ePL.KM, atRisk = TRUE) ## graphical display
 #' plot(ePL.KM, atRisk = TRUE, alpha = 0.1) 
@@ -137,11 +135,15 @@
 #' range(ePL.KM$survival - eEXP.KM$survival)
 #' range(survfit(Surv(time,event)~1, data = d)$surv - ePL.KM$survival) ## same
 #'
-#' #### with ties (exponential approximation, Efron estimator for the baseline hazard)
-#' fit.KM.ties <- coxph(Surv(time.round,event)~ 1, data=d, x = TRUE, y = TRUE)
+#' ################################
+#' #### Kaplan Meier (ties)    ####
+#' ################################
+#' 
+#' ## Ties: Efron estimator for the baseline hazard
+#' fit.KM.ties <- coxph(Surv(time.round,event) ~ 1, data=d, x = TRUE, y = TRUE)
 #' predictCox(fit.KM)
 #' 
-#' ## retrieving survfit results with ties
+#' ## Ties: Breslow estimator for the baseline hazard
 #' fit.KM.ties <- coxph(Surv(time.round,event)~ 1, data=d,
 #'                      x = TRUE, y = TRUE, ties = "breslow")
 #' ePL.KM.ties <- predictCox(fit.KM, product.limit = TRUE)
@@ -152,30 +154,39 @@
 #' #################################
 #' 
 #' fit.SKM <- coxph(Surv(time,event)~strata(X2), data=d, x = TRUE, y = TRUE)
-#' ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE, se = TRUE, keep.newdata = TRUE)
+#' 
+#' ## Kaplan Meier product-limit estimator for the survival
+#' ePL.SKM <- predictCox(fit.SKM, product.limit = TRUE, se = TRUE)
 #' ePL.SKM
 #' 
 #' range(survfit(Surv(time,event)~X2, data = d)$surv - ePL.SKM$survival) ## same
 #'
-#' plot(ePL.SKM) 
-#' plot(ePL.SKM, atRisk = TRUE) ## graphical display
+#' ## graphical display
+#' plot(ePL.SKM, atRisk = TRUE, alpha = 0.1) 
+#' plot(ePL.SKM, alpha = 0.1, atRisk = TRUE, 
+#'      ylim = c(0.1,1), space.atRisk = 0.025) ## customize at risk display
 #' 
 #' ###################
 #' #### Cox model ####
 #' ###################
 #'
-#' fit.Cox <- coxph(Surv(time,event)~X1 + X2 + X6, data=d, x = TRUE, y = TRUE)
+#' fit.Cox <- coxph(Surv(time,event) ~ X1 + X2 + X6, data=d, x = TRUE, y = TRUE)
 #' 
-#' #### compute the baseline cumulative hazard
+#' #### baseline hazard and survival  ####
+#' ## exponential approximation for the survival
 #' Cox.haz0 <- predictCox(fit.Cox)
 #' Cox.haz0
 #' 
 #' range(survival::basehaz(fit.Cox)$hazard-Cox.haz0$cumhazard) ## same
 #'
-#' #### compute individual specific cumulative hazard and survival probabilities
+#' ## graphical display of the survival for the reference level
+#' plot(predictCox(fit.Cox, se = TRUE), alpha = 0.1) 
+#'
+#' #### individual specific hazard and survival probabilities  ####
+#' 
 #' ## exponential approximation
 #' fit.predCox <- predictCox(fit.Cox, newdata=nd, times=c(3,8),
-#'                           se = TRUE, band = TRUE)
+#'                           se = TRUE)
 #' fit.predCox
 #' 
 #' ## product-limit
@@ -190,7 +201,7 @@
 #' fitPL.predCox$survival.se - fitPL.predCox$cumhazard.se * fitPL.predCox$survival
 #'
 #'
-#' #### left truncation
+#' #### left truncation ####
 #' test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
 #'               stop=c(2,3,6,7,8,9,9,9,14,17), 
 #'               event=c(1,1,1,1,1,1,1,0,0,0), 
@@ -200,23 +211,39 @@
 #'
 #' basehaz(m.cph)
 #'
-#' ##############################
-#' #### Stratified Cox model ####
-#' ##############################
+#' ##############################################
+#' #### Stratified Cox model (single strata) ####
+#' ##############################################
 #' 
-#' #### one strata variable
 #' fit.SCox <- coxph(Surv(time,event)~X1+strata(X2)+X6, data=d, x = TRUE, y = TRUE)
+#'
+#' #### baseline hazard and survival  ####
+#' ## exponential approximation for the survival
+#' plot(predictCox(fit.SCox, se = TRUE, keep.newdata = TRUE),
+#'      alpha = 0.1, atRisk = TRUE)
+#'
+#' 
+#' #### individual specific hazard and survival probabilities  ####
 #' predictCox(fit.SCox, newdata=nd, times = c(3,12))
 #' predictCox(fit.SCox, newdata=nd, times = c(3,12), product.limit = TRUE)
 #' ## NA: timepoint is beyond the last observation in the strata and censoring
-#' tapply(d$time,d$X2,max)
 #' 
-#' #### two strata variables
+#' ################################################
+#' #### Stratified Cox model (multiple strata) ####
+#' ################################################
+#' 
 #' fit.S2Cox <- coxph(Surv(time,event)~X1+strata(U)+strata(V)+X2,
 #'                    data=d, x = TRUE, y = TRUE)
 #'
+#' #### baseline hazard and survival  ####
+#' ## exponential approximation for the survival
+#' plot(predictCox(fit.S2Cox, se = TRUE, keep.newdata = TRUE),
+#'      alpha = 0.1, atRisk = TRUE)
+#' 
 #' base.S2Cox <- predictCox(fit.S2Cox)
 #' range(survival::basehaz(fit.S2Cox)$hazard - base.S2Cox$cumhazard) ## same
+#' 
+#' #### individual specific hazard and survival probabilities  ####
 #' predictCox(fit.S2Cox, newdata=nd, times = 3)
 
 ## * predictCox (code)
@@ -229,7 +256,7 @@ predictCox <- function(object,
                        type=c("cumhazard","survival"),
                        keep.strata = TRUE,
                        keep.times = TRUE,
-                       keep.newdata = FALSE,
+                       keep.newdata = NULL,
                        keep.infoVar = FALSE,
                        se = FALSE,
                        band = FALSE,
@@ -260,12 +287,14 @@ predictCox <- function(object,
     if (missing(times)) {
         nTimes <- 0
         times <- numeric(0)
+        if(is.null(keep.newdata)){keep.newdata <- TRUE}
     }else{
         if(!is.numeric(times) && !is.integer(times)){
             stop("Argument \'times\' should be a numeric vector. \n",
                  "Provide class: ",class(times)[1],". \n")
         }
         nTimes <- length(times)
+        if(is.null(keep.newdata)){keep.newdata <- FALSE}
     }
     needOrder <- (nTimes[1]>0 && is.unsorted(times))
     if (all(!is.na(times)) && needOrder) {
@@ -304,7 +333,6 @@ predictCox <- function(object,
         j = "eXb",
         value = exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})))
     ## add linear predictor and remove useless columns
-    rm.name <- setdiff(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num"))
   
     ## sort the data
     object.modelFrame[, c("statusM1") := 1-.SD$status] ## sort by statusM1 such that deaths appear first and then censored events
@@ -485,11 +513,6 @@ predictCox <- function(object,
 
     ## ** baseline hazard
     ## *** evaluate at requested times
-    ## if(inherits(object,"prodlim")){
-    ##     Lambda0 <- baseHaz_prodlim(object,
-    ##                                times = times.sorted,
-    ##                                etimes.max = etimes.max)
-    ## }else{
     Lambda0 <- baseHaz_cpp(starttimes = object.modelFrame$start,
                            stoptimes = object.modelFrame$stop,
                            status = object.modelFrame$status,
@@ -502,16 +525,11 @@ predictCox <- function(object,
                            cause = 1,
                            Efron = (object.baseEstimator == "efron"),
                            reverse = reverse)
-    ## }
+
     ## *** evaluate at all jump times    
-    if(product.limit){        
+    if(product.limit && "survival" %in% type){        
         if(length(times.sorted)==0){
             AllLambda0 <- Lambda0
-            ## }else if(inherits(object,"prodlim")){
-            ##     AllLambda0 <- baseHaz_prodlim(object,
-            ##                                   times = numeric(0),
-            ##                                   etimes.max = pmin(etimes.max,max(c(times.sorted,Inf))) ## times.sorted may be numeric(0)
-            ##                                   )
         }else{
             AllLambda0 <- baseHaz_cpp(starttimes = object.modelFrame$start,
                                       stoptimes = object.modelFrame$stop,
@@ -567,72 +585,63 @@ predictCox <- function(object,
     }
 
     ## *** special case: return baseline hazard/cumulative hazard/survival
-    if (is.null(newdata) && (se[[1]] || band[[1]])){
-        if(is.strata || nVar.lp>0){ ## add strata and covariates values
-            lpvars.num <- intersect(names(object.modelFrame), infoVar$lpvars.original)
-            if(length(lpvars.num)>0){ ## set numeric covariates at their reference level
-                toCenter <- coxCenter(object)[lpvars.num]
-                object.modelFrame[,c(names(toCenter)) := toCenter]
-            }else{
-                toCenter <- NULL
-            }
-            lpvars.factor <- intersect(names(object$xlevels), infoVar$lpvars.original)
-            if(length(lpvars.factor)>0){
-                toFactor <- sapply(object$xlevels[lpvars.factor], "[",1)
-                object.modelFrame[,c(names(toFactor)) := toFactor]
-            }else{
-                toFactor <- NULL
-            }
-            if(is.strata){ ## remove strata(.) or strat(.) from the name
-                object.modelFrame <- cbind(object.modelFrame, stats::model.frame(object)[object.modelFrame$XXXindexXXX,infoVar$stratavars,drop=FALSE])
-                names(object.modelFrame)[match(infoVar$stratavars,names(object.modelFrame))] <- infoVar$stratavars.original
-            }
-        }else{
-            lpvars.num <- NULL
-            lpvars.factor <- NULL
-        }
+    if (is.null(newdata)){
 
-        Lambda0.se <- predictCox(object, times = Lambda0$times, newdata = object.modelFrame, diag = TRUE, se = se, iid = band, band = band,
-                                 product.limit = product.limit, type = union("cumhazard",type), keep.times = keep.times, keep.strata = keep.strata, keep.infoVar = keep.infoVar)
-        ## SANITY CHECK (note: type must contain cumhazard or survival for se or band to be valid. survival involves getting cumhazard)
-        if(any(abs(Lambda0$cumhazard-Lambda0.se$cumhazard[,1])>1e-12)){ 
-            warning("Discrepancy between the baseline cumulative hazard and the one used to obtain the standard error.",
-                    "Max. discrepancy: ",max(abs(Lambda0$cumhazard-Lambda0.se$cumhazard[,1])),".\n")
-        }
-        Lambda0.se$var.lp <- infoVar$lpvars.original
-        if(nVar.lp>0 && length(lpvars.num)){
-            attr(Lambda0.se$var.lp, "center") <- as.data.frame(c(as.list(toCenter),as.list(toFactor))[Lambda0.se$var.lp])
-        }
-        Lambda0.se$var.strata <- infoVar$stratavars.original
-        ## flatten matrix into vector
-        keep.col <- type
-        if("cumhazard" %in% type == FALSE){Lambda0.se$cumhazard <- NULL}
-        if(se[[1]]){
-            keep.col <- c(keep.col, unlist(lapply(type,paste,c("se","lower","upper"), sep = ".")))
-            if("cumhazard" %in% type == FALSE){Lambda0.se$cumhazard.se <- Lambda0.se$cumhazard.lower <- Lambda0.se$cumhazard.upper <- NULL}
-        }
-        if(band[[1]]){
-            keep.col <- c(keep.col, unlist(lapply(type,paste,c("lowerBand","upperBand"), sep = ".")))
-            if("cumhazard" %in% type == FALSE){Lambda0.se$cumhazard.quantileBand <- Lambda0.se$cumhazard.lowerBand <- Lambda0.se$cumhazard.upperBand <- NULL}
-        }
-        Lambda0.se[keep.col] <- lapply(keep.col, function(iName){Lambda0.se[[iName]][,1]})
-        Lambda0.se[intersect(names(Lambda0.se),unlist(lapply(type,paste0,".iid")))] <- NULL 
-        Lambda0.se$baseline <- TRUE
-        Lambda0.se$diag <- FALSE
-        Lambda0.se$nTimes <- 0
-        if(keep.newdata[1]==TRUE){
-            if(length(rm.name)+nVar.lp+is.strata>0){                
-                object.modelFrame[,unique(c(rm.name,infoVar$lpvars.original,infoVar$stratavars.original)) := NULL]
+        if(se[[1]] || band[[1]]){
+            
+            ## prepare baseline dataset
+            if(is.strata || nVar.lp>0){ ## add strata and covariates values
+                lpvars.num <- intersect(names(object.modelFrame), infoVar$lpvars.original)
+                if(length(lpvars.num)>0){ ## set numeric covariates at their reference level
+                    toCenter <- coxCenter(object)[lpvars.num]
+                    object.modelFrame[,c(names(toCenter)) := toCenter]
+                }else {
+                    toCenter <- NULL
+                }
+                lpvars.factor <- setdiff(infoVar$lpvars.original, lpvars.num)
+                if(length(lpvars.factor)>0){
+                    toFactor <- sapply(object$xlevels[lpvars.factor], "[",1)
+                    object.modelFrame[,c(names(toFactor)) := as.list(toFactor)]
+                }else{
+                    toFactor <- NULL
+                }
+                if(is.strata){ ## remove strata(.) or strat(.) from the name
+                    object.modelFrame <- cbind(object.modelFrame, stats::model.frame(object)[object.modelFrame$XXXindexXXX,infoVar$stratavars,drop=FALSE])
+                    names(object.modelFrame)[match(infoVar$stratavars,names(object.modelFrame))] <- infoVar$stratavars.original
+                }
+            }else{
+                lpvars.num <- NULL
+                lpvars.factor <- NULL
             }
-            Lambda0.se$newdata <- object.modelFrame
-        }        
-        return(Lambda0.se)
-    }else if(is.null(newdata)){
-        if (!("hazard" %in% type)){
-            Lambda0$hazard <- NULL
-        }
-        if ("survival" %in% type){  ## must be before cumhazard
-            if(product.limit){
+            
+            ## save for SANITY CHECK
+            Lambda0_cumhazard <- Lambda0$cumhazard
+            
+            ## OVERWRITE Lambda0 by evaluating baseline hazard/survival with se
+            Lambda0 <- predictCox(object, times = Lambda0$times, newdata = object.modelFrame, diag = TRUE, se = se, iid = band, band = band,
+                                  product.limit = product.limit, type = union("cumhazard",type))
+            
+            ## SANITY CHECK
+            if(any(abs(Lambda0_cumhazard-Lambda0$cumhazard[,1])>1e-12)){ 
+                warning("Discrepancy between the baseline cumulative hazard and the one used to obtain the standard error.",
+                        "Max. discrepancy: ",max(abs(Lambda0_cumhazard-Lambda0$cumhazard[,1])),".\n")
+            }
+            Lambda0[intersect(names(Lambda0),unlist(lapply(type,paste0,".iid")))] <- NULL  ## do not keep iid
+            
+            ## flatten matrix into vector
+            keep.col <- type
+            if(se[[1]]){
+                keep.col <- c(keep.col, unlist(lapply(type,paste,c("se","lower","upper"), sep = ".")))
+            }
+            if(band[[1]]){
+                keep.col <- c(keep.col, unlist(lapply(type,paste,c("lowerBand","upperBand"), sep = ".")))
+            }
+            Lambda0[keep.col] <- lapply(keep.col, function(iName){Lambda0[[iName]][,1]})
+            
+        }else if("survival" %in% type){  ## must be before removing cumhazard
+
+            ## evaluate survival from baseline hazard
+            if(product.limit){ 
                 if(length(times.sorted)==0){
                     Lambda0$survival <- AllLambda0$survival
                 }else{
@@ -643,37 +652,47 @@ predictCox <- function(object,
             }else{
                 Lambda0$survival <- exp(-Lambda0$cumhazard)
             }
-        }else{
-            Lambda0$survival <- NULL
-        }
-        if (!("cumhazard" %in% type)){
-            Lambda0$cumhazard <- NULL
+
+            ## store meta information
+            Lambda0$se <- FALSE
+            Lambda0$band <- FALSE                        
         } 
+    
+        ## remove extra information
+        if("hazard" %in% type == FALSE){
+            Lambda0[intersect(names(Lambda0),paste0("hazard",c("",".se",".lower",".upper",".quantileBand",".lowerBand",".upperBand")))] <- NULL
+        }
+        if("cumhazard" %in% type == FALSE){
+            Lambda0[intersect(names(Lambda0),paste0("cumhazard",c("",".se",".lower",".upper",".quantileBand",".lowerBand",".upperBand")))] <- NULL
+        }
+        if("survival" %in% type == FALSE){
+            Lambda0[intersect(names(Lambda0),paste0("survival",c("",".se",".lower",".upper",".quantileBand",".lowerBand",".upperBand")))] <- NULL
+        }
+            
+        ## store meta information
+        Lambda0$type <- type
+        Lambda0$baseline <- TRUE
+        Lambda0$diag <- FALSE
+        Lambda0$nTimes <- 0
+        Lambda0$var.lp <- infoVar$lpvars.original
+        Lambda0$var.strata <- infoVar$stratavars.original
+        Lambda0$lastEventTime <- etimes.max
         if (keep.times==FALSE){
             Lambda0$times <- NULL
         }
         if (keep.strata[[1]]==FALSE ||(is.null(call$keep.strata) && !is.strata)){
             Lambda0$strata <- NULL
-        }
-        if( keep.newdata[1]==TRUE){
-            if(length(rm.name)>0){
-                object.modelFrame[,c(rm.name) := NULL]
+        }            
+        if(keep.newdata[1]==TRUE){
+            if(nVar.lp>0){ ## for graphical display of the reference level
+                attr(Lambda0$var.lp,"center")  <- coxCenter(object, as.factor = TRUE)
             }
-            Lambda0$newdata <- object.modelFrame
+            Lambda0$newdata <- object.modelFrame[,.SD,.SDcols = intersect(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num",infoVar$lpvars))]
+            ## remove extra columns like XXXindexXXX
         }
-        add.list <- list(lastEventTime = etimes.max,
-                         se = FALSE,
-                         band = FALSE,                         
-                         type = type,
-                         nTimes = nTimes,
-                         baseline = TRUE,
-                         diag = FALSE,
-                         var.lp = infoVar$lpvars.original,
-                         var.strata = infoVar$stratavars.original)
         if(keep.infoVar){
-            add.list$infoVar <- infoVar
+            Lambda0$infoVar <- infoVar
         }
-        Lambda0[names(add.list)] <- add.list
         class(Lambda0) <- "predictCox"
         return(Lambda0)
 
@@ -1077,48 +1096,4 @@ predictCox <- function(object,
 
 
 
-## * baseHaz_prodlim
-baseHaz_prodlim <- function(object, times, etimes.max){
-
-    ## ** check input
-    if(!inherits(object,"prodlim")){
-        stop("baseHaz_prodlim can only handle prodlim objects. \n")
-    }
-
-    ## ** gather baseline hazard, cumulative hazard and corresponding strata and jump times
-    n.strata <- length(object$first.strata)
-
-    Lambda0 <- list(times = object$time,
-                    hazard = object$hazard,
-                    cumhazard = NA,
-                    strata = unlist(mapply(s = 0:(n.strata-1), size = object$size.strata, function(s,size){rep(s,size)}, SIMPLIFY = FALSE)))
-    Lambda0$cumhazard <- unname(unlist(tapply(Lambda0$hazard, Lambda0$strata, cumsum, simplify = FALSE)))
-    ## ** subset to match user specific times
-    if(length(times)>0){
-        ls.Lambda0 <- lapply(0:(n.strata-1), function(iS){ ## iS <- 0
-            iIndex <- which(Lambda0$strata==iS)
-            iSindex <- prodlim::sindex(jump.times = Lambda0$times[iIndex], eval.times = times)
-            iOut <- list(times = times,
-                         hazard = c(0,Lambda0$hazard[iIndex])[iSindex+1],
-                         cumhazard = c(0,Lambda0$cumhazard[iIndex])[iSindex+1],
-                         strata =  rep(iS, length(times)))
-            return(iOut)
-        })
-
-        Lambda0 <- list(times = unlist(lapply(ls.Lambda0,"[[","times")),
-                        hazard = unlist(lapply(ls.Lambda0,"[[","hazard")),
-                        cumhazard = unlist(lapply(ls.Lambda0,"[[","cumhazard")),
-                        strata = unlist(lapply(ls.Lambda0,"[[","strata")))
-
-        ## set to NA after the last event in each strata
-        index.NA <- which(Lambda0$times>etimes.max[Lambda0$strata+1])
-        if(length(index.NA)>0){
-            Lambda0$hazard[index.NA] <- NA
-            Lambda0$cumhazard[index.NA] <- NA
-        }
-    }
-
-    ## ** export
-    return(Lambda0)
-}
 
