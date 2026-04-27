@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Apr 27 2026 (08:22) 
+## last-updated: Apr 27 2026 (10:35) 
 ##           By: Brice Ozenne
-##     Update #: 1784
+##     Update #: 1786
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -400,8 +400,6 @@ autoplot.predictCox <- function(object,
                         newdataF$strata.num <- strata.beyond
                     }
                     newdataF$eXb <- NA
-                    newdataF$statusM1 <- NA
-                    newdataF$XXXindexXXX <- NA
                     object$newdata <- rbind(object$newdata, newdataF)
                 }
             }

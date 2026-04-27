@@ -638,10 +638,9 @@ predictCox <- function(object,
             }
             Lambda0[keep.col] <- lapply(keep.col, function(iName){Lambda0[[iName]][,1]})
             
-        }else if("survival" %in% type){  ## must be before removing cumhazard
+        }else{
 
-            ## evaluate survival from baseline hazard
-            if(product.limit){ 
+            if("survival" %in% type & product.limit){
                 if(length(times.sorted)==0){
                     Lambda0$survival <- AllLambda0$survival
                 }else{
@@ -649,10 +648,10 @@ predictCox <- function(object,
                         AllLambda0$survival[AllLambda0$strata==iS][prodlim::sindex(jump.times = AllLambda0$times[AllLambda0$strata==iS], eval.times = times.sorted[oorder.times])]
                     }))
                 }
-            }else{
+            }else if("survival" %in% type & !product.limit){
                 Lambda0$survival <- exp(-Lambda0$cumhazard)
             }
-
+            
             ## store meta information
             Lambda0$se <- FALSE
             Lambda0$band <- FALSE                        

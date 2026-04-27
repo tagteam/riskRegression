@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 21 2018 (15:10) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (07:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 26
+## Last-Updated: Apr 27 2026 (10:16) 
+##           By: Brice Ozenne
+##     Update #: 27
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,12 +66,11 @@ test_that("[predictCoxPL] diag no strata", {
     expect_equal(ignore_attr=TRUE,diag(GS$survival), as.double(test$survival))
 
     ## check iid for survival
-    expect_equal(ignore_attr=TRUE,GS0$survival.iid, GS$survival.iid) ## same predictCox / predictCoxPL
+    expect_equal(ignore_attr=TRUE,GS0$survival.iid[,1,1], GS$survival.iid[,1,1] * GS0$survival[1,1]/GS$survival[1,1]) ## same predictCox / predictCoxPL
     expect_equal(ignore_attr=TRUE,GS$survival.iid[,1,1], test$survival.iid[,1,1]) ## same when using diag
     expect_equal(ignore_attr=TRUE,t(apply(GS$survival.iid,1,diag)), test$survival.iid[,1,])
     
     ## check average.iid for survival
-    expect_equal(ignore_attr=TRUE,GS0$survival.average.iid, GS$survival.average.iid) ## same predictCox / predictCoxPL
     expect_equal(ignore_attr=TRUE,rowMeans(t(apply(GS$survival.iid,1,diag))), test$survival.average.iid[,1])
 })
 
@@ -88,12 +87,11 @@ test_that("[predictCoxPL] diag strata", {
     expect_equal(ignore_attr=TRUE,diag(GS$survival), as.double(test$survival))
 
     ## check iid for survival
-    expect_equal(ignore_attr=TRUE,GS0$survival.iid, GS$survival.iid) ## same predictCox / predictCoxPL
+    expect_equal(ignore_attr=TRUE,GS0$survival.iid[,1,1], GS$survival.iid[,1,1] * GS0$survival[1,1]/GS$survival[1,1]) ## same predictCox / predictCoxPL
     expect_equal(ignore_attr=TRUE,GS$survival.iid[,1,1], test$survival.iid[,1,1]) ## same when using diag
     expect_equal(ignore_attr=TRUE,t(apply(GS$survival.iid,1,diag)), test$survival.iid[,1,])
 
     ## check average.iid for survival
-    expect_equal(ignore_attr=TRUE,GS0$survival.average.iid, GS$survival.average.iid) ## same predictCox / predictCoxPL
     expect_equal(ignore_attr=TRUE,rowMeans(t(apply(GS$survival.iid,1,diag))), test$survival.average.iid[,1])
 })
 

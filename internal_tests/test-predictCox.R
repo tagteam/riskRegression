@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Apr 28 2025 (09:12) 
-##           By: Thomas Alexander Gerds
-##     Update #: 178
+## last-updated: Apr 27 2026 (10:12) 
+##           By: Brice Ozenne
+##     Update #: 182
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,8 +47,8 @@ test_that("baseline hazard (no strata): compare to survival::basehaz",{
 
   ## consistency cph coxph
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
-  expect_equal(ignore_attr=TRUE,predictCox(fit.cph, centered = FALSE),
-               predictCox(fit.coxph, centered = FALSE), 
+  expect_equal(ignore_attr=TRUE,predictCox(fit.cph, centered = FALSE, keep.newdata = FALSE),
+               predictCox(fit.coxph, centered = FALSE, keep.newdata = FALSE), 
                tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
   ## note centered = TRUE will no give same results as coxph do not center all variables
 })
@@ -1093,10 +1093,10 @@ newdata <- d
 test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE) 
+                       store = list(iid = "minimal"), se = TRUE, iid = TRUE, average.iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "full", se = TRUE, iid = TRUE)
+                       store = list(iid = "full"), se = TRUE, iid = TRUE)
     expect_equal(ignore_attr=TRUE,res1$cumhazard.se,res2$cumhazard.se)
     expect_equal(ignore_attr=TRUE,res1$survival.se,res2$survival.se)
     expect_equal(ignore_attr=TRUE,res1$cumhazard.iid,res2$cumhazard.iid)
@@ -1128,10 +1128,10 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
     newdata <- rbind(d[1],d[1])
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE) 
+                       store = list(iid = "minimal"), se = TRUE, iid = TRUE, average.iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "full", se = TRUE, iid = TRUE)
+                       store = list(iid = "full"), se = TRUE, iid = TRUE)
     expect_equal(ignore_attr=TRUE,res1$cumhazard.se,res2$cumhazard.se)
     expect_equal(ignore_attr=TRUE,res1$survival.se,res2$survival.se)
     expect_equal(ignore_attr=TRUE,res1$cumhazard.iid,res2$cumhazard.iid)
@@ -1329,9 +1329,9 @@ test_that("Cox - iid/se should not depend on other arguments", {
                        average.iid = TRUE)
 
     out5 <- predictCox(fit, newdata = d[1:5], times = seqTau,
-                       se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
+                       se = TRUE, iid = TRUE, average.iid = TRUE, store = list(iid = "minimal"))
     out6 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
-                       se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
+                       se = TRUE, iid = TRUE, average.iid = TRUE, store = list(iid = "minimal"))
 
     expect_equal(ignore_attr=TRUE,out1$survival.iid[,order(seqTau),],out2$survival.iid)
     expect_equal(ignore_attr=TRUE,out1$survival.se[,order(seqTau)],out2$survival.se)

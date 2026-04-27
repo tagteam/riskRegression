@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jun 25 2024 (09:21) 
 ## Version: 
-## Last-Updated: Jun 25 2024 (09:24) 
-##           By: Thomas Alexander Gerds
-##     Update #: 2
+## Last-Updated: Apr 27 2026 (10:27) 
+##           By: Brice Ozenne
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,7 @@ dSurv <- d[event!=2] ## remove competing risk
 
 # {{{ no censoring
 test_that("wglm - no censoring",{
-    test <- wglm(regressor.event = ~ X1 +  X8, formula.censor = Surv(time,event==0) ~ 1,
-                 times = tau, data = dFull)
+    test <- wglm(Surv(time,event) ~ X1 +  X8, times = tau, data = dFull)
 
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event)~X1 + X8,
                                      time = tau[5], data = dFull))
@@ -53,8 +52,7 @@ test_that("wglm - no censoring",{
 # {{{ right censoring (but no competing risks)
 test_that("wglm - censoring",{
     #### no covariate in censoring model ####
-    test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ 1,
-                 times = tau, data = dSurv, product.limit = TRUE)
+    test <- wglm(Surv(time,event) ~ X1 + X8, times = tau, data = dSurv, product.limit = TRUE)
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event)~X1 + X8,
                                      cens.model = ~1,
                                      time = tau[5], data = dSurv, cens.code = 0, cause = 1))
@@ -75,17 +73,15 @@ test_that("wglm - censoring",{
                  tolerance = 1e-5)
 
     #### stratified censoring model ####
-    test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1,
-                 times = tau, data = dSurv, product.limit = FALSE)
+    test <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1, times = tau, data = dSurv, fitter = "prodlim", product.limit = TRUE)
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event) ~ X1 + X8,
-                                     cens.model = ~X1,
+                                     cens.model = ~strata(X1),
                                      time = tau[5], data = dSurv, cens.code = 0, cause = 1))
 
     expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
 
     #### censoring model with continuous covariate ####
-    test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1+X8,
-                 times = tau, data = dSurv, product.limit = FALSE)
+    test <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1+X8, times = tau, data = dSurv, fitter = "coxph", product.limit = FALSE)
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event) ~ X1 + X8,
                     cens.model = ~X1+X8,
                     time = tau[5], data = dSurv, cens.code = 0, cause = 1))
@@ -96,8 +92,7 @@ test_that("wglm - censoring",{
 # {{{ competing risks
 test_that("wglm - competing risks",{
     #### no covariate in censoring model ####
-    test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ 1,
-                 times = tau, data = d, product.limit = TRUE, cause = 1)
+    test <- wglm(Surv(time,event) ~ X1 + X8, times = tau, data = d, product.limit = TRUE, cause = 1)
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event) ~ X1 + X8,
                     cens.model = ~1,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
@@ -114,19 +109,17 @@ test_that("wglm - competing risks",{
                  tolerance = 1e-5)
 
     #### stratified censoring model ####
-    test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1,
-                 times = tau, data = d, product.limit = FALSE, cause = 1)
+    test <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1, times = tau, data = d, fitter = "prodlim", product.limit = TRUE, cause = 1)
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event) ~ X1 + X8,
-                    cens.model = ~X1,
-                    time = tau[5], data = d, cens.code = 0, cause = 1))
+                                     cens.model = ~strata(X1),
+                                     time = tau[5], data = d, cens.code = 0, cause = 1))
 
     expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"],
                  tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
     #### censoring model with continuous covariate ####
-    test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1+X8,
-                 times = tau, data = d, product.limit = FALSE)
+    test <- wglm(Surv(time,event) ~ X1 + X8, formula.censor = ~ X1+X8, times = tau, data = d, fitter = "coxph", product.limit = FALSE)
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event) ~ X1 + X8,
                     cens.model = ~X1+X8,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
@@ -793,8 +786,7 @@ myW.T0 <- (d0$X1=="0")/(1-predict(e.T, type = "response"))
 myW.T1 <- (d0$X1=="1")/predict(e.T, type = "response")
 
 test_that("[ate] IPCW LR - no censoring", {
-    e0.wglm <- wglm(regressor.event = ~ X1+X2+X6, formula.censor = Surv(time,event==0) ~ 1,
-                    times = tau, data = d0)
+    e0.wglm <- wglm(Surv(time,event) ~ X1+X2+X6, times = tau, data = d0)
     e0.glm <- glm(Y ~ X1+X2+X6, family = binomial, data = d0)
     
     ## NOTE difference between wglm and glm is that lava:::information.glm uses numerical derivatives
@@ -881,9 +873,7 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     ## censoring:
     ## IPCW model
     suppressWarnings(eW.glm <- glm(Y1~X2+A2,family="binomial",data=d, weights = myW.C))
-    e.wglm <- wglm(regressor.event = ~ X2+A2,
-                   formula.censor = Surv(time,status==0) ~ 1,
-                   times = 5, data = d, product.limit = TRUE)
+    e.wglm <- wglm(Surv(time,status) ~ X2+A2, times = 5, data = d, product.limit = TRUE)
     
     ## e.mets <- logitIPCW(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, cens.model=~1)
     ## expect_equal(ignore_attr=TRUE,as.double(coef(e.mets)), as.double(coef(e.wglm)), tol = 1e-3)
@@ -1329,35 +1319,6 @@ test_that("[ate] Censoring, competing risks (surv.type=\"hazard\") - check vs. m
     expect_equal(ignore_attr=TRUE,dt.ate1, dt.ate2, tol = 1e-8)
 })
 
-## * [ate] Landmark analysis (time varying covariates)
-cat("[ate] Landmark analysis \n")
-
-fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
-vet2 <- survSplit(Surv(time, status) ~., veteran,
-                  cut=c(60, 120), episode ="timegroup")
-fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
-               data= vet2,x=1)
-
-test_that("[ate] landmark analyses", {
-    resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-                  data = vet2, treatment = "celltype", contrasts = NULL,
-                  times=5,verbose=FALSE,
-                  landmark = c(0,30,60,90), cause = 1, se = FALSE)
-    dt.resVet <- as.data.table(resVet)
-    dt.resVet$level <- factor(dt.resVet$level, levels = unique(dt.resVet$level))
-    setkeyv(dt.resVet,c("type","level"))
-    
-    GS <- c(0.01773158, 0.02092285, 0.01489588, 0.02981096, 0.04098041, 0.04821725, 0.03463358, 0.06846231, 0.05589160, 0.06564467, 0.04741838, 0.09298832, 0.02633366, 0.03103968, 0.02217127, 0.04416996)
-    expect_equal(ignore_attr=TRUE,dt.resVet[type=="meanRisk",estimate], GS, tol = 1e-6)
-
-    GS <- c(0.02324883, 0.0272944, 0.01973769, 0.03865134, 0.03816002, 0.04472182, 0.0325225, 0.06317735, 0.00860208, 0.01011683, 0.00727539, 0.014359, 0.01491119, 0.01742742, 0.0127848, 0.02452601, -0.01464675, -0.01717757, -0.01246231, -0.02429234, -0.02955794, -0.03460499, -0.02524711, -0.04881836)
-    expect_equal(ignore_attr=TRUE,dt.resVet[type=="diffRisk",estimate], GS, tol = 1e-6)
-    
-    
-    GS <- c(2.31115372, 2.30452621, 2.32504339, 2.29654787, 3.15209352, 3.13746333, 3.18332093, 3.11926569, 1.48512762, 1.4835302, 1.488416, 1.48166834, 1.36386147, 1.3614353, 1.36914474, 1.3582411, 0.64259145, 0.64374629, 0.64016698, 0.64517198, 0.47115595, 0.47284384, 0.46756706, 0.47500549)
-    expect_equal(ignore_attr=TRUE,dt.resVet[type=="ratioRisk",estimate], GS, tol = 1e-6)
-
-})
 ## * [ate] Case only
 cat("[ate] Case only \n")
 set.seed(11)

@@ -350,8 +350,8 @@ CSC <- function(formula,
                 stop("Formula specials 'strat', rcs', and 'pol' can only be applied when fitter is 'cph'.")
             }
         }
-        if (length(intersect(c("strata","pspline","ridge","tt"),names(specs))>0)&&fitterX != "coxph"){
-            stop("Formula specials 'strata' and pspline' can only be applied when fitter is 'coxph'.")
+        if (length(intersect(c("pspline","ridge","tt"),names(specs))>0)&&fitterX != "coxph"){
+            stop("Formula specials 'pspline', 'ridge', 'tt' can only be applied when fitter is 'coxph'.")
         }
         args <- list(formulaXX, data = workData)
         ## augment per-model fitter_arguments[[x]] with dots_args (dots take precedence)
