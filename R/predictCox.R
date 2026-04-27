@@ -218,7 +218,7 @@
 #' fit.SCox <- coxph(Surv(time,event)~X1+strata(X2)+X6, data=d, x = TRUE, y = TRUE)
 #'
 #' #### baseline hazard and survival  ####
-#' ## exponential approximation for the survival
+#' ## graphical display of the survival for the reference level (exponential approximation)
 #' plot(predictCox(fit.SCox, se = TRUE, keep.newdata = TRUE),
 #'      alpha = 0.1, atRisk = TRUE)
 #'
@@ -236,7 +236,7 @@
 #'                    data=d, x = TRUE, y = TRUE)
 #'
 #' #### baseline hazard and survival  ####
-#' ## exponential approximation for the survival
+#' ## graphical display of the survival for the reference level (exponential approximation)
 #' plot(predictCox(fit.S2Cox, se = TRUE, keep.newdata = TRUE),
 #'      alpha = 0.1, atRisk = TRUE)
 #' 
