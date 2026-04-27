@@ -104,58 +104,79 @@ nd <- sampleData(4,outcome="comp") ## validation dataset
 d$time.round <- round(d$time,1) ## create tied events
 ttt <- sort(sample(x = unique(d$time), size = 10))
 
-########################
-#### Aalen-Johansen ####
-########################
+##################################
+#### Aalen-Johansen (no ties) ####
+##################################
 
-#### no ties
 fit.AE <- CSC(Hist(time, event) ~ 1, data = d)
+
+## Aalen-Johansen product-limit estimator for the risk/CIF
+ePL.AE <- predict(fit.AE, se = TRUE) ## default is product.limit = TRUE
+as.data.table(ePL.AE)
+plot(ePL.AE, atRisk = TRUE)
+plot(ePL.AE, alpha = 0.1, atRisk = TRUE)
+
+## user-specific timepoints
+predict(fit.AE, newdata = d[1], times = 1:10, cause = 1)
+
+## same as prodlim
 GS.AE <- prodlim(Hist(time, event) ~ 1, data = d)
+range(ePL.AE$absRisk - GS.AE$cuminc[[1]])
 
-## product limit
-ePL.AE <- predict(fit.AE, newdata = d[1], times = GS.AE$time,
-                  product.limit = TRUE, cause = 1)
-range(ePL.AE$absRisk - GS.AE$cuminc[[1]]) ## same
+## exponential approx. vs. product limit
+range(predict(fit.AE, product.limit = FALSE)$absRisk - ePL.AE$absRisk)
 
-## exponential approximation
-predict(fit.AE, newdata = d[1], times = GS.AE$time,
-        product.limit = FALSE, cause = 1)
+####################################
+#### Aalen-Johansen (with ties) ####
+####################################
 
-#### with ties (use Breslow estimator instead of Efron to match prodlim)
+Utimes <- unique(sort(d$time.round))
+
+## Breslow estimator instead of Efron to match prodlim
 fit.AE.ties <- CSC(Hist(time.round, event) ~ 1, ties = "breslow",
-                   data = as.data.frame(d)[c("time.round","event")])
-GS.AE.ties <- prodlim(Hist(time.round, event) ~ 1,
-                   data = as.data.frame(d)[c("time.round","event")])
+                   data = d[,.SD,.SDcols = c("time.round","event","X1")])
 
 ## product limit
-ePL.AE.ties <- predict(fit.AE.ties, newdata = d[1], times = GS.AE.ties$time,
+ePL.AE.ties <- predict(fit.AE.ties, newdata = d[1], times = Utimes,
                        product.limit = TRUE, cause = 1)
-range(ePL.AE.ties$absRisk - GS.AE.ties$cuminc[[1]]) ## same
+as.data.table(ePL.AE.ties)
+
+## same as prodlim
+GS.AE.ties <- prodlim(Hist(time.round, event) ~ 1, data = d)
+range(ePL.AE.ties$absRisk - GS.AE.ties$cuminc[[1]]) 
 
 ###################################
 #### Stratified Aalen-Johansen ####
 ###################################
 
-#### no ties
 fit.SAE <- CSC(Hist(time, event) ~ strata(X1), data = d)
-GS.SAE <- prodlim(Hist(time, event) ~ X1, data = d)
 
-## product limit
+## Aalen-Johansen product-limit estimator for the risk/CIF
+ePL.SAE <- predict(fit.SAE, se = TRUE) ## default is product.limit = TRUE
+as.data.table(ePL.SAE)
+plot(ePL.SAE, atRisk = TRUE)
+plot(ePL.SAE, alpha = 0.1, atRisk = TRUE)
+
+## user-specific timepoints
+predict(fit.SAE, newdata = d[1], times = 1:10, cause = 1)
+
+## same as prodlim
+GS.SAE <- prodlim(Hist(time, event) ~ X1, data = d)
 index.strata1 <- GS.SAE$first.strata[1]:(GS.SAE$first.strata[2]-1)
 ePL.SAE <- predict(fit.SAE, newdata = d[1],
                    times = GS.SAE$time[index.strata1],
                    product.limit = TRUE, cause = 1)
-range(ePL.SAE$absRisk - GS.SAE$cuminc[[1]][index.strata1]) ## same
-
-## exponential approximation
-predict(fit.SAE, newdata = d[1:10], times = 1:10, product.limit = FALSE)
+range(ePL.SAE$absRisk - prodlim(Hist(time, event) ~ X1, data = d)$cuminc[[1]][index.strata1])
 
 ############################
 #### Cause-specific Cox ####
 ############################
 
 ## estimate a CSC model based on the coxph function
-CSC.fit <- CSC(Hist(time,event)~ X3+X8, data=d, method = "breslow")
+CSC.fit <- CSC(Hist(time,event)~ X3+X8, data=d)
+
+## graphical display of the absolute risk for the reference level
+plot(predict(CSC.fit))
 
 ## compute the absolute risk of cause 1, in the validation dataset
 ## at time 1:10
@@ -176,6 +197,8 @@ predict(CSC.fit.s,cause=1,times=ttt,se=1L) ## note: absRisk>1 due to small numbe
 ## using the cph function instead of coxph
 CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")#' 
 predict(CSC.cph, newdata = d, cause = 2, times = ttt)
+## NOTE: no graphical automatic display using plot(predict(CSC.cph))
+##       as CSC.cph$model[[1]]$means does not respect the factor variables
 
 ## landmark analysis
 T0 <- 1

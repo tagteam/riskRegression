@@ -13,7 +13,6 @@
   ci = object$inference$ci,
   band = object$inference$band,
   plot.type = "1",
-  plot = TRUE,
   smooth = FALSE,
   digits = 2,
   alpha = NA,
@@ -45,8 +44,6 @@ and \code{"IPCW"} to display the censoring weights (if any).}
 \item{plot.type}{[character] Type of plot to be used.
 \code{plot.type="2"} is useful when looking simulateneous at all eventtimes.
 Otherwise use \code{plot.type="1"}.}
-
-\item{plot}{[logical] Should the graphic be plotted.}
 
 \item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
 

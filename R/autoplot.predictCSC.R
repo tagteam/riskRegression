@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Apr 27 2026 (14:03) 
+## last-updated: apr 27 2026 (17:50) 
 ##           By: Brice Ozenne
-##     Update #: 162
+##     Update #: 179
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,6 +18,8 @@
 ## * autoplot.predictCSC (documentation)
 #' @title Plot Predictions From a Cause-specific Cox Proportional Hazard Regression
 #' @description Plot predictions from a Cause-specific Cox proportional hazard regression.
+#' The method \code{plot} is a warper around \code{autoplot} that automatically produces a graphical display
+#' but hides the corresponding dataset and ggplot2 object using \code{invisible}.
 #' @name autoplot.predictCSC
 #' 
 #' @param object,x Object obtained with the function \code{predictCox}.
@@ -25,15 +27,23 @@
 #' @param band [logical] If \code{TRUE} display the confidence bands for the predictions.
 #' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
-#' @param plot [logical] Should the graphic be plotted.
 #' @param digits [integer] Number of decimal places.
 #' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param atRisk [logical] Should the number at risk be diplayed at the bottom of the plot? 
 #' @param xlim,ylim [numeric vector of length 2] limits for the x and y axes.
-#' @param ... Additional parameters to cutomize the display.
+#' @param ... Additional parameters to cutomize the display: \itemize{
+#' \item size.estimate: thickness of the line used to represent the estimated survival/hazard.
+#' \item size.point: size of the points used to represent obsevations (if any).
+#' \item size.ci: thickness of the line used to represent the confidence intervals for the survival/hazard.
+#' \item size.band: thickness of the line used to represent the confidence bands for the survival/hazard.
+#' \item size.atRisk: font size used to display the number at risk.
+#' \item space.atRisk: vertical space used between the  display of the number at risk across strata. 
+#' \item shape.point: shape of the points used to represent obsevations (if any).
+#' \item col.ribbon: should shaded areas be colored according to the grouping factor. Otherwise grey. 
+#' }
 #' 
-#' @return Invisible. A list containing:
+#' @return A (possibly invisible) list containing:
 #' \itemize{
 #' \item plot: the ggplot object.
 #' \item data: the data used to create the plot.
@@ -56,16 +66,14 @@
 #' 
 #' #### CSC model ####
 #' m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
-#' 
 #' pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = seqTau, cause = 1, band = TRUE)
-#' autoplot(pred.CSC, alpha = 0.2)
+#' plot(pred.CSC, alpha = 0.2)
 #' 
 #' #### stratified CSC model ####
-#' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
-#'               data = d)
+#' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6, data = d)
 #' pred.SCSC <- predict(m.SCSC, time = seqTau, newdata = d[1:4,],
 #'                      cause = 1, keep.newdata = TRUE, keep.strata = TRUE)
-#' autoplot(pred.SCSC, group.by = "strata")
+#' plot(pred.SCSC, group.by = "strata")
 
 ## * autoplot.predictCSC (code)
 #' @rdname autoplot.predictCSC
@@ -74,7 +82,6 @@
 autoplot.predictCSC <- function(object,
                                 ci = object$se,
                                 band = object$band,
-                                plot = TRUE,
                                 smooth = FALSE,
                                 digits = 2,
                                 alpha = NA,
@@ -84,10 +91,10 @@ autoplot.predictCSC <- function(object,
                                 xlim = NULL,
                                 ylim = NULL,
                                 ...){
-  
+    
     ## initialize and check
     group.by <- match.arg(group.by, c("row","covariates","strata", names(object$newdata)))
-  
+    
     if(group.by[[1]] == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
@@ -96,7 +103,7 @@ autoplot.predictCSC <- function(object,
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling the predictCox function \n")
     }
-  
+    
     if(ci[[1]] && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling the predict.CauseSpecificCox function \n")
@@ -131,7 +138,7 @@ autoplot.predictCSC <- function(object,
         
         ## *** add time 0
         if((0 %in% object$times == FALSE) && (is.null(xlim) || xlim[1]<=0)){
-                
+            
             n.strata <- ifelse(is.null(object$strata), 1 ,length(levels(object$strata)))
             object[[type]] <- cbind(matrix(type=="survival", nrow = 1, ncol = n.strata),
                                     object[[type]]) ## 0 if absRisk 1 if survival
@@ -156,7 +163,7 @@ autoplot.predictCSC <- function(object,
                 newdata0 <- object$newdata[1:n.strata,,drop=FALSE]
                 newdata0$time <- 0
                 newdata0$status <- NA
-                newdata0$event <- factor(NA, levels = levels(newdata$status))
+                newdata0$event <- factor(NA, levels = levels(object$newdata$status))
                 if(!is.null(object$strata)){
                     newdata0$strata <- factor(levels(object$strata), levels = levels(object$strata))
                     newdata0$strata.num <- 1:n.strata
@@ -164,70 +171,70 @@ autoplot.predictCSC <- function(object,
                 object$newdata <- rbind(newdata0, object$newdata)
             }
             
-            }
-            ## *** extrapolate beyond last observations when last observation is an event
-            ## NOTE: survival may not be 0 when using exponential approximation
-            time.beyond <- max(c(xlim, max(object$time)))
+        }
+        ## *** extrapolate beyond last observations when last observation is an event
+        ## NOTE: survival may not be 0 when using exponential approximation
+        time.beyond <- max(c(xlim, max(object$time)))
+        if(is.null(object$strata)){
+            time.maxStrata <- max(object$time)
+        }else{
+            time.maxStrata <- tapply(object$time, object$strata, max)
+        }            
+        if(any(time.maxStrata < time.beyond & time.beyond < object$lastEventTime)){
+
+            ## identify which strata needs update and what is the last observation in each strata
             if(is.null(object$strata)){
-                time.maxStrata <- max(object$time)
+                strata.beyond <- 1
+                n.strataBeyond <- 1
+                index.strataBeyond <-  length(object$time)
             }else{
-                time.maxStrata <- tapply(object$time, object$strata, max)
-            }            
-            if(any(time.maxStrata < time.beyond & time.beyond < object$lastEventTime)){
+                strata.beyond <- which(time.maxStrata < time.beyond & time.beyond < object$lastEventTime)
+                n.strataBeyond <- length(strata.beyond)
+                index.strataBeyond <-  which(rev(!duplicated(rev(object$strata))))[strata.beyond]
+            }
+            ## update: add a ficticious observation
+            object[[type]] <- cbind(object[[type]], matrix(NA, nrow = 1, ncol = n.strataBeyond)) ## NA instead of object[[type]][,index.strataBeyond] so no point is displayed (but the plot function will extend the line)
+            if(ci){
+                object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]],
+                                                         matrix(object[[paste0(type,".lower")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+                object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]],
+                                                         matrix(object[[paste0(type,".lower")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+            }
+            if(band){
+                object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]],
+                                                             matrix(object[[paste0(type,".lowerBand")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+                object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]],
+                                                             matrix(object[[paste0(type,".upperBand")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
+            }
+            object$times <- c(object$times, rep(time.beyond, n.strataBeyond))
+            if(!is.null(object$strata)){
+                object$strata <- c(object$strata, factor(levels(object$strata)[strata.beyond], levels = levels(object$strata)))
+            }                
 
-                ## identify which strata needs update and what is the last observation in each strata
-                if(is.null(object$strata)){
-                    strata.beyond <- 1
-                    n.strataBeyond <- 1
-                    index.strataBeyond <-  length(object$time)
-                }else{
-                    strata.beyond <- which(time.maxStrata < time.beyond & time.beyond < object$lastEventTime)
-                    n.strataBeyond <- length(strata.beyond)
-                    index.strataBeyond <-  which(rev(!duplicated(rev(object$strata))))[strata.beyond]
-                }
-                ## update: add a ficticious observation
-                object[[type]] <- cbind(object[[type]], matrix(NA, nrow = 1, ncol = n.strataBeyond)) ## NA instead of object[[type]][,index.strataBeyond] so no point is displayed (but the plot function will extend the line)
-                if(ci){
-                    object[[paste0(type,".lower")]] <- cbind(object[[paste0(type,".lower")]],
-                                                             matrix(object[[paste0(type,".lower")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
-                    object[[paste0(type,".upper")]] <- cbind(object[[paste0(type,".upper")]],
-                                                             matrix(object[[paste0(type,".lower")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
-                }
-                if(band){
-                    object[[paste0(type,".lowerBand")]] <- cbind(object[[paste0(type,".lowerBand")]],
-                                                                 matrix(object[[paste0(type,".lowerBand")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
-                    object[[paste0(type,".upperBand")]] <- cbind(object[[paste0(type,".upperBand")]],
-                                                                 matrix(object[[paste0(type,".upperBand")]][,index.strataBeyond], nrow = 1, ncol = n.strataBeyond))
-                }
-                object$times <- c(object$times, rep(time.beyond, n.strataBeyond))
+            if(!is.null(object$newdata)){
+                newdataF <- object$newdata[1:n.strataBeyond]
+                newdataF$time <- 0
+                newdataF$status <- NA
+                newdataF$event <- factor(NA, levels = levels(newdata$status))
                 if(!is.null(object$strata)){
-                    object$strata <- c(object$strata, factor(levels(object$strata)[strata.beyond], levels = levels(object$strata)))
-                }                
-
-                if(!is.null(object$newdata)){
-                    newdataF <- object$newdata[1:n.strataBeyond]
-                    newdataF$time <- 0
-                    newdataF$status <- NA
-                    newdataF$event <- factor(NA, levels = levels(newdata$status))
-                    if(!is.null(object$strata)){
-                        newdataF$strata[] <- factor(levels(object$strata)[strata.beyond], levels = levels(object$strata))
-                        newdataF$strata.num <- strata.beyond
-                    }
-                    object$newdata <- rbind(object$newdata, newdataF)
+                    newdataF$strata[] <- factor(levels(object$strata)[strata.beyond], levels = levels(object$strata))
+                    newdataF$strata.num <- strata.beyond
                 }
+                object$newdata <- rbind(object$newdata, newdataF)
             }
+        }
 
-            if(ci && !is.null(object$newdata) && !is.na(alpha)){
-                object[[paste0(type,".lower")]][,is.na(object$newdata$status)] <- NA
-                object[[paste0(type,".upper")]][,is.na(object$newdata$status)] <- NA
-                object[[paste0(type,".lower")]][,object$newdata$status==0] <- NA
-                object[[paste0(type,".upper")]][,object$newdata$status==0] <- NA
-            }
-            
-            newdata <- NULL
+        if(ci && !is.null(object$newdata) && !is.na(alpha)){
+            object[[paste0(type,".lower")]][,is.na(object$newdata$status)] <- NA
+            object[[paste0(type,".upper")]][,is.na(object$newdata$status)] <- NA
+            object[[paste0(type,".lower")]][,object$newdata$status==0] <- NA
+            object[[paste0(type,".upper")]][,object$newdata$status==0] <- NA
+        }
+        
+        newdata <- NULL
 
     }else{
-    
+        
         newdata <- copy(object$newdata)
         if(!is.null(newdata) && reduce.data[[1]]){
             test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
@@ -254,11 +261,22 @@ autoplot.predictCSC <- function(object,
                           baseline = object$baseline
                           )
 
+
+    ## add covariate names to the caption 
+    if(group.by == "strata" && !is.null(object$var.strata)){
+        attr(group.by,"label") <- paste0(group.by," (",paste(object$var.strata, collapse = ", "),")")
+        dataL[ , (attr(group.by,"label")) := .SD$strata]
+    }else if(group.by ==  "covariates"){
+        attr(group.by, "label") <- attr(dataL, "covariates")
+    }else{
+        attr(group.by, "label") <- group.by
+    }
+    
     ## ** display
     if(object$baseline & length(object$lp.var)>0){
-        ylab <- ifelse(type=="absRisk","Baseline absolute risk","Baseline survival")
+        ylab <- ifelse(type=="absRisk",paste0("Baseline absolute risk for cause ",object$cause),"Baseline survival")
     }else{
-        ylab <- ifelse(type=="absRisk","Absolute risk","Survival")
+        ylab <- ifelse(type=="absRisk",paste0("Absolute risk for cause ",object$cause),"Survival")
     }
 
     gg.res <- predict2plot(dataL = dataL,
@@ -276,7 +294,7 @@ autoplot.predictCSC <- function(object,
                            ylim = ylim,                           
                            ...
                            )
-      
+    
 
     if(object$baseline){
         if(length(object$lp.var)>0){
@@ -284,14 +302,18 @@ autoplot.predictCSC <- function(object,
         }
         if(!is.null(object$strata)){
             gg.res$plot <- gg.res$plot + ggplot2::labs(color = "Strata")
+            
+            col.ribbon <- list(...)$col.ribbon
+            if(is.null(col.ribbon)){col.ribbon <- TRUE}
+            if((band || ci) & !is.na(alpha) & col.ribbon){
+                gg.res$plot <- gg.res$plot + ggplot2::labs(fill = "Strata")
+            }
+        }else if(is.null(object$strata) && (ci || band)){
+            gg.res$plot <- gg.res$plot + ggplot2::guides(color = "none")
         }
     }
 
-  if(plot){
-    print(gg.res$plot)
-  }
-  
-  return(invisible(gg.res))
+    return(gg.res)
 }
 
 #----------------------------------------------------------------------

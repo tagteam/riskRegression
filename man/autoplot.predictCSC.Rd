@@ -9,7 +9,6 @@
   object,
   ci = object$se,
   band = object$band,
-  plot = TRUE,
   smooth = FALSE,
   digits = 2,
   alpha = NA,
@@ -30,8 +29,6 @@
 
 \item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{plot}{[logical] Should the graphic be plotted.}
-
 \item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
 
 \item{digits}{[integer] Number of decimal places.}
@@ -46,10 +43,19 @@
 
 \item{xlim, ylim}{[numeric vector of length 2] limits for the x and y axes.}
 
-\item{...}{Additional parameters to cutomize the display.}
+\item{...}{Additional parameters to cutomize the display: \itemize{
+\item size.estimate: thickness of the line used to represent the estimated survival/hazard.
+\item size.point: size of the points used to represent obsevations (if any).
+\item size.ci: thickness of the line used to represent the confidence intervals for the survival/hazard.
+\item size.band: thickness of the line used to represent the confidence bands for the survival/hazard.
+\item size.atRisk: font size used to display the number at risk.
+\item space.atRisk: vertical space used between the  display of the number at risk across strata. 
+\item shape.point: shape of the points used to represent obsevations (if any).
+\item col.ribbon: should shaded areas be colored according to the grouping factor. Otherwise grey. 
+}}
 }
 \value{
-Invisible. A list containing:
+A (possibly invisible) list containing:
 \itemize{
 \item plot: the ggplot object.
 \item data: the data used to create the plot.
@@ -57,6 +63,8 @@ Invisible. A list containing:
 }
 \description{
 Plot predictions from a Cause-specific Cox proportional hazard regression.
+The method \code{plot} is a warper around \code{autoplot} that automatically produces a graphical display
+but hides the corresponding dataset and ggplot2 object using \code{invisible}.
 }
 \section{Functions}{
 \itemize{
@@ -76,16 +84,14 @@ seqTau <- c(0,unique(sort(d[d$event==1,time])), max(d$time))
 
 #### CSC model ####
 m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
-
 pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = seqTau, cause = 1, band = TRUE)
-autoplot(pred.CSC, alpha = 0.2)
+plot(pred.CSC, alpha = 0.2)
 
 #### stratified CSC model ####
-m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
-              data = d)
+m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6, data = d)
 pred.SCSC <- predict(m.SCSC, time = seqTau, newdata = d[1:4,],
                      cause = 1, keep.newdata = TRUE, keep.strata = TRUE)
-autoplot(pred.SCSC, group.by = "strata")
+plot(pred.SCSC, group.by = "strata")
 }
 \seealso{
 \code{\link{predict.CauseSpecificCox}} to compute risks based on a CSC model.

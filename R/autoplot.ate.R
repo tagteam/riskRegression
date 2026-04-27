@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Apr 25 2026 (09:34) 
+## last-updated: apr 27 2026 (15:23) 
 ##           By: Brice Ozenne
-##     Update #: 265
+##     Update #: 267
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,6 @@
 #' and \code{"IPCW"} to display the censoring weights (if any).
 #' @param ci [logical] If \code{TRUE} display the confidence intervals for the average risks.
 #' @param band [logical] If \code{TRUE} display the confidence bands for the average risks.
-#' @param plot [logical] Should the graphic be plotted.
 #' @param plot.type [character] Type of plot to be used.
 #' \code{plot.type="2"} is useful when looking simulateneous at all eventtimes.
 #' Otherwise use \code{plot.type="1"}.
@@ -111,7 +110,6 @@ autoplot.ate <- function(object,
                          ci = object$inference$ci,
                          band = object$inference$band,
                          plot.type = "1",
-                         plot = TRUE,
                          smooth = FALSE,
                          digits = 2,
                          alpha = NA,
@@ -299,14 +297,8 @@ autoplot.ate <- function(object,
         }
     }
 
-    ## ** display
-    if(plot){
-        print(gg.res$plot)
-    }
-
-
     ## ** export
-    return(invisible(gg.res))
+    return(gg.res)
 }
 
 

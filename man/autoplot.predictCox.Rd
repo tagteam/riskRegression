@@ -10,7 +10,6 @@
   type = NULL,
   ci = object$se,
   band = object$band,
-  plot = TRUE,
   smooth = NULL,
   digits = 2,
   alpha = NA,
@@ -39,8 +38,6 @@ or \code{"survival"} the survival function.}
 
 \item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{plot}{[logical] Should the graphic be plotted.}
-
 \item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
 
 \item{digits}{[integer] Number of decimal places when displaying the values of the covariates in the caption.}
@@ -68,10 +65,11 @@ or \code{"survival"} the survival function.}
 \item size.atRisk: font size used to display the number at risk.
 \item space.atRisk: vertical space used between the  display of the number at risk across strata. 
 \item shape.point: shape of the points used to represent obsevations (if any).
+\item col.ribbon: should shaded areas be colored according to the grouping factor. Otherwise grey. 
 }}
 }
 \value{
-Invisible. A list containing:
+A (possibly invisible) list containing:
 \itemize{
 \item plot: the ggplot object.
 \item data: the data used to create the plot.
@@ -79,6 +77,8 @@ Invisible. A list containing:
 }
 \description{
 Plot predictions from a Cox model.
+The method \code{plot} is a warper around \code{autoplot} that automatically produces a graphical display
+but hides the corresponding dataset and ggplot2 object using \code{invisible}.
 }
 \section{Functions}{
 \itemize{
@@ -100,39 +100,32 @@ m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 
 ## display baseline hazard
 e.basehaz <- predictCox(m.cox)
-autoplot(e.basehaz, type = "cumhazard")
+plot(e.basehaz, type = "cumhazard")
 \dontrun{
-autoplot(e.basehaz, type = "cumhazard", size.point = 0) ## without points
-autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
-autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
-}
-
-## display baseline hazard with type of event
-\dontrun{
-e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
-autoplot(e.basehaz, type = "cumhazard")
-autoplot(e.basehaz, type = "cumhazard", shape.point = c(3,20))
+plot(e.basehaz, type = "cumhazard", size.point = 0) ## without points
+plot(e.basehaz, type = "cumhazard", smooth = TRUE)
+plot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
 }
 
 ## display predicted survival
 \dontrun{
 pred.cox <- predictCox(m.cox, newdata = d[1:2,],
   times = seqTau, type = "survival", keep.newdata = TRUE)
-autoplot(pred.cox)
-autoplot(pred.cox, smooth = TRUE)
-autoplot(pred.cox, group.by = "covariates")
-autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
-autoplot(pred.cox, group.by = "X1", reduce.data = TRUE)
+plot(pred.cox)
+plot(pred.cox, smooth = TRUE)
+plot(pred.cox, group.by = "covariates")
+plot(pred.cox, group.by = "covariates", reduce.data = TRUE)
+plot(pred.cox, group.by = "X1", reduce.data = TRUE)
 }
 
 ## predictions with confidence interval/bands
 \dontrun{
 pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
   times = seqTau, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
-res <- autoplot(pred.cox, ci = TRUE, band = TRUE, plot = FALSE)
+res <- plot(pred.cox, ci = TRUE, band = TRUE)
 res$plot + facet_wrap(~row)
-res2 <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = NA, plot = FALSE)
-res2$plot + facet_wrap(~row, labeller = label_both) + guides(color = FALSE)
+res2 <- plot(pred.cox, ci = TRUE, band = TRUE, alpha = NA)
+res2$plot + facet_wrap(~row, labeller = label_both) + guides(color = "none")
 }
 
 #### Stratified Cox model ####
@@ -142,18 +135,18 @@ m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X4,
 
 ## baseline hazard
 pred.baseline <- predictCox(m.cox.strata, keep.newdata = TRUE, type = "survival")
-res <- autoplot(pred.baseline)
+res <- plot(pred.baseline)
 res$plot + facet_wrap(~strata, labeller = label_both)
 
 ## predictions
 pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:3,,drop=FALSE],
                               time = seqTau, keep.newdata = TRUE, se = TRUE)
 
-res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
+res2 <- plot(pred.cox.strata, type = "survival", group.by = "strata")
 res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="bottom")
 
 ## smooth version
-autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
+plot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
 }
 
 #### Cox model with splines ####
@@ -165,14 +158,14 @@ grid <- data.frame(X1 = factor(0,0:1), X2 = factor(0,0:1),
                    X6 = seq(min(d$X6),max(d$X6), length.out = 100))
 pred.spline <- predictCox(m.cox.spline, newdata = grid, keep.newdata = TRUE,
                           se = TRUE, band = TRUE, centered = TRUE, type = "lp")
-autoplot(pred.spline, group.by = "X6")
-autoplot(pred.spline, group.by = "X6", alpha = 0.5)
+plot(pred.spline, group.by = "X6")
+plot(pred.spline, group.by = "X6", alpha = 0.5, col.ribbon = TRUE)
 
 grid2 <- data.frame(X1 = factor(1,0:1), X2 = factor(0,0:1),
                     X6 = seq(min(d$X6),max(d$X6), length.out = 100))
 pred.spline <- predictCox(m.cox.spline, newdata = rbind(grid,grid2), keep.newdata = TRUE,
                           se = TRUE, band = TRUE, centered = TRUE, type = "lp")
-autoplot(pred.spline, group.by = c("X6","X1"), alpha = 0.5, plot = FALSE)$plot + facet_wrap(~X1)
+autoplot(pred.spline, group.by = c("X6","X1"), alpha = 0.5)$plot + facet_wrap(~X1)
 }
 }
 \seealso{
