@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 27 2025 (07:31) 
 ## Version: 
-## Last-Updated: feb 16 2026 (09:48) 
-##           By: Thomas Alexander Gerds
-##     Update #: 3
+## Last-Updated: Apr 26 2026 (23:37) 
+##           By: Brice Ozenne
+##     Update #: 18
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,12 +22,13 @@
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
+#' @param as.factor [logical] should the original factor level be returned instead of the corresponding dummy variables? Will return a data.frame instead of a matrix as side effect.
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
 
 #' @rdname coxCenter
 #' @export
-coxCenter <- function(object){
+coxCenter <- function(object, as.factor){
   UseMethod("coxCenter") 
 } 
 
@@ -35,16 +36,31 @@ coxCenter <- function(object){
 #' @rdname coxCenter
 #' @method coxCenter cph
 #' @export
-coxCenter.cph <- function(object){
-  return(setNames(object$means, object$mmcolnames))
+coxCenter.cph <- function(object, as.factor = FALSE){
+    out <- setNames(object$means, names(coef(object)))
+    if(as.factor){
+        out <- as.data.frame(as.list(out))
+    }
+  return(out)
 }
 
 ## ** coxCenter.coxph
 #' @rdname coxCenter
 #' @method coxCenter coxph
 #' @export
-coxCenter.coxph <- function(object){
-  return(setNames(object$means, names(coef(object))))
+coxCenter.coxph <- function(object, as.factor = FALSE){
+    if(as.factor & length(object$xlevels)>0){
+        object.info <- coxVariableName(object, model.frame = coxModelFrame(object))
+
+        var.factor <-  intersect(names(object$xlevels),
+                                 setdiff(object.info$lpvars.original,object.info$lpvars)) ## could contain splines names e.g. ns(X,1)
+        ref.factor <- sapply(object$xlevels[var.factor],"[",1)
+        ref.num <- object$means[setdiff(names(object$means),object.info$lpvars[which(object.info$lpvars.original %in% var.factor)])]        
+        out <- as.data.frame(c(as.list(ref.num),as.list(ref.factor)))
+    }else{
+        out <- setNames(object$means, names(coef(object)))
+    }
+    return(out)
 }
 
 
@@ -52,8 +68,13 @@ coxCenter.coxph <- function(object){
 #' @rdname coxCenter
 #' @method coxCenter phreg
 #' @export
-coxCenter.phreg <- function(object){
-    return(apply(object$X,2,mean))
+coxCenter.phreg <- function(object, as.factor = FALSE){
+
+    out <- apply(object$X,2,mean)
+    if(as.factor){
+        out <- as.data.frame(as.list(out))
+    }
+    return(out)
 }
 
 # }}}

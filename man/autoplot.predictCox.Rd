@@ -19,6 +19,8 @@
   ylab = NULL,
   first.derivative = FALSE,
   atRisk = FALSE,
+  xlim = NULL,
+  ylim = NULL,
   ...
 )
 
@@ -56,7 +58,17 @@ or \code{"survival"} the survival function.}
 
 \item{atRisk}{[logical] Should the number at risk be diplayed at the bottom of the plot?}
 
-\item{...}{Additional parameters to cutomize the display.}
+\item{xlim, ylim}{[numeric vector of length 2] limits for the x and y axes.}
+
+\item{...}{Additional parameters to cutomize the display: \itemize{
+\item size.estimate: thickness of the line used to represent the estimated survival/hazard.
+\item size.point: size of the points used to represent obsevations (if any).
+\item size.ci: thickness of the line used to represent the confidence intervals for the survival/hazard.
+\item size.band: thickness of the line used to represent the confidence bands for the survival/hazard.
+\item size.atRisk: font size used to display the number at risk.
+\item space.atRisk: vertical space used between the  display of the number at risk across strata. 
+\item shape.point: shape of the points used to represent obsevations (if any).
+}}
 }
 \value{
 Invisible. A list containing:
