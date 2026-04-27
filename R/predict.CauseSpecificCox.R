@@ -177,7 +177,7 @@ predict.CauseSpecificCox <- function(object,
                                      ...){
 
 
-    ## ** deal with specific case
+    ## ** deal with special cases
     if(type == "survival" && object$surv.type=="survival"){
         return(predictCox(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
                           keep.strata = keep.strata, keep.newdata = keep.newdata,
@@ -185,89 +185,69 @@ predict.CauseSpecificCox <- function(object,
                           product.limit = product.limit, average.iid = average.iid, store = store)
                )
     }
+    if(missing(times)){
+        if(missing(newdata)){
+        }else{
+            stop("Argument \'times\' must be specified. \n")
+        }
+    }
     
-    ## ** prepare
+    ## ** normalize user input
+    ## *** newdata
     if(missing(newdata)){
         newdata <- eval(object$call$data)
     }else{
         newdata <- data.table::as.data.table(newdata)
     }
+    new.n <- NROW(newdata)
 
-    if (missing(times)) {
-        times = object$times
-        if (is.null(times)) {
-            stop("times must be specified")
-        }
+    ## *** max.times 
+    if (is.null(max.time)) {
+        max.time <- max(object$response[,"time"])
     }
 
-    ## ** prepare    
-    n.times <- length(times)
-    fitter = object$fitter
-    fitter_is_list <- is.list(fitter)
-    any_phreg <- if (fitter_is_list) any(vapply(fitter, identical, logical(1), "phreg")) else identical(fitter, "phreg")
-    entry <- if (any_phreg) 0 else NULL
-    new.n <- NROW(newdata)
-    ## if(data.table::is.data.table(newdata)){
-    ## newdata <- data.table::copy(newdata)
-    ## }else{
-    ## newdata <- data.table::as.data.table(newdata)
-    ## }
-    
-    surv.type <- object$surv.type
+    ## *** prediction times
+    if(any(is.na(times))){
+        stop("NA values in argument \'times\' \n")
+    }
+    n.times <- length(times) ## number of times in the output
+    valid.times <- times[times<= max.time] ## prediction times before last observation
+
+    ## *** jump times
+    eTimes <- object$eventTimes
+    if (is.null(eTimes)) {
+            stop("object should contain an element \'eventTimes\' storing the jump times. \n")
+    }
+    if(length(valid.times) == 0 || all(eTimes > max(valid.times))){
+        eventTimes <- eTimes[1] ## at least the first event
+    }else {
+        eventTimes <- eTimes[eTimes <= max(times)] ## jump times before the last prediction time (that is before the last jump)
+    }
+    nEventTimes <- length(eventTimes) ## number of jump times
+
+    ## *** cause
+    causes <- object$causes
     if (missing(cause)) {
         cause <- object$theCause
+    }else{
+        if (length(cause) > 1){
+            stop(paste0("Length of argument cause is longer than 1. Can only predict a single cause. The object contains the following causes: ", 
+                        paste(cause, collapse = ", "), sep = ""))
+        }
+        if (any(match(as.character(cause), causes, nomatch = 0)==0L))
+            stop(paste0("Cannot find all requested cause(s) ...\n\n", 
+                        "Requested cause(s): ", paste0(cause, collapse = ", "), 
+                        "\n Available causes: ", paste(causes, collapse = ", "), 
+                        "\n"))
     }
-    if (length(cause) > 1){
-        stop(paste0("Length of argument cause is longer than 1. Can only predict a single cause. The object contains the following causes: ", 
-                    paste(cause, collapse = ", "), sep = ""))
-    }
-	
-    ## causes
-    # NOTE: cannot use only eventtimes of cause 1 otherwise wrong estimation of the survival in the absolute risk
-    causes <- object$causes
     index.cause <- which(causes == cause)
-    name.model <- names(object$models)
-    
-    ## event times
-    eTimes <- object$eventTimes
 
-    ## ** check
-    ## *** cause
-    if (any(match(as.character(cause), causes, nomatch = 0)==0L))
-        stop(paste0("Cannot find all requested cause(s) ...\n\n", 
-                    "Requested cause(s): ", paste0(cause, collapse = ", "), 
-                    "\n Available causes: ", paste(causes, collapse = ", "), 
-                    "\n"))
+    surv.type <- object$surv.type
     if (surv.type == "survival") {
         if (object$theCause != cause) 
             stop("Object can be used to predict cause ", object$theCause, 
                  " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
     }
-
-    ## *** times and max.times
-    if(any(is.na(times))){
-        stop("NA values in argument \'times\' \n")
-    }
-    ## relevant event times to use
-    if (is.null(max.time)) {
-        max.time <- max(object$response[,"time"])
-    }
-    valid.times <- times[times<= max.time] ## prediction times before the event
-    if(length(valid.times) == 0){
-        if (is.null(eTimes)) {
-            stop("eventTimes was removed from model, but no valid times")
-        }
-        eventTimes <- eTimes[1] ## at least the first event
-    }else{
-        eventTimes <- eTimes[eTimes <= max(valid.times)] ## jump times before the last prediction time (that is before the last jump)
-        if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
-
-    }
-    if (is.null(eventTimes)) {
-        stop("eventTimes was removed from model - cannot predict")
-    }
-    eventTimes <- eTimes[eTimes <= max(times)] ## jump times before the last prediction time (that is before the last jump)
-    if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
     
     ## *** landmark
     if(length(landmark)!=1){
@@ -357,16 +337,16 @@ predict.CauseSpecificCox <- function(object,
         oorder.times <- outCompress$oorder.times
         nTimes <- outCompress$nTimes
         average.iid <- outCompress$average.iid
+        new.n <- NROW(newdata) ## OVERWRITE with compressed dataset
     }
 
     ## ** extract baseline hazard, linear predictor and strata from Cox models
-    new.n <- NROW(newdata)
-    nEventTimes <- length(eventTimes)
+    name.model <- names(object$models)
     nCause <- length(causes)
     if(object$surv.type=="survival"){
         nModel <- 2
     }else{
-        nModel <- length(causes)
+        nModel <- nCause
     }
     ls.hazard <- vector(mode = "list", length = nModel)
     ls.cumhazard <- vector(mode = "list", length = nModel)
@@ -404,7 +384,7 @@ predict.CauseSpecificCox <- function(object,
         ## baseline hazard from the Cox model
         ls.cumhazard[[iterC]] <- matrix(baseline$cumhazard, byrow = FALSE, nrow = nEventTimes)
         ls.hazard[[iterC]] <- matrix(baseline$hazard, byrow = FALSE, nrow = nEventTimes)
-          
+
         ## linear predictor for the new observations
         M.eXb[,iterC] <- exp(coxLP(object$models[[iterC]], data = newdata, center = FALSE))
 

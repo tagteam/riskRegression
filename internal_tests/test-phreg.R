@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 28 2017 (09:52) 
 ## Version: 
-## last-updated: Sep 17 2022 (07:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 31
+## last-updated: Apr 27 2026 (10:09) 
+##           By: Brice Ozenne
+##     Update #: 34
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -41,9 +41,14 @@ test_that("survival - no strata", {
     m.coxph <- coxph(Surv(eventtime,event)~X1+X2,data=d, x = TRUE, y = TRUE) ## do not center anymore factor or binary variables
     m.cph <- cph(Surv(eventtime,event)~X1+X2,data=d, x = TRUE, y = TRUE)
     ## slight difference in estimated coefficients: coef(m.phreg) - coef(m.cph)
-    
-    expect_equal(ignore_attr=TRUE,predictCox(m.phreg, center = FALSE),predictCox(m.coxph, center = FALSE), tolerance = 1e-8)
-    expect_equal(ignore_attr=TRUE,predictCox(m.phreg, center = TRUE),predictCox(m.cph, center = TRUE), tolerance = 1e-4)
+
+    ## keep.newdata = FALSE so does not store coxCenter which differs between phreg and coxph
+    expect_equal(predictCox(m.phreg, center = FALSE, keep.newdata = FALSE),
+                 predictCox(m.coxph, center = FALSE, keep.newdata = FALSE),
+                 tolerance = 1e-8, ignore_attr=TRUE)
+    expect_equal(predictCox(m.phreg, center = TRUE, keep.newdata = FALSE),
+                 predictCox(m.cph, center = TRUE, keep.newdata = FALSE),
+                 tolerance = 1e-4, ignore_attr=TRUE)
 
     pred.phreg <- predictCox(m.phreg, newdata = d, time = 1:5, se = TRUE)
     pred.coxph <- predictCox(m.coxph, newdata = d, time = 1:5, se = TRUE)
@@ -57,8 +62,11 @@ test_that("survival - one strata variable", {
     mS.cph <- cph(Surv(eventtime,event)~X1+X2+strat(group),data=d, x = TRUE, y = TRUE)
     ## slight difference in estimated coefficients: coef(mS.phreg) - coef(mS.cph)
     
-    expect_equal(ignore_attr=TRUE,predictCox(mS.phreg, center = FALSE),predictCox(mS.coxph, center = FALSE), tolerance = 1e-8)
-    expect_equal(ignore_attr=TRUE,predictCox(mS.phreg, center = TRUE)[c("cumhazard","survival")],predictCox(mS.cph, center = TRUE)[c("cumhazard","survival")], tolerance = 1e-4)
+    expect_equal(predictCox(mS.phreg, center = FALSE, keep.newdata = FALSE),
+                 predictCox(mS.coxph, center = FALSE, keep.newdata = FALSE), tolerance = 1e-8, ignore_attr=TRUE)
+    expect_equal(predictCox(mS.phreg, center = TRUE, keep.newdata = FALSE, keep.strata = FALSE),
+                 predictCox(mS.cph, center = TRUE, keep.newdata = FALSE, keep.strata = FALSE),
+                 tolerance = 1e-4, ignore_attr=TRUE)
 
     predS.phreg <- predictCox(mS.phreg, newdata = d, time = 1:5, se = TRUE)
     predS.coxph <- predictCox(mS.coxph, newdata = d, time = 1:5, se = TRUE)
@@ -109,10 +117,10 @@ test_that("competing risk - no strata", {
                    fitter = "phreg")
     m.coxph <- CSC(Hist(time,event)~X1+X2,data=d,
                    fitter = "coxph")
-    expect_equal(ignore_attr=TRUE,class(m.phreg$models[[1]]),"phreg")
+    expect_equal(class(m.phreg$models[[1]]),"phreg", ignore_attr=TRUE)
     pred.phreg <- predict(m.phreg, newdata = d, times = 1:5, cause = 1, se = TRUE)
     pred.coxph <- predict(m.coxph, newdata = d, times = 1:5, cause = 1, se = TRUE)
-    expect_equal(ignore_attr=TRUE,pred.phreg,pred.coxph, tolerance = 1e-8)
+    expect_equal(pred.phreg,pred.coxph, tolerance = 1e-8, ignore_attr=TRUE)
 })
 
 test_that("competing risk - one strata variable", {

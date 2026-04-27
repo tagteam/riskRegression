@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Apr 26 2026 (23:52) 
+## last-updated: Apr 27 2026 (10:01) 
 ##           By: Brice Ozenne
-##     Update #: 183
+##     Update #: 185
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -46,10 +46,11 @@ test_that("baseline hazard (no strata): compare to survival::basehaz",{
                survival::basehaz(fit.cph)$hazard, tolerance = 1e-8)
 
   ## consistency cph coxph
+  ## keep.newdata = FALSE so does not store coxCenter which differs between phreg and coxph
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
   expect_equal(ignore_attr=TRUE,
-               as.data.table(predictCox(fit.cph, centered = FALSE)),
-               as.data.table(predictCox(fit.coxph, centered = FALSE)), 
+               predictCox(fit.cph, centered = FALSE, keep.newdata = FALSE),
+               predictCox(fit.coxph, centered = FALSE, keep.newdata = FALSE), 
                tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
   ## note centered = TRUE will no give same results as coxph do not center all variables
 })
