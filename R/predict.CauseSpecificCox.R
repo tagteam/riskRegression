@@ -177,19 +177,119 @@ predict.CauseSpecificCox <- function(object,
                                      ...){
 
 
-    ## ** deal with special cases
-    if(type == "survival" && object$surv.type=="survival"){
+    ## ** special case 1: predict survival with CSC cause+survival
+    if(type == "survival" && object$surv.type=="survival"){ 
         return(predictCox(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
                           keep.strata = keep.strata, keep.newdata = keep.newdata,
                           se = se, band = band, iid = iid, confint = confint, diag = diag,
                           product.limit = product.limit, average.iid = average.iid, store = store)
                )
     }
-    if(missing(times)){
-        if(missing(newdata)){
-        }else{
-            stop("Argument \'times\' must be specified. \n")
+
+    ## ** special case 2: baseline absolute risk 
+    if(missing(times) && missing(newdata)){
+
+        ## *** get all jump times
+        eTimes <- object$eventTimes
+        if (is.null(eTimes)) {
+            stop("object should contain an element \'eventTimes\' storing the jump times. \n")
         }
+
+        ## *** type
+        type <- match.arg(type, c("absRisk","survival"))
+
+        ## *** prepare baseline dataset
+        ## extract time, status, event from object
+        newdata <- as.data.frame(matrix(as.vector(object$response), nrow = NROW(object$response), ncol = NCOL(object$response), dimnames = list(NULL,colnames(object$response))))
+        newdata$event <- factor(newdata$event, labels = c("Censoring",object$causes))
+
+        ls.coxModelFrame <- lapply(object$models, coxModelFrame)
+        ls.infoVar <- mapply(iModel = object$models, iFrame = ls.coxModelFrame, FUN = function(iModel, iFrame){
+            coxVariableName(iModel, model.frame = iFrame)
+        }, SIMPLIFY = FALSE)
+
+        is.strata <- sapply(ls.infoVar, "[[","is.strata")
+        is.lp <- lengths(lapply(ls.infoVar, "[[","lpvars.original"))>0
+
+        if(any(is.strata)){
+            ## find unique strata variables
+            ls.stratavars <- lapply(ls.infoVar, "[[", "stratavars")
+            Ustratavars <- unique(unlist(ls.stratavars))
+
+            ## add strata variable
+            for(iM in which(is.strata)){ ## iM <- 1
+                iModelFrame <- stats::model.frame(object$models[[iM]])
+                iAdd <- setdiff(intersect(Ustratavars,names(iModelFrame)),names(newdata))
+                newdata <- cbind(newdata, iModelFrame[iAdd])
+                if(all(Ustratavars %in% names(newdata))){break}
+            }
+
+            ## restaure original name
+            ls.stratavars.original <- lapply(ls.infoVar, "[[", "stratavars.original")
+            Ustratavars.original <- unique(unlist(ls.stratavars.original)) ## original strata vars
+            names(newdata)[match(Ustratavars,names(newdata))] <- Ustratavars.original
+        }
+
+        if(any(is.lp)){ 
+
+            ## find covariates
+            ls.lpVars <- lapply(ls.infoVar, "[[", "lpvars.original")
+            UlpVars <- unique(unlist(ls.lpVars))
+
+            ## find reference level
+            ls.center <- lapply(object$models, coxCenter, as.factor = TRUE)
+            
+            ## add covariates relative to the linear predictor
+            for(iM in which(is.lp)){ ## iM <- 1
+                iAdd <- setdiff(intersect(UlpVars,names(ls.center[[iM]])),names(newdata))
+                newdata <- cbind(newdata,ls.center[[iM]][iAdd])
+                if(all(UlpVars %in% names(newdata))){break}
+            }
+            
+
+            if(any(UlpVars %in% names(newdata) == FALSE)){
+                stop("Cannot evaluate the baseline ",paste(type, collapse = "/")," in presence of categorical covariate(s) unless fitter=\"coxph\". \n",
+                     "(the Cox model is centered around a level that does not correspond to a plausible observation). \n")
+            }
+        }
+
+        if(any(is.strata)){
+            neworder <- order(interaction(lapply(ls.coxModelFrame, function(iDT){as.character(iDT$strata)})), newdata$time)
+        }else{
+            neworder <- order(newdata$time)
+        }
+        newdata <- newdata[neworder,,drop=FALSE]
+
+        ## *** predict 
+        out <- predict(object, times = newdata$time, cause = cause, newdata = newdata, diag = TRUE, se = se, iid = band, band = band,
+                       product.limit = product.limit, type = type, keep.times = keep.times, keep.newdata = FALSE, keep.strata = TRUE)
+
+        ## *** flatten matrix into vector
+        flatten.col <- intersect(names(out),paste0(type,c("",".se",".lower",".upper",".lowerBand",".upperBand")))        
+        out[flatten.col] <- lapply(flatten.col, function(iName){out[[iName]][,1]})
+
+        ## *** store meta information
+        out$baseline <- TRUE
+        out$diag <- FALSE        
+        if(keep.newdata){
+            out$newdata <- newdata
+            if(any(is.strata)){
+                out$newdata$strata <- out$strata
+                out$newdata$strata.num <- as.numeric(out$strata)
+            }            
+        }
+        if(!keep.strata){
+            out$strata <- NULL
+        }
+        if(any(is.lp)){
+            out$lp.var <- as.data.frame(newdata[1,UlpVars,drop=FALSE])
+        }
+
+        ## *** export
+        return(out)
+
+    }else if(missing(times)){
+        stop("Argument \'times\' must be specified. \n")
     }
     
     ## ** normalize user input
@@ -216,7 +316,7 @@ predict.CauseSpecificCox <- function(object,
     ## *** jump times
     eTimes <- object$eventTimes
     if (is.null(eTimes)) {
-            stop("object should contain an element \'eventTimes\' storing the jump times. \n")
+        stop("object should contain an element \'eventTimes\' storing the jump times. \n")
     }
     if(length(valid.times) == 0 || all(eTimes > max(valid.times))){
         eventTimes <- eTimes[1] ## at least the first event
@@ -621,6 +721,7 @@ predict.CauseSpecificCox <- function(object,
                     "Possible cause: incorrect extrapolation, i.e., time and/or covariates used for the prediction differ from those used to fit the Cox models.\n")
         }
     }
+    out$baseline <- FALSE
     return(out)
 }
 

@@ -15,6 +15,9 @@
   alpha = NA,
   group.by = "row",
   reduce.data = FALSE,
+  atRisk = FALSE,
+  xlim = NULL,
+  ylim = NULL,
   ...
 )
 
@@ -38,6 +41,10 @@
 \item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
 \item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+
+\item{atRisk}{[logical] Should the number at risk be diplayed at the bottom of the plot?}
+
+\item{xlim, ylim}{[numeric vector of length 2] limits for the x and y axes.}
 
 \item{...}{Additional parameters to cutomize the display.}
 }
