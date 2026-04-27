@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Apr 27 2026 (10:35) 
+## last-updated: Apr 27 2026 (13:57) 
 ##           By: Brice Ozenne
-##     Update #: 1786
+##     Update #: 1818
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -302,7 +302,7 @@ autoplot.predictCox <- function(object,
         group.by <- if(length(group.by[-1])==0){"row"}else{group.by[-1]}
     }else{
 
-        if(!is.matrix(object[[type]])){ ## baseline hazard/survival
+        if(object$baseline){ ## baseline hazard/survival
             
             object[[type]] <- rbind(object[[type]])
             if(ci){
@@ -338,7 +338,7 @@ autoplot.predictCox <- function(object,
                 }                
 
                 if(!is.null(object$newdata)){
-                    newdata0 <- object$newdata[1:n.strata]
+                    newdata0 <- as.data.frame(object$newdata)[1:n.strata,,drop=FALSE]
                     newdata0$start <- 0
                     newdata0$stop <- 0
                     newdata0$status <- NA
@@ -396,7 +396,7 @@ autoplot.predictCox <- function(object,
                     newdataF$stop <- time.beyond
                     newdataF$status <- NA
                     if(!is.null(object$strata)){
-                        newdataF$strata[] <- factor(levels(object$strata)[strata.beyond], levels = levels(object$strata))
+                        newdataF$strata <- factor(levels(object$strata)[strata.beyond], levels = levels(object$strata))
                         newdataF$strata.num <- strata.beyond
                     }
                     newdataF$eXb <- NA
@@ -553,8 +553,13 @@ predict2melt <- function(outcome, name.outcome,
     dataL$time <- times[dataL$time.factor]
     if(diag){
         dataL$row <- 1:length(name.obs)
-    }else if(!is.null(strata) && baseline){
-        dataL$row <- as.numeric(strata)
+    }else if(baseline){
+        if(is.null(strata)){
+            dataL$row <- 1
+        }else{
+            dataL$row <- strata
+        }
+        
     }
 
     ## ** add variables
@@ -600,7 +605,7 @@ predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by, smooth,                        
                          conf.level, alpha, xlab, ylab, xlim = NULL, ylim = NULL,
                          smoother = NULL, formula.smoother = NULL, first.derivative = FALSE, atRisk = FALSE,
-                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, size.atRisk = 5, space.atRisk = 0.05, shape.point = c(3,18), n.sim = 250){
+                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, size.atRisk = 5, space.atRisk = 0.05, shape.point = c(3,18,17), n.sim = 250){
 
     .GRP <- .data <- NULL ## [:: for CRAN CHECK::]
     if(first.derivative && (smooth==FALSE)){
@@ -801,10 +806,16 @@ predict2plot <- function(dataL, name.outcome,
                                                    linewidth = size.estimate)
 
         if("status" %in% names(dataL)){
-            dataL$status <- as.character(dataL$status)
+            if(is.numeric(dataL$status)){ ## predictCox  (0,1)
+                dataL$status <- as.character(dataL$status)
+            }
             gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL$status)],
                                                      mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], shape = .data$status, group = .data[[group.by]]), size = size.point)
-            gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values = shape.point, labels = c("censoring","event"))
+            if(is.factor(dataL$status)){
+                gg.base <- gg.base + ggplot2::scale_shape_manual(name = "Type of event", breaks = levels(dataL$status), values = shape.point)
+            }else{
+                gg.base <- gg.base + ggplot2::scale_shape_manual(name = "Type of event", breaks = c(0,1), values = shape.point[1:2], labels = c("Censoring","Event"))
+            }
         }else{
             gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL[[name.outcome]])],
                                                      mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.by]], group = .data[[group.by]]), size = size.point)
@@ -876,6 +887,7 @@ predict2plot <- function(dataL, name.outcome,
             }
             return(iOut)
         }))
+
         gg.base <- gg.base + scale_y_continuous(breaks = unique(c(yatRisk, ybreaks)), ## in case yatRisk matches a break
                                                 labels = c("at risk",ybreaks)[!duplicated(c(yatRisk, ybreaks))])
         if("strata" %in% names(dataL)){

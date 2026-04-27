@@ -600,6 +600,10 @@ predictCox <- function(object,
                 }
                 lpvars.factor <- setdiff(infoVar$lpvars.original, lpvars.num)
                 if(length(lpvars.factor)>0){
+                    if(is.null(object$xlevels)){
+                        stop("Cannot evaluate uncertainty for the baseline ",paste(type, collapse = "/")," in presence of categorical covariate(s) unless fitter=\"coxph\". \n",
+                             "(the Cox model is centered around a level that does not correspond to a plausible observation). \n")
+                    }
                     toFactor <- sapply(object$xlevels[lpvars.factor], "[",1)
                     object.modelFrame[,c(names(toFactor)) := as.list(toFactor)]
                 }else{
@@ -613,7 +617,6 @@ predictCox <- function(object,
                 lpvars.num <- NULL
                 lpvars.factor <- NULL
             }
-            
             ## save for SANITY CHECK
             Lambda0_cumhazard <- Lambda0$cumhazard
             
@@ -629,14 +632,8 @@ predictCox <- function(object,
             Lambda0[intersect(names(Lambda0),unlist(lapply(type,paste0,".iid")))] <- NULL  ## do not keep iid
             
             ## flatten matrix into vector
-            keep.col <- type
-            if(se[[1]]){
-                keep.col <- c(keep.col, unlist(lapply(type,paste,c("se","lower","upper"), sep = ".")))
-            }
-            if(band[[1]]){
-                keep.col <- c(keep.col, unlist(lapply(type,paste,c("lowerBand","upperBand"), sep = ".")))
-            }
-            Lambda0[keep.col] <- lapply(keep.col, function(iName){Lambda0[[iName]][,1]})
+            flatten.col <- intersect(names(Lambda0), unlist(lapply(type, paste0, c("",".se",".lower",".upper",".lowerBand",".upperBand"))))
+            Lambda0[flatten.col] <- lapply(flatten.col, function(iName){Lambda0[[iName]][,1]})
             
         }else{
 

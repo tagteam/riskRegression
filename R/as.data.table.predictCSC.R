@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: Sep  6 2023 (09:52) 
-##           By: Thomas Alexander Gerds
-##     Update #: 51
+## Last-Updated: Apr 27 2026 (12:32) 
+##           By: Brice Ozenne
+##     Update #: 53
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,30 +45,53 @@ as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
         if (!is.null(x$strata)){
             nd[,strata:=x$strata]
         }
-        ar <- cbind(absRisk = x[["absRisk"]][,tt])
+
+        if(x$baseline){
+            ar <- cbind(absRisk = x[["absRisk"]])
+        }else{
+            ar <- cbind(absRisk = x[["absRisk"]][,tt])
+        }
     
-    vec.names <- c("absRisk")
+        vec.names <- c("absRisk")
 
-    if (x$se==1L){
-        if(se){
-            ar <- cbind(ar,
-                        absRisk.se=x[["absRisk.se"]][,tt])
-            
+        if (x$se==1L){
+            if(se){
+                if(x$baseline){
+                    ar <- cbind(ar, absRisk.se=x[["absRisk.se"]])
+                }else{
+                    ar <- cbind(ar, absRisk.se=x[["absRisk.se"]][,tt])
+                }
+                
+                
+            }
+            if(!is.null(x$conf.level)){
+                if(x$baseline){
+                    ar <- cbind(ar,
+                                absRisk.lower=x[["absRisk.lower"]],
+                                absRisk.upper=x[["absRisk.upper"]]
+                                )
+                }else{
+                    ar <- cbind(ar,
+                                absRisk.lower=x[["absRisk.lower"]][,tt],
+                                absRisk.upper=x[["absRisk.upper"]][,tt]
+                                )
+                }
+            }
         }
-        if(!is.null(x$conf.level)){
-            ar <- cbind(ar,
-                        absRisk.lower=x[["absRisk.lower"]][,tt],
-                        absRisk.upper=x[["absRisk.upper"]][,tt]
-                        )
-        }
-    }
-
+        
         if (x$band==1L){
             if(!is.null(x$conf.level)){
-                ar <- cbind(ar,
-                            absRisk.quantileBand=x[["absRisk.quantileBand"]],
-                            absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
-                            absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+                if(x$baseline){
+                    ar <- cbind(ar,
+                                absRisk.quantileBand=x[["absRisk.quantileBand"]],
+                                absRisk.lowerBand=x[["absRisk.lowerBand"]],
+                                absRisk.upperBand=x[["absRisk.upperBand"]])
+                }else{
+                    ar <- cbind(ar,
+                                absRisk.quantileBand=x[["absRisk.quantileBand"]],
+                                absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
+                                absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+                }
             }
         }
         nd <- cbind(nd,ar)
