@@ -2,7 +2,24 @@
 % Please edit documentation in R/saveCoxConfidential.R
 \name{saveCoxConfidential}
 \alias{saveCoxConfidential}
-\title{library(survival)
+\title{Save confidential Cox objects}
+\usage{
+saveCoxConfidential(object, times)
+}
+\arguments{
+\item{object}{An object of class \code{coxph}.}
+
+\item{times}{The times at which we want to predict risk.}
+}
+\description{
+Save confidential Cox objects
+}
+\details{
+This function can save \code{coxph} objects such that we do not need to export 
+the data on which it was fitted at given times.
+}
+\examples{
+library(survival)
 library(lava)
 set.seed(18)
 trainSurv <- sampleData(300,outcome="survival")
@@ -21,14 +38,10 @@ class(u) <- "CoxConfidential"
 }
 predictRisk(u,newdata=testSurv)
 cox1 = coxph(Surv(time,event)~strata(X1)+X2+X3+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-z<-saveCoxConfidential(cox1,c(2,5))}
-\usage{
-saveCoxConfidential(object, times)
-}
-\description{
+z<-saveCoxConfidential(cox1,c(2,5))
+
 dput(z) ## get output to copy object
-}
-\details{
+
 all.equal(predictRisk(z,newdata=testSurv),
           predictRisk(cox1,newdata=testSurv,times=c(2,5)))
 

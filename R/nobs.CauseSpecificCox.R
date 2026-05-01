@@ -20,14 +20,6 @@
 nobs.CauseSpecificCox <- function(object,...){
     return(NROW(object$response))
 }
-#' @export
-nobs.coxph <- function(object,...){
-    return(object$n)
-}
-#' @export
-nobs.phreg <- function(object,...){
-    return(NROW(object$time))
-}
 
 
 ##----------------------------------------------------------------------
