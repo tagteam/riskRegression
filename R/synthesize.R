@@ -1,11 +1,11 @@
 ### synthesize.R ---
 #----------------------------------------------------------------------
-## Author: Johan Sebastian Ohlendorff Thomas Alexander Gerds
+## Author: Johan Sebastian Ohlendorff & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: feb 12 2026 (12:14) 
+## Last-Updated: maj 19 2026 (06:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 156
+##     Update #: 170
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -246,9 +246,10 @@ synthesize.lvm <- function(object,
                            fix.names = FALSE,
                            return_code = FALSE,
                            ...){
+    browser(skipCalls=1L)
   from.formula <- length(attr(object,"from.formula"))>0
   # check whether variables in model are in data set
-  if (!from.formula && !all(object$attributes$eventHistory$time$names %in% names(data))) {
+  if (!from.formula && !all(object$attributes$eventHistory[[1]]$names %in% names(data))) {
     stop("Time or status variable could not be found in data set.")
   }
   var.model <- colnames(object$M)
@@ -507,7 +508,7 @@ synthesize.lvm <- function(object,
   }
   # Estimate regression coefficients in real data
   # and add them to the lvm object using lava::regression
-  for(var in latent_vars[!(latent_vars %in% object$attributes$eventHistory$time$names)]){
+  for(var in latent_vars[!(latent_vars %in% object$attributes$eventHistory[[1]]$names)]){
       covariates <- get_covariates(object,var,dichotomized_variables)
       reg_formula <- as.formula(paste0(var, "~", covariates))
       # we have three types of regression to deal with now. Either
