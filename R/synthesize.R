@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: maj 19 2026 (06:53) 
+## Last-Updated: maj 19 2026 (06:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 170
+##     Update #: 171
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -246,7 +246,6 @@ synthesize.lvm <- function(object,
                            fix.names = FALSE,
                            return_code = FALSE,
                            ...){
-    browser(skipCalls=1L)
   from.formula <- length(attr(object,"from.formula"))>0
   # check whether variables in model are in data set
   if (!from.formula && !all(object$attributes$eventHistory[[1]]$names %in% names(data))) {
