@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Apr 23 2026 (19:28) 
-##           By: Brice Ozenne
-##     Update #: 2651
+## last-updated: maj 19 2026 (06:55) 
+##           By: Thomas Alexander Gerds
+##     Update #: 2652
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,7 @@
 #' @param data.index [numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
 #' Only necessary for the standard errors when computing the Average Treatment Effects on a subset of the data set. 
 #' @param contrasts [character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.
-#' @param allContrasts [2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
+#' @param allContrasts [2-row character matrix] where each column contains the levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
 #' @param strata [character] Strata variable on which to compute the average risk.
 #' To be used instead of the treatment argument when the interest lies in the average outcome within group
 #' instead of the average counterfactual outcome had all subjects experience the exposure of a specific group. 
