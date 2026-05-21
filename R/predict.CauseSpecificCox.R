@@ -77,14 +77,14 @@
 #' ##################################
 #' #### Aalen-Johansen (no ties) ####
 #' ##################################
-#'
+#' 
 #' fit.AE <- CSC(Hist(time, event) ~ 1, data = d)
 #' 
 #' ## Aalen-Johansen product-limit estimator for the risk/CIF
 #' ePL.AE <- predict(fit.AE, se = TRUE) ## default is product.limit = TRUE
 #' as.data.table(ePL.AE)
 #' plot(ePL.AE, atRisk = TRUE)
-#' plot(ePL.AE, alpha = 0.1, atRisk = TRUE)
+#' plot(ePL.AE, alpha = 0.1, size.estimate = 1, atRisk = TRUE)
 #'
 #' ## user-specific timepoints
 #' predict(fit.AE, newdata = d[1], times = 1:10, cause = 1)
@@ -125,7 +125,7 @@
 #' ePL.SAE <- predict(fit.SAE, se = TRUE) ## default is product.limit = TRUE
 #' as.data.table(ePL.SAE)
 #' plot(ePL.SAE, atRisk = TRUE)
-#' plot(ePL.SAE, alpha = 0.1, atRisk = TRUE)
+#' plot(ePL.SAE, alpha = 0.1, size.estimate = 1, atRisk = TRUE)
 #' 
 #' ## user-specific timepoints
 #' predict(fit.SAE, newdata = d[1], times = 1:10, cause = 1)
@@ -224,7 +224,13 @@ predict.CauseSpecificCox <- function(object,
         ## *** prepare baseline dataset
         ## extract time, status, event from object
         newdata <- as.data.frame(matrix(as.vector(object$response), nrow = NROW(object$response), ncol = NCOL(object$response), dimnames = list(NULL,colnames(object$response))))
-        newdata$event <- factor(newdata$event, labels = c("Censoring",object$causes))
+        if(length(unique(newdata$event))==(length(object$causes)+1)){
+            level.censoring <- unique(newdata$event[newdata$status==0])
+            newdata$event <- factor(newdata$event, levels = c(level.censoring, setdiff(unique(sort(newdata$event)), level.censoring)), labels = c("Censoring",object$causes))
+        }else if(length(unique(newdata$event))==length(object$causes)){
+            newdata$event <- factor(newdata$event, labels = object$causes)
+        }
+        
 
         ls.coxModelFrame <- lapply(object$models, coxModelFrame)
         ls.infoVar <- mapply(iModel = object$models, iFrame = ls.coxModelFrame, FUN = function(iModel, iFrame){
@@ -676,7 +682,7 @@ predict.CauseSpecificCox <- function(object,
         out$se <- se
         out$keep.times <- keep.times
         out$band <- band
-    
+        
         class(out) <- "predictCSC"
     }
 

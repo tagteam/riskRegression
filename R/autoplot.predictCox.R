@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: apr 27 2026 (18:24) 
+## last-updated: maj 21 2026 (16:55) 
 ##           By: Brice Ozenne
-##     Update #: 1955
+##     Update #: 1965
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -711,9 +711,12 @@ predict2plot <- function(dataL, name.outcome,
     ## ** display
     labelCI <- paste0(conf.level*100,"% pointwise \n confidence interval")
     labelBand <- paste0(conf.level*100,"% simulaneous \n confidence interval \n")
-
-    group.byL <- attr(group.by,"label")
-    dataL[,c(group.byL) := as.factor(.SD[[group.byL]])]
+    if(!is.null(attr(group.by,"label"))){
+        group.byL <- attr(group.by,"label")
+        dataL[,c(group.byL) := as.factor(.SD[[group.byL]])]
+    }else{
+        group.byL <- group.by
+    }
 
     gg.base <- ggplot2::ggplot(data = dataL)
 

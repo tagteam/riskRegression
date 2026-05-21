@@ -58,7 +58,7 @@ instead of the average counterfactual outcome had all subjects experience the ex
 
 \item{contrasts}{[character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.}
 
-\item{allContrasts}{[2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.}
+\item{allContrasts}{[2-row character matrix] where each column contains the levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.}
 
 \item{times}{[numeric vector] Time points at which to evaluate average treatment effects.}
 

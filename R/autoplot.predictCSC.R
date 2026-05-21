@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: apr 27 2026 (17:50) 
+## last-updated: maj 21 2026 (16:41) 
 ##           By: Brice Ozenne
-##     Update #: 179
+##     Update #: 183
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -122,7 +122,7 @@ autoplot.predictCSC <- function(object,
     ##     txt.s <- if(length(txt)>1){"s"}else{""}
     ##     stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     ## }
-    
+
     ## ** reshape data
     if(object$baseline){
 

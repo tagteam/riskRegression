@@ -56,7 +56,7 @@ Otherwise use \code{plot.type="1"}.}
 \item{...}{Additional parameters to cutomize the display.}
 }
 \value{
-Invisible. A list containing:
+A (possibly invisible) list containing:
 \itemize{
 \item plot: the ggplot object.
 \item data: the data used to create the plot.
@@ -64,6 +64,8 @@ Invisible. A list containing:
 }
 \description{
 Plot average risks.
+The method \code{plot} is a warper around \code{autoplot} that automatically produces a graphical display
+but hides the corresponding dataset and ggplot2 object using \code{invisible}.
 }
 \section{Functions}{
 \itemize{
@@ -86,11 +88,11 @@ fit <- coxph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #### plot.type = 1: for few timepoints ####
 ateFit <- ate(fit, data = dtS, treatment = "X1",
               times = c(1,2,5,10), se = TRUE, band = TRUE)
-ggplot2::autoplot(ateFit)
+plot(ateFit)
 \dontrun{
-ggplot2::autoplot(ateFit, band = FALSE)
-ggplot2::autoplot(ateFit, type = "diffRisk")
-ggplot2::autoplot(ateFit, type = "ratioRisk")
+plot(ateFit, band = FALSE)
+plot(ateFit, type = "diffRisk")
+plot(ateFit, type = "ratioRisk")
 }
 
 #### plot.type = 2: when looking at all jump times ####
@@ -98,24 +100,25 @@ ggplot2::autoplot(ateFit, type = "ratioRisk")
 ateFit <- ate(fit, data = dtS, treatment = "X1",
               times = seqTimes, se = TRUE, band = TRUE)
 
-ggplot2::autoplot(ateFit, plot.type = "2")
+plot(ateFit)
+plot(ateFit, plot.type = "2")
 
 ## customize plot
-outGG <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = 0.25)
+outGG <- autoplot(ateFit, plot.type = "2", alpha = 0.25)
 outGG$plot + facet_wrap(~X1, labeller = label_both)
 
 
 ## Looking at the difference after smoothing
-outGGS <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
+outGGS <-autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
 outGGS$plot + facet_wrap(~X1, labeller = label_both)
 
 ## first derivative
 ## (computation of the confidence intervals takes time)
 ## (based on simulation - n.sim parameter)
-ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
-                  band = FALSE, type = "diffRisk")
-ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
-                  band = FALSE, type = "diffRisk")
+autoplot(ateFit, plot.type = "2", smooth = TRUE,
+         band = FALSE, type = "diffRisk")
+autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
+         band = FALSE, type = "diffRisk")
 }
 }
 \seealso{

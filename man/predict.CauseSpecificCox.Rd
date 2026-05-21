@@ -114,7 +114,7 @@ fit.AE <- CSC(Hist(time, event) ~ 1, data = d)
 ePL.AE <- predict(fit.AE, se = TRUE) ## default is product.limit = TRUE
 as.data.table(ePL.AE)
 plot(ePL.AE, atRisk = TRUE)
-plot(ePL.AE, alpha = 0.1, atRisk = TRUE)
+plot(ePL.AE, alpha = 0.1, size.estimate = 1, atRisk = TRUE)
 
 ## user-specific timepoints
 predict(fit.AE, newdata = d[1], times = 1:10, cause = 1)
@@ -155,7 +155,7 @@ fit.SAE <- CSC(Hist(time, event) ~ strata(X1), data = d)
 ePL.SAE <- predict(fit.SAE, se = TRUE) ## default is product.limit = TRUE
 as.data.table(ePL.SAE)
 plot(ePL.SAE, atRisk = TRUE)
-plot(ePL.SAE, alpha = 0.1, atRisk = TRUE)
+plot(ePL.SAE, alpha = 0.1, size.estimate = 1, atRisk = TRUE)
 
 ## user-specific timepoints
 predict(fit.SAE, newdata = d[1], times = 1:10, cause = 1)

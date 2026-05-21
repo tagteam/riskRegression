@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: maj 21 2026 (14:52) 
+## last-updated: maj 21 2026 (16:56) 
 ##           By: Brice Ozenne
-##     Update #: 268
+##     Update #: 272
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -81,24 +81,25 @@
 #' ateFit <- ate(fit, data = dtS, treatment = "X1",
 #'               times = seqTimes, se = TRUE, band = TRUE)
 #'
-#' ggplot2::autoplot(ateFit, plot.type = "2")
+#' plot(ateFit)
+#' plot(ateFit, plot.type = "2")
 #' 
 #' ## customize plot
-#' outGG <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = 0.25)
+#' outGG <- autoplot(ateFit, plot.type = "2", alpha = 0.25)
 #' outGG$plot + facet_wrap(~X1, labeller = label_both)
 #'
 #' 
 #' ## Looking at the difference after smoothing
-#' outGGS <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
+#' outGGS <-autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
 #' outGGS$plot + facet_wrap(~X1, labeller = label_both)
 #' 
 #' ## first derivative
 #' ## (computation of the confidence intervals takes time)
 #' ## (based on simulation - n.sim parameter)
-#' ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
-#'                   band = FALSE, type = "diffRisk")
-#' ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
-#'                   band = FALSE, type = "diffRisk")
+#' autoplot(ateFit, plot.type = "2", smooth = TRUE,
+#'          band = FALSE, type = "diffRisk")
+#' autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
+#'          band = FALSE, type = "diffRisk")
 #' }
 
 ## * autoplot.ate (code)
