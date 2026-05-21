@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: apr 27 2026 (15:23) 
+## last-updated: apr 27 2026 (18:32) 
 ##           By: Brice Ozenne
-##     Update #: 267
+##     Update #: 269
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,6 +18,8 @@
 ## * autoplot.ate (documentation)
 #' @title Plot Average Risks
 #' @description Plot average risks.
+#' The method \code{plot} is a warper around \code{autoplot} that automatically produces a graphical display
+#' but hides the corresponding dataset and ggplot2 object using \code{invisible}.
 #' @name autoplot.ate
 #' 
 #' @param object,x Object obtained with the function \code{ate}.
@@ -41,7 +43,7 @@
 #' @param estimator [character] The type of estimator relative to which the risks should be displayed. 
 #' @param ... Additional parameters to cutomize the display.
 #' 
-#' @return Invisible. A list containing:
+#' @return A (possibly invisible) list containing:
 #' \itemize{
 #' \item plot: the ggplot object.
 #' \item data: the data used to create the plot.
@@ -67,11 +69,11 @@
 #' #### plot.type = 1: for few timepoints ####
 #' ateFit <- ate(fit, data = dtS, treatment = "X1",
 #'               times = c(1,2,5,10), se = TRUE, band = TRUE)
-#' ggplot2::autoplot(ateFit)
+#' plot(ateFit)
 #' \dontrun{
-#' ggplot2::autoplot(ateFit, band = FALSE)
-#' ggplot2::autoplot(ateFit, type = "diffRisk")
-#' ggplot2::autoplot(ateFit, type = "ratioRisk")
+#' plot(ateFit, band = FALSE)
+#' plot(ateFit, type = "diffRisk")
+#' plot(ateFit, type = "ratioRisk")
 #' }
 #' 
 #' #### plot.type = 2: when looking at all jump times ####
