@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  9 2024 (14:04) 
 ## Version: 
-## Last-Updated: Oct 21 2024 (09:46) 
+## Last-Updated: Jun  1 2026 (11:08) 
 ##           By: Brice Ozenne
-##     Update #: 169
+##     Update #: 176
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -220,8 +220,8 @@ decompressData <- function(object, newdata, type, diag, times, se, confint, band
 
     ## ** recover original profiles
     if(diag){
-        for(iType in type){ ## iType <- "cumhazard"
-            iNewIndex <- attr(newdata.index,"vectorwise") + (match(times, times.sorted)-1) * NROW(newdata)
+        iNewIndex <- attr(newdata.index,"vectorwise") + (match(times, times.sorted)-1) * NROW(newdata)
+        for(iType in type){ ## iType <- type[1]
             object[[iType]] <- cbind(object[[iType]][iNewIndex])
             if(se){
                 object[[paste(iType,"se",sep=".")]] <- cbind(object[[paste(iType,"se",sep=".")]][iNewIndex])

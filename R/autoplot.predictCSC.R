@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: maj 21 2026 (16:41) 
+## last-updated: Jun  1 2026 (11:46) 
 ##           By: Brice Ozenne
-##     Update #: 183
+##     Update #: 196
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -245,13 +245,25 @@ autoplot.predictCSC <- function(object,
         }
     }
 
+    ## *** normalize newdata to resemble one out of predictCox
+    if(!is.null(object$newdata) && !is.null(object$newdata$event)){
+        data.status <- data.frame(stop = object$newdata$time, status = object$newdata$event, strata = factor("1"))
+        ## set cause of interest as the second level
+        data.status$status <- factor(data.status$status, levels = c(levels(data.status$status)[1],object$cause,setdiff(levels(data.status$status),c(levels(data.status$status)[1],object$cause))))
+        ## restaure strata variable
+        if("strata" %in% names(object$newdata)){
+            data.status$strata <- object$newdata$strata
+        }
+    }else{
+        data.status <- NULL
+    }
     dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
                           outcome.lower = if(ci){object[[paste0(type,".lower")]]}else{NULL},
                           outcome.upper = if(ci){object[[paste0(type,".upper")]]}else{NULL},
                           outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
                           outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
                           newdata = newdata,
-                          status = object$newdata$event,
+                          data.status = data.status,
                           strata = object$strata,
                           times = object$times,
                           name.outcome = type,

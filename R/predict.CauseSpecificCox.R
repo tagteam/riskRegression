@@ -531,12 +531,21 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** compute CIF (aka absolute risk) or event-free survival
     vec.etimes.max <- apply(M.etimes.max,1,max) ## take the max because if not censored for one cause and last event equal to 1 then we have the full curve
+    
     if(type == "absRisk"){
+        if(!is.null(outCompress)){
+            times2 <- times.sorted
+        }else if(diag){
+            times2 <- times
+        }else{
+            times2 <- sort(times)            
+        }
+
         outCpp <- predictCIF_cpp(hazard = ls.hazard, 
                                  cumhazard = ls.cumhazard, 
                                  eXb = M.eXb, 
                                  strata = M.strata.num,
-                                 newtimes = if(diag){times}else{sort(times)}, 
+                                 newtimes = times2, 
                                  etimes = eventTimes, 
                                  etimeMax = vec.etimes.max, 
                                  t0 = landmark,
@@ -549,8 +558,9 @@ predict.CauseSpecificCox <- function(object,
                                  productLimit = product.limit>0,
                                  diag = diag,
                                  exportSurv = (se || band || iid || average.iid))
-    }else if(type == "survival" && object$surv.type=="hazard"){
-        
+
+    }else if(type == "survival" && object$surv.type=="hazard"){        
+
         if(!is.null(outCompress)){
             times2 <- times.sorted
         }else{
@@ -612,6 +622,13 @@ predict.CauseSpecificCox <- function(object,
         }else{  ## usual computation of the uncertainty even when CIF>1
             check.cif <- 0*outCpp$cif
         }
+        if(!is.null(outCompress)){
+            times3 <- times.sorted
+        }else if(diag){
+            times3 <- times
+        }else{
+            times3 <- Utimes
+        }
         out.seCSC <- calcSeCSC(object,
                                cif = check.cif,
                                hazard = ls.hazard,
@@ -622,7 +639,7 @@ predict.CauseSpecificCox <- function(object,
                                eXb = M.eXb,
                                new.LPdata = new.LPdata,
                                new.strata = M.strata.num,                               
-                               times = if(diag){times}else{Utimes},
+                               times = times3,
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
                                cause = index.cause,

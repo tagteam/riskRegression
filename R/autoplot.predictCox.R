@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: maj 21 2026 (16:55) 
+## last-updated: Jun  1 2026 (10:41) 
 ##           By: Brice Ozenne
-##     Update #: 1965
+##     Update #: 2044
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -442,7 +442,7 @@ autoplot.predictCox <- function(object,
                               outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
                               outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
                               newdata = newdata,
-                              status = object$newdata$status,
+                              data.status = object$newdata,
                               strata = object$strata,
                               times = object$times,
                               name.outcome = type,
@@ -498,7 +498,7 @@ autoplot.predictCox <- function(object,
 predict2melt <- function(outcome, name.outcome,
                          ci, outcome.lower, outcome.upper,
                          band, outcome.lowerBand, outcome.upperBand,
-                         newdata, status, strata, times, 
+                         newdata, data.status, strata, times, 
                          group.by, digits, diag, baseline){
 
     patterns <- NULL ## [:CRANtest:] data.table
@@ -595,9 +595,44 @@ predict2melt <- function(outcome, name.outcome,
         ## create twice the same as data.table does not like .SDcols = "name with a ,"
     }
 
-    ## *** status + covariates from original data
-    if(!is.null(status)){ 
-        dataL$status <- status        
+    ## *** add status from the original data to the jump information
+    if(!is.null(data.status$status)){
+
+        ## prepare check for ties
+        if("strata" %in% names(dataL)){
+            vec.strataStop <- paste(data.status$strata,data.status$stop, sep = "_XXX.XXX_")
+        }else{
+            vec.strataStop <- data.status$stop
+            dataL$strata <- unique(data.status$strata)
+        }
+        
+        if(any(duplicated(vec.strataStop))){ ## ties
+
+            ## keep track of original levels
+            if(is.factor(data.status$status)){
+                level.status <- levels(data.status$status)
+            }else{
+                level.status <- NULL
+            }
+            ## combine events occuring at the same time
+            data.status <- do.call(rbind,by(data.status, vec.strataStop, function(iData){
+                data.frame(strata = iData$strata[1], stop = iData$stop[1], status = paste(sort(unique(iData$status)), collapse = "."))
+            }, simplify = FALSE))
+            ## NOTE: because of sort NA are converted to "": sort(NA) is empty          
+            data.status[data.status$status == "","status"] <- NA
+
+            ## restaure original levels
+            if(!is.null(level.status)){
+                data.status$status <- factor(data.status$status, levels = c(level.status,setdiff(unique(data.status$status),level.status)))
+                data.status$status.original <- data.status$status %in% level.status
+            }else{
+                data.status$status.original <- data.status$status %in% 0:1
+            }
+        }else{
+            data.status$status.original <- TRUE
+        }
+        dataL <- merge(x = dataL, y = data.status[c("strata","stop","status","status.original")],
+                       by.x = c("strata","time"), by.y = c("strata","stop"))
     }
 
     ## ** export
@@ -834,16 +869,26 @@ predict2plot <- function(dataL, name.outcome,
                                                    linewidth = size.estimate)
 
         if("status" %in% names(dataL) &  size.point>0){
-            if(is.numeric(dataL$status)){ ## predictCox  (0,1)
-                dataL$status <- as.character(dataL$status)
-            }
-            gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL$status)],
-                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.byL]], shape = .data$status, group = .data[[group.byL]]), size = size.point)
+            dataL.status <- dataL[!is.na(dataL$status)]
+
             if(is.factor(dataL$status)){
-                gg.base <- gg.base + ggplot2::scale_shape_manual(name = "Type of event", breaks = levels(dataL$status), values = shape.point)
+                dataL.status[dataL.status$status.original == FALSE,"status"] <- levels(dataL.status$status)[2]
+                status.break <- levels(dataL$status)
+                labels.break <- levels(dataL$status)
+                shape.point <- shape.point[1:length(status.break)]
             }else{
-                gg.base <- gg.base + ggplot2::scale_shape_manual(name = "Type of event", breaks = c(0,1), values = shape.point[1:2], labels = c("Censoring","Event"))
+                if(is.numeric(dataL.status$status)){ ## predictCox  (0,1)
+                    dataL.status$status <- as.character(dataL.status$status)
+                }            
+                dataL.status[dataL.status$status.original == FALSE,"status"] <- "1" ## ties containing censoring and event are displayed as event
+                status.break <- c("0","1")
+                labels.break <- c("Censoring","Event")
+                shape.point <- shape.point[1:2]
             }
+            gg.base <- gg.base + ggplot2::geom_point(data = dataL.status,
+                                                     mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.byL]], shape = .data$status, group = .data[[group.byL]]), size = size.point)
+            gg.base <- gg.base + ggplot2::scale_shape_manual(name = "Type of event", breaks = status.break, values = shape.point, labels = labels.break)
+            
         }else if(size.point>0){
             gg.base <- gg.base + ggplot2::geom_point(data = dataL[!is.na(dataL[[name.outcome]])],
                                                      mapping = ggplot2::aes(x = .data$time, y = .data[[name.outcome]], color = .data[[group.byL]], group = .data[[group.byL]]), size = size.point)
@@ -912,7 +957,7 @@ predict2plot <- function(dataL, name.outcome,
             atRisk <- ggBUILD.base$layout$panel_params[[1]]$x$breaks
         }
 
-        df.atRisk <- do.call(rbind,lapply(atRisk, function(iT){ ## iT <- 1
+        df.atRisk <- do.call(rbind,lapply(atRisk, function(iT){ ## iT <- atRisk[1]
             if("strata" %in% names(dataL)){
                 iOut <- data.frame(time = iT, y = yatRisk - space.atRisk[2] * 0:(length(levels(dataL$strata))-1), strata = levels(dataL$strata), atRisk = tapply(dataL$time>=iT,dataL$strata,sum))
             }else{
