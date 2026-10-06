@@ -16,7 +16,7 @@ test_that("Testing binary data with cv5", {
     input.m2 <- append(list(formula = Y ~ X3 + X5 + X6), input.m)
     m1 <- do.call(glm, input.m1)
     m2 <- do.call(glm, input.m2)
-    input.score <- list(object = list("m(X1+X2+X7+X9)"=m1,"m(X3+X5+X6)"=m2), formula = Y ~ 1, data=train.data, conf.int=TRUE, progress.bar=NULL, split.method="cv5", B=100)
+    input.score <- list(object = list("m(X1+X2+X7+X9)"=m1,"m(X3+X5+X6)"=m2), formula = Y ~ 1, data=train.data, conf.int=TRUE, progress.bar=NULL, split.method="cv5", B=100,keep = "splitindex")
     x1 <- do.call(Score, input.score)
     expect_output(print(x1))
 })
