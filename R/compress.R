@@ -33,14 +33,24 @@ compressData <- function(object, newdata, times, diag, average.iid,
         }
         test.allCategorical <- TRUE
     }else if(inherits(object,"CauseSpecificCox")){
-        ls.infoVar <- lapply(object$model, function(iO){coxVariableName(iO, model.frame = coxModelFrame(iO))})
+        ls.infoVar <- lapply(object$models, function(iO){coxVariableName(iO, model.frame = coxModelFrame(iO))})
         test.allCategorical <- all(sapply(ls.infoVar, function(iInfo){length(intersect(iInfo$lpvars, iInfo$lpvars.original))==0}))
 
         if(test.allCategorical || (!is.null(level) && level == "minimal")){
             ## *** covariates
-            keep.col <- !duplicated(do.call("c",lapply(ls.infoVar, "[[","lpvars.original")))
-            if(length(keep.col)>0){
-                newdata.X <- do.call(cbind,lapply(object$model, FUN = function(iO){stats::model.matrix(iO, data = newdata)}))[,keep.col,drop=FALSE]
+            ## Use the variables from the original data rather than columns of
+            ## the design matrices.  The latter do not have a one-to-one
+            ## correspondence with lpvars.original (in particular for
+            ## interactions), so selecting them from a cbind'ed design matrix
+            ## can silently omit predictors.  Profiles that differ only in an
+            ## omitted predictor are then incorrectly treated as identical.
+            name.lpvars <- unique(unlist(lapply(ls.infoVar, "[[", "lpvars.original")))
+            if(length(name.lpvars)>0){
+                if(any(name.lpvars %in% names(newdata) == FALSE)){
+                    stop("Incorrect argument \'newdata\': missing column(s) \"",
+                         paste(setdiff(name.lpvars,names(newdata)), collapse = "\", \""),"\". \n")
+                }
+                newdata.X <- as.data.frame(newdata)[,name.lpvars,drop=FALSE]
             }else{
                 newdata.X <- NULL
             }

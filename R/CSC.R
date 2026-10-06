@@ -359,6 +359,26 @@ CSC <- function(formula,
         extra.args <- extra.args[!duplicated(names(extra.args))]
         if (fitterX=="coxph"){
             fit <- do.call("coxph",c(args,list(x=TRUE,y=TRUE),extra.args))
+            ## A factor interaction with a stratification variable can be
+            ## represented with aliased columns solely because of the order
+            ## in which model.matrix expands the terms. Retry with an
+            ## equivalent term order when that is the source of the NA
+            ## coefficients. Genuine singular fits are left unchanged.
+            if(anyNA(stats::coef(fit)) && is.null(extra.args$init) &&
+               is.null(extra.args$tt)){
+                formula.reordered <- .reorderCoxFormula(formulaXX, workData)
+                if(!is.null(formula.reordered)){
+                    fit.reordered <- try(do.call("coxph",
+                                                 c(list(formula.reordered, data = workData),
+                                                   list(x = TRUE, y = TRUE), extra.args)),
+                                          silent = TRUE)
+                    if(!inherits(fit.reordered, "try-error") &&
+                       !anyNA(stats::coef(fit.reordered))){
+                        formulaXX <- formula.reordered
+                        fit <- fit.reordered
+                    }
+                }
+            }
         } else if (fitterX=="cph") {
             fit <- do.call("cph",c(args,list(surv=TRUE,x=TRUE,y=TRUE),extra.args))
         } else if (fitterX=="phreg") {
@@ -388,4 +408,75 @@ CSC <- function(formula,
     out
 }
 
+## Internal helper used when coxph encounters aliases caused by term order.
+.reorderCoxFormula <- function(formula, data){
+    ## A factor-by-factor interaction is expanded differently depending on
+    ## the order of the terms in a formula. When one of the factors is also
+    ## used for stratification, putting that interaction first can create
+    ## columns that are aliases of the stratum baselines. survival::coxph
+    ## then returns NA coefficients although an equivalent, identifiable
+    ## parameterization exists.
+    terms.object <- try(stats::terms(formula, data = data,
+                                     specials = c("strata", "tt", "pspline", "ridge")),
+                        silent = TRUE)
+    if(inherits(terms.object, "try-error")){
+        return(NULL)
+    }
 
+    term.labels <- attr(terms.object, "term.labels")
+    if(length(term.labels) == 0L || any(term.labels == ".") ||
+       !any(grepl(":", term.labels))){
+        return(NULL)
+    }
+
+    strata.labels <- term.labels[grepl("^strata\\(", term.labels)]
+    if(length(strata.labels) == 0L){
+        return(NULL)
+    }
+    strata.vars <- unique(unlist(lapply(strata.labels, function(term){
+        all.vars(stats::as.formula(paste0("~", term),
+                                   env = environment(formula)))
+    })))
+    if(length(strata.vars) == 0L){
+        return(NULL)
+    }
+
+    model.frame <- try(stats::model.frame(formula, data = data,
+                                          na.action = stats::na.pass),
+                       silent = TRUE)
+    if(inherits(model.frame, "try-error")){
+        return(NULL)
+    }
+
+    term.has.anchor <- vapply(term.labels, function(term){
+        term.vars <- intersect(all.vars(stats::as.formula(paste0("~", term),
+                                                           env = environment(formula))),
+                               names(model.frame))
+        has.strata.var <- !grepl("^strata\\(", term) &&
+            any(term.vars %in% strata.vars)
+        has.numeric.var <- any(vapply(term.vars, function(var){
+            is.numeric(model.frame[[var]]) || is.integer(model.frame[[var]])
+        }, logical(1)))
+        has.strata.var && has.numeric.var
+    }, logical(1))
+
+    if(any(term.has.anchor) == FALSE){
+        return(NULL)
+    }
+
+    ## Terms carrying a numeric interaction with a stratification variable
+    ## must be seen first. The remaining terms retain a deterministic order.
+    new.labels <- term.labels[order(!term.has.anchor,
+                                    grepl("^strata\\(", term.labels),
+                                    term.labels)]
+    if(identical(new.labels, term.labels)){
+        return(NULL)
+    }
+
+    response <- paste(deparse(formula[[2L]]), collapse = "")
+    rhs <- paste(new.labels, collapse = " + ")
+    if(attr(terms.object, "intercept") == 0L){
+        rhs <- paste("0 +", rhs)
+    }
+    stats::as.formula(paste(response, "~", rhs), env = environment(formula))
+}

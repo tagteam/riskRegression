@@ -85,6 +85,57 @@ test_that("strat and strata",{
     expect_equal(ignore_attr=TRUE,pa,pb,tolerance=1e-6)
 })
 
+test_that("factor interactions with strata are identifiable",{
+    data(Melanoma)
+    Melanoma.numeric <- Melanoma
+    Melanoma.numeric$ulcer <- as.integer(Melanoma.numeric$ulcer == "present")
+    Melanoma.numeric$epicel <- as.integer(Melanoma.numeric$epicel == "present")
+    csc.formula <- list(
+        Hist(time,status) ~ sex:(ulcer*age + logthick + epicel) + strata(sex),
+        Hist(time,status) ~ sex:(ulcer*age + logthick + epicel) + strata(sex)
+    )
+
+    fit.factor <- CSC(csc.formula, data = Melanoma)
+    fit.numeric <- CSC(csc.formula, data = Melanoma.numeric)
+
+    expect_true(all(vapply(coef(fit.factor), function(x){all(is.finite(x))}, logical(1))))
+    for(iCause in 1:2){
+        p.factor <- predictRisk(fit.factor, newdata = Melanoma[1:20,],
+                                times = c(100,1000,3000), cause = iCause,
+                                product.limit = FALSE)
+        p.numeric <- predictRisk(fit.numeric, newdata = Melanoma.numeric[1:20,],
+                                 times = c(100,1000,3000), cause = iCause,
+                                 product.limit = FALSE)
+        expect_equal(ignore_attr = TRUE, p.factor, p.numeric, tolerance = 1e-8)
+    }
+})
+
+test_that("large stratified predictions keep all covariates when compressing newdata",{
+    data(Melanoma)
+    Melanoma$ulcer <- as.integer(Melanoma$ulcer == "present")
+    Melanoma$epicel <- as.integer(Melanoma$epicel == "present")
+    csc.stratified <- CSC(list(
+        Hist(time,status) ~ sex:(ulcer*age + logthick + epicel) + strata(sex),
+        Hist(time,status) ~ sex:(ulcer*age + logthick + epicel) + strata(sex)
+    ), data = Melanoma)
+    newdata <- data.frame(
+        age = rep(seq(4,95,length.out = 100), length.out = 5000),
+        logthick = rep(seq(-2,2,length.out = 101), length.out = 5000),
+        sex = factor(rep("Male", 5000), levels = levels(Melanoma$sex)),
+        ulcer = rep(0:1, length.out = 5000),
+        epicel = rep(0:1, length.out = 5000)
+    )
+
+    p.compressed <- predictRisk(csc.stratified, newdata = newdata,
+                                times = 4000, cause = 1,
+                                product.limit = FALSE)
+    p.full <- predictRisk(csc.stratified, newdata = newdata,
+                          times = 4000, cause = 1,
+                          product.limit = FALSE,
+                          store = list(data = "full"))
+    expect_equal(ignore_attr = TRUE, p.compressed, p.full, tolerance = 1e-8)
+})
+
 # test_that("CSC many character valued causes",{
 #     set.seed(17)
 #     d <- prodlim::SimCompRisk(100)
@@ -93,7 +144,6 @@ test_that("strat and strata",{
 #     m2 <- CSC(Hist(time,event)~strata(X1)+X2,data=d,surv.type="surv",cause="b")
 #     expect_equal(ignore_attr=TRUE,round(coef(m1$models[[2]])[[1]],6),0.535059)
 # })
-
 
 
 
