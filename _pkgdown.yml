@@ -1,0 +1,194 @@
+url: ~
+template:
+  bootstrap: 5
+
+reference:
+- title: "Model Fitting"
+  desc: "Functions for fitting risk regression and survival models"
+  contents:
+  - CSC
+  - FGR
+  - riskRegression
+  - wglm
+  - GLMnet
+  - Hal9001
+  - SuperPredictor
+  - Cforest
+  - Ctree
+  - selectCox
+
+- title: "Prediction"
+  desc: "Compute predicted risks, survival probabilities, and hazards"
+  contents:
+  - predictCox
+  - predictRisk
+  - predict.CauseSpecificCox
+  - predict.FGR
+  - predict.riskRegression
+  - predictCoxPL
+  - saveCoxConfidential
+
+- title: "Prediction Performance (Score)"
+  desc: "Assess and compare risk predictions using AUC, Brier score, calibration, and ROC"
+  contents:
+  - Score
+  - IPA
+  - getSplitMethod
+
+- title: "Average Treatment Effects"
+  desc: "G-formula, IPTW, and augmented estimators for causal contrasts"
+  contents:
+  - ate
+  - confint.ate
+  - coef.ate
+  - vcov.ate
+  - anova.ate
+  - model.tables.ate
+  - as.data.table.ate
+  - weights.ate
+  - autoplot.ate
+  - print.ate
+  - summary.ate
+  - IPWbox
+  - drop1.IPWbox
+
+- title: "Weighted GLM Methods"
+  desc: "Methods for IPCW-weighted logistic regression objects"
+  contents:
+  - confint.wglm
+  - coef.wglm
+  - vcov.wglm
+  - iid.wglm
+  - information.wglm
+  - model.tables.wglm
+  - weights.wglm
+  - score.wglm
+
+- title: "Inference & Influence Functions"
+  desc: "Influence-function-based standard errors and confidence intervals"
+  contents:
+
+  - iidCox
+  - is.iidCox
+  - influenceTest
+  - confint.predictCox
+  - confint.predictCSC
+  - confint.influenceTest
+  - as.data.table.influenceTest
+  - calcSeCox
+  - calcSeCSC
+  - boot2pvalue
+
+- title: "Visualization (ggplot2)"
+  desc: "Autoplot methods for ggplot2-based graphics"
+  contents:
+  - autoplot.Score
+  - autoplot.predictCox
+  - autoplot.predictCSC
+
+- title: "Visualization (Base Graphics)"
+  desc: "Traditional plot functions for model assessment"
+  contents:
+  - plotROC
+  - plotAUC
+  - plotBrier
+  - plotCalibration
+  - plotRisk
+  - plotPredictRisk
+  - plotEffects
+  - boxplot.Score
+  - plot.riskRegression
+  - riskLevelPlot
+
+- title: "Censoring Weights"
+  desc: "Inverse probability of censoring weighting"
+  contents:
+  - ipcw
+  - subjectWeights
+
+- title: "Data Synthesis & Simulation"
+  desc: "Generate synthetic and simulated datasets"
+  contents:
+  - synthesize
+  - simsynth
+  - saveSynth
+  - SmcFcs
+  - sampleData
+  - simMelanoma
+  - simActiveSurveillance
+  - simPBC
+
+- title: "Datasets"
+  desc: "Example datasets included in the package"
+  contents:
+  - Melanoma
+  - Paquid
+
+- title: "Print & Summary Methods"
+  desc: "Display methods for model objects"
+  contents:
+  - print.CauseSpecificCox
+  - print.FGR
+  - print.GLMnet
+  - print.IPA
+  - print.Score
+  - print.influenceTest
+  - print.predictCSC
+  - print.predictCox
+  - print.riskRegression
+  - print.subjectWeights
+  - print.synth_code
+  - summary.FGR
+  - summary.Score
+  - summary.riskRegression
+  - coef.CauseSpecificCox
+  - coef.riskRegression
+
+- title: "Conversion to data.table"
+  desc: "Convert prediction objects to data.table format"
+  contents:
+  - as.data.table.predictCox
+  - as.data.table.predictCSC
+
+- title: "Cox Model Utilities"
+  desc: "Low-level helper functions for Cox model internals"
+  contents:
+  - coxBaseEstimator
+  - coxCenter
+  - coxFormula
+  - coxLP
+  - coxModelFrame
+  - coxN
+  - coxSpecial
+  - coxStrata
+  - coxStrataLevel
+  - coxVarCov
+  - coxVariableName
+  - model.matrix.cph
+  - model.matrix.phreg
+  - terms.phreg
+  - reconstructData
+  - penalizedS3
+
+- title: "Internal Utilities"
+  desc: "Helper functions and C++ internals"
+  contents:
+  - riskRegression-package
+  - riskRegression.options
+  - baseHaz_cpp
+  - colCenter_cpp
+  - colMultiply_cpp
+  - colScale_cpp
+  - colCumSum
+  - rowCenter_cpp
+  - rowMultiply_cpp
+  - rowScale_cpp
+  - rowCumSum
+  - rowSumsCrossprod
+  - rowPaste
+  - subsetIndex
+  - discreteRoot
+  - transformCIBP
+  - selectJump
+  - splitStrataVar
+  - SurvResponseVar
