@@ -15,6 +15,7 @@ List getIC0AUC(NumericVector time,
                         NumericVector Gtau,
                         double auc) {
   int n = time.size();
+  double n2 = double (n) * n; // n*n in int overflows for n > 46340
   NumericVector ic0(n), ic0Case(n), ic0Control(n), weights(n);
   LogicalVector cases(n), controls1(n), controls2(n);
   double muCase{}, muControls{}, nu{};
@@ -45,7 +46,7 @@ List getIC0AUC(NumericVector time,
     weights[i] = 1.0/Gtau[i];
     muControls += weights[i];
   }
-  double mu = muCase*muControls / (double (n*n));
+  double mu = muCase*muControls / n2;
   nu = auc * mu;
 
   IntegerVector ordering(n);
@@ -146,6 +147,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
   // Thomas' code from IC of Nelson-Aalen estimator, i.e. calculate the influence function of the hazard
   // initialize first time point t=0 with data of subject i=0
   int n = time.size();
+  double n2 = double (n) * n; // n*n in int overflows for n > 46340
   NumericVector icpart(n);
   arma::uvec sindex(n,fill::zeros);
   arma::vec utime=unique(time);
@@ -154,7 +156,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
   arma::vec MC_term2(nu,fill::zeros);
   getInfluenceFunctionKM(time,status,atrisk,MC_term2,sindex,utime);
   double term2numpart1{}, term2denpart1{};
-  double term2numpart2 = nu1 * (double (n*n)); //{}, term3num{}, term2denpart2{}, term3den{};
+  double term2numpart2 = nu1 * n2; //{}, term3num{}, term2denpart2{}, term3den{};
   double term2denpart2 = muCase;
   double term3numpart1{}, term3denpart1{};
   double term3numpart2{};
@@ -163,10 +165,10 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
   for (int i = startControls1; i < nControls; i++){ // control with time > t
     sumPartNum += ic0Controls[i];
   }
-  term3numpart2 = nu1 * (double (n*n)) - sumPartNum; //{}, term3num{}, term2denpart2{}, term3den{};
+  term3numpart2 = nu1 * n2 - sumPartNum; //{}, term3num{}, term2denpart2{}, term3den{};
   double sumPartDen = double ((n-(firsthit+1)))/Gtau;
   double term3denpart2 = muControls - sumPartDen;
-  double mu = muCase*muControls / (n*n);
+  double mu = muCase*muControls / n2;
   int tieIter{}, tieIterCases{}, tieIterControls{};
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
@@ -195,10 +197,10 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
     else {
       fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
     }
-    term2num = 1.0 / (n*n) * (term2numpart1+fihattau*term2numpart2); // is wrong?
-    term2den = 1.0 / (n*n) * (term2denpart1+fihattau*term2denpart2)*muControls; // ok
-    term3num = 1.0 / (n*n) * (term3numpart1+fihattau*term3numpart2+fihattau*sumPartNum); // is ok 
-    term3den = 1.0 / (n*n) * (term3denpart1+fihattau*term3denpart2+fihattau*sumPartDen)*muCase; // is ok 
+    term2num = 1.0 / n2 * (term2numpart1+fihattau*term2numpart2); // is wrong?
+    term2den = 1.0 / n2 * (term2denpart1+fihattau*term2denpart2)*muControls; // ok
+    term3num = 1.0 / n2 * (term3numpart1+fihattau*term3numpart2+fihattau*sumPartNum); // is ok
+    term3den = 1.0 / n2 * (term3denpart1+fihattau*term3denpart2+fihattau*sumPartDen)*muCase; // is ok
     // Rcout << term2num << "\n";
     // Rcout << term2den<< "\n\n";
     // Rcout << term3num<< "\n";

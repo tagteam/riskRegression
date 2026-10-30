@@ -56,7 +56,7 @@ getInfluenceFunction.AUC.censoring.term <- function(time,
         }
         ic0Case <- IFcalculationList[["ic0Case"]]
         ic0Control <- IFcalculationList[["ic0Control"]]
-        Phi <- IFcalculationList[["muCase"]] * IFcalculationList[["muControls"]] / (n*n)
+        Phi <- IFcalculationList[["muCase"]] * IFcalculationList[["muControls"]] / (n^2)
         weights <- IFcalculationList[["weights"]]
         muCase <- IFcalculationList[["muCase"]]
         muControls <- IFcalculationList[["muControls"]]
