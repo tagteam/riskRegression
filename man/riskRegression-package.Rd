@@ -20,6 +20,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Thomas Alexander Gerds \email{tag@biostat.ku.dk}
   \item Johan Sebastian Ohlendorff
   \item Brice Ozenne \email{broz@sund.ku.dk}
 }
