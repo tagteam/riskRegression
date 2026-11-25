@@ -73,8 +73,8 @@ statistics to apply to the predicted risks. Choices are \code{"risks"}, \code{"I
 \item \code{"riskQuantile"} calculates
 time-point specific boxplots for the
 predicted risks (or biomarker values) conditional on the outcome at the time-point.
-\item \code{"ibs"} calculates integrated Brier scores across the time points at which the Brier score is computed. This works only with
-time-to-event outcome and the results depend on the argument \code{times}.
+\item \code{"ibs"} calculates integrated Brier scores for time-to-event outcomes using the trapezoidal rule on the evaluation grid.
+At each positive evaluation time, the integral from zero is divided by that time. If zero is absent from the grid, the Brier score at zero is assumed to be zero.
 }
 Set to \code{NULL} to avoid estimation of summary statistics.}
 
