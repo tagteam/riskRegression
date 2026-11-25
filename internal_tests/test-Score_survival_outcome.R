@@ -55,34 +55,30 @@ test_that("survival outcome, Brier Score, external prediction",{
 # {{{ integrated Brier score
 
 test_that("integrated Brier score",{
-    if (!requireNamespace("pec",quietly=TRUE)){
-        message("Package pec not installed. Skip this test.")
-        p <- q <- 1
-    }else{
-        set.seed(18)
-        trainSurv <- sampleData(100,outcome="survival")
-        testSurv <- sampleData(40,outcome="survival")
-        library(pec)
-        cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-        cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
-        ttt = sort(unique(testSurv$time))
-        # remove last obs to avoid NA predictions
-        ttt = ttt[-length(ttt)]
-        suppressWarnings(xs <- Score(list("c1"=cox1,"c2"=cox2),
-                                     formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
-                                     se.fit=FALSE,
-                                     summary="ibs",
-                                     times=ttt))
-        library(prodlim)
-        xp=pec::pec(list("c1"=cox1,"c2"=cox2),
-                    formula=Surv(time,event)~1,data=testSurv,
-                    times=ttt)
-        a1 <- as.numeric(ibs(xp,times=ttt,models="c1"))
-        b1 <- xs$Brier$score[model=="c1"][["IBS"]]
-        q <- as.numeric(c(a1,use.names=FALSE))
-        p <- c(b1)
+    set.seed(18)
+    trainSurv <- sampleData(100, outcome = "survival")
+    testSurv <- sampleData(40, outcome = "survival")
+    cox1 <- coxph(Surv(time, event) ~ X1 + X2 + X7 + X9, data = trainSurv, y = TRUE, x = TRUE)
+    cox2 <- coxph(Surv(time, event) ~ X3 + X5 + X6, data = trainSurv, y = TRUE, x = TRUE)
+    times <- sort(unique(testSurv$time))
+    # Remove the last observation to avoid NA predictions.
+    times <- times[-length(times)]
+    scores <- Score(list(c1 = cox1, c2 = cox2), formula = Surv(time, event) ~ 1,
+                    data = testSurv, conf.int = FALSE, se.fit = FALSE,
+                    metrics = "brier", summary = "ibs", times = times)$Brier$score
+
+    for (model.name in unique(scores$model)) {
+        model.score <- scores[model == model.name]
+        # Sum the trapezoids separately at each horizon using the model's pointwise Brier scores.
+        expected <- vapply(model.score$times, function(horizon) {
+            grid <- model.score[times <= horizon]
+            # The grid starts after zero, so the first trapezoid starts at Brier(0) = 0.
+            widths <- diff(c(0, grid$times))
+            left <- c(0, head(grid$Brier, -1L))
+            sum(widths * (left + grid$Brier) / 2) / horizon
+        }, numeric(1))
+        expect_equal(model.score$IBS, expected)
     }
-    expect_equal(ignore_attr=TRUE,p,q)
 })
 
 # }}}

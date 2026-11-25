@@ -3,7 +3,7 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: feb 13 2026 (12:40) 
+## Last-Updated: feb 13 2026 (12:40)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 57
 #----------------------------------------------------------------------
@@ -107,32 +107,8 @@ computePerformance <- function(DT,
         }
     }
     ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
-    if (ibs){
-        Dint <- function(x,y,range,na.omit=FALSE){
-            if (is.null(range)) range=c(x[1],x[length(x)])
-            ##   integrate a step function f with
-            ##   values y=f(x) between range[1] and range[2]
-            start <- max(range[1],min(x))
-            Stop <- min(range[2],max(x))
-            if ((Stop-start)<=0)
-                return(0)
-            else{
-                Y=y[x>=start & x<Stop]
-                X=x[x>=start & x<Stop]
-                if (na.omit){
-                    X=X[!is.na(Y)]
-                    Y=Y[!is.na(Y)]
-                } else if (any(is.na(Y))|| any(is.na(X))){
-                    return(NA)
-                }
-                return(1/(Stop-start) * sum(Y*diff(c(X,Stop))))
-            }
-        }
-        if (response.type!="binary"){
-            out[["Brier"]][["score"]][,IBS:=sapply(times,function(t){
-                Dint(x=c(0,times),y=c(0,Brier),range=c(0,t))
-            }),by=c("model")]
-        }
+    if (ibs && response.type != "binary" && "Brier" %in% metrics){
+        out[["Brier"]][["score"]][, IBS := integratedBrier(times, Brier), by = "model"]
     }
     if (ipa == TRUE) {
         out[["IPA"]] <- IPACompute(brier.results = copy(out[["Brier"]]),
@@ -155,6 +131,17 @@ computePerformance <- function(DT,
     out[]
 }
 
+## Compute the cumulative trapezoidal integral on the sorted grid for one model
+integratedBrier <- function(times, brier){
+    positive <- times > 0
+    brier.zero <- if (any(times == 0)) brier[times == 0] else 0
+    brier <- c(brier.zero, brier[positive])
+    delta_t <- diff(c(0, times[positive]))
+    areas <- delta_t * (head(brier, -1L) + tail(brier, -1L)) / 2
+    ibs <- numeric(length(times))
+    ibs[positive] <- cumsum(areas) / times[positive]
+    ibs
+}
 
 #----------------------------------------------------------------------
 ### computePerformance.R ends here

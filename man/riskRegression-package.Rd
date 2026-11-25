@@ -34,6 +34,7 @@ Other contributors:
   \item John Muschelli [contributor]
   \item Ulla Brasch Mogensen [contributor]
   \item Asbjørn Risom \email{ar@math.ku.dk} [contributor]
+  \item John Zobolas \email{bblodfon@gmail.com} [contributor]
 }
 
 }
