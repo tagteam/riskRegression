@@ -20,7 +20,6 @@ Useful links:
 
 Authors:
 \itemize{
-  \item Thomas Alexander Gerds \email{tag@biostat.ku.dk}
   \item Johan Sebastian Ohlendorff
   \item Brice Ozenne \email{broz@sund.ku.dk}
 }
@@ -34,7 +33,7 @@ Other contributors:
   \item John Muschelli [contributor]
   \item Ulla Brasch Mogensen [contributor]
   \item Asbjørn Risom \email{ar@math.ku.dk} [contributor]
-  \item John Zobolas \email{bblodfon@gmail.com} [contributor]
+  \item John Zobolas [contributor]
 }
 
 }

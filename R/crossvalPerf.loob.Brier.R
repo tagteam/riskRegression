@@ -33,7 +33,8 @@ crossvalPerf.loob.Brier <- function(times,
                                     keep.residuals,
                                     conservative,
                                     cens.model,
-                                    cause){
+                                    cause,
+                                    ibs.method="left"){
     riskRegression_status <- riskRegression_time <- residuals <- risk <- WTi <- riskRegression_event <- riskRegression_event <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- reference <- riskRegression_status0 <- IBS <- Wt <- .I <- response <- NULL
     ## sum across bootstrap samples where subject i is out of bag
     if (cens.type=="rightCensored"){
@@ -139,7 +140,7 @@ crossvalPerf.loob.Brier <- function(times,
     }
     ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
     if (ibs && response.type != "binary"){
-        score.loob[, IBS := integratedBrier(times, Brier), by = "model"]
+        score.loob[, IBS := integratedBrier(times, Brier, method = ibs.method), by = "model"]
     }
     
     data.table::setkeyv(score.loob,byvars)

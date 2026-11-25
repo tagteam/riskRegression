@@ -37,10 +37,19 @@
 ##'     \item \code{"riskQuantile"} calculates
 ##'     time-point specific boxplots for the
 ##'     predicted risks (or biomarker values) conditional on the outcome at the time-point.
-##'     \item \code{"ibs"} calculates integrated Brier scores for time-to-event outcomes using the trapezoidal rule on the evaluation grid.
+##'     \item \code{"ibs"} calculates integrated Brier scores for time-to-event outcomes on the evaluation grid using the method specified by \code{ibs.method}.
 ##'     At each positive evaluation time, the integral from zero is divided by that time. If zero is absent from the grid, the Brier score at zero is assumed to be zero.
 ##'     }
 ##'     Set to \code{NULL} to avoid estimation of summary statistics.
+##' @param ibs.method Integration method for \code{summary="ibs"}.
+##'     The default \code{"left"} preserves the original \code{Dint} calculation:
+##'     the Brier score at the left endpoint is held constant over each interval.
+##'     Alternatively, \code{"trapezoidal"} averages the Brier scores at both endpoints.
+##'     Both methods divide the integral from zero by the evaluation time and return zero at time zero.
+##'     With \code{"left"}, a warning recommends trapezoidal integration when the grid omits
+##'     observed event or censoring times between zero and the largest evaluation time,
+##'     unless \code{verbose <= 0} (including \code{verbose=FALSE}). These are potential
+##'     Brier score change times; prediction models can also change between observed times.
 ##' @param plots Character vector specifying for which plots to put data into the result.
 ##'     Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}.
 ##'     In addition, one can plot AUC and Brier score as function of time as soon as
@@ -533,6 +542,7 @@ Score.list <- function(object,
                        roc.grid=switch(roc.method,"vertical"=seq(0,1,.01),"horizontal"=seq(1,0,-.01)),
                        cutpoints = NULL,
                        verbose = 2,
+                       ibs.method = c("left", "trapezoidal"),
                        ...){
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=riskRegression_time=riskRegression_time_status=riskRegression_ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=riskRegression_event=residuals=event=riskRegression_status = j = NULL
     # }}}
@@ -560,6 +570,7 @@ Score.list <- function(object,
     }else{
         ibs <- FALSE
     }
+    ibs.method <- match.arg(ibs.method)
     ## IPA
     if (length(posRR <- grep("^ipa$|^rr$|^r2|rsquared$",summary,ignore.case=TRUE))>0){
         if (!null.model) stop("Need the null model to compute IPA/R^2 but argument 'null.model' is FALSE.")
@@ -886,6 +897,14 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             NT <-  length(times)
             if (NT==0)
                 stop("No evaluation time before maximal end of followup.")
+            ## Check once, before any resampling, for omitted potential Brier change times.
+            if (ibs && ibs.method == "left" && verbose > 0 &&
+                any(!eventTimes[eventTimes > 0 & eventTimes < max(times)] %in% times)){
+                warning("IBS is calculated using the original left-endpoint (Dint) integration, ",
+                        "but 'times' omits observed event or censoring times at which the Brier score may change. ",
+                        "Trapezoidal integration is recommended: set ibs.method = \"trapezoidal\". ",
+                        "Set verbose = FALSE to suppress this warning.", call. = FALSE)
+            }
         } else{
             stop("Landmark updating not yet implemented.")
         }
@@ -968,7 +987,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         }else{
             off.predictions <- "None"
         }
-        noSplit <- computePerformance(DT=DT,N=N,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=se.fit,conservative=conservative,cens.model=cens.model,keep.residuals=keep.residuals,keep.vcov=keep.vcov,keep.iid=keep.iid,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ipa = ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=NULL,cutpoints=cutpoints)
+        noSplit <- computePerformance(DT=DT,N=N,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=se.fit,conservative=conservative,cens.model=cens.model,keep.residuals=keep.residuals,keep.vcov=keep.vcov,keep.iid=keep.iid,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ibs.method=ibs.method,ipa = ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=NULL,cutpoints=cutpoints)
         if (verbose>2) message("computed apparent performance")
     }
     # }}}
@@ -1087,14 +1106,16 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         # }}}
         # {{{ Leave-one-out bootstrap performance calculation
         if (split.method$internal.name =="crossval" && B == 1){
-            crossvalPerf <- computePerformance(DT=DT.B,N=N,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=se.fit,conservative=conservative,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid = FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=NULL)
+            crossvalPerf <- computePerformance(DT=DT.B,N=N,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=se.fit,conservative=conservative,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid = FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ibs.method=ibs.method,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=NULL)
         } else {
             if (split.method$internal.name %in% c("LeaveOneOutBoot","crossval")){
                 if (verbose>1) message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",NROW(DT.B)," rows.",ifelse(NROW(DT.B)>1000000," This may take a while ..."," This should be fast ...")))
                 crossvalPerf <- lapply(metrics, function(m){
                     # either crossvalPerf.loob.AUC or crossvalPerf.loob.Brier
                     cvploob = paste0("crossvalPerf.loob.",m)
-                    do.call(cvploob,list(times = times,se.fit = se.fit,NT = NT,response.type = response.type,response.names = response.names,cens.type = cens.type,Weights = Weights,N = N,B = B,DT.B = DT.B,dolist = dolist,alpha = alpha,byvars = byvars,mlabels = mlabels,ipa = ipa,ibs = ibs,keep.residuals = keep.residuals,conservative = conservative,cens.model = cens.model,cause = cause))
+                    cv.args <- list(times = times,se.fit = se.fit,NT = NT,response.type = response.type,response.names = response.names,cens.type = cens.type,Weights = Weights,N = N,B = B,DT.B = DT.B,dolist = dolist,alpha = alpha,byvars = byvars,mlabels = mlabels,ipa = ipa,ibs = ibs,keep.residuals = keep.residuals,conservative = conservative,cens.model = cens.model,cause = cause)
+                    if (m == "Brier") cv.args$ibs.method <- ibs.method
+                    do.call(cvploob, cv.args)
                 })
                 names(crossvalPerf) <- metrics
                 ## FIXME: extracting IPA table 
@@ -1126,7 +1147,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                         if(!is.null(progress.bar)){
                             setTxtProgressBar(pb1, j)
                         }
-                        computePerformance(DT=DT.b,N=N.b,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=FALSE,conservative=TRUE,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid =FALSE,dolist=dolist,probs=probs,metrics="AUC",plots=plots,summary=summary,ibs=ibs,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=breaks)
+                        computePerformance(DT=DT.b,N=N.b,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=FALSE,conservative=TRUE,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid =FALSE,dolist=dolist,probs=probs,metrics="AUC",plots=plots,summary=summary,ibs=ibs,ibs.method=ibs.method,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=breaks)
                     }
                     cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
                     TPR=FPR=NULL
@@ -1175,7 +1196,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                         if(!is.null(progress.bar)){
                             setTxtProgressBar(pb1, j)
                         }
-                        computePerformance(DT=DT.b,N=N.b,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=FALSE,conservative=TRUE,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid = FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=breaks)
+                        computePerformance(DT=DT.b,N=N.b,NT=NT,NF=NF,models=list(levels=mlevs,labels=mlabels),response.type=response.type,times=times,jack=jack,cens.type=cens.type,cause=cause,states=states,alpha=alpha,se.fit=FALSE,conservative=TRUE,cens.model=cens.model,keep.residuals=FALSE,keep.vcov=FALSE,keep.iid = FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ibs=ibs,ibs.method=ibs.method,ipa=ipa,ROC=ROC,MC=Weights$IC,IC.data=Weights$IC.data,breaks=breaks)
                     }
                     if (!is.null(progress.bar)){
                         cat("\n")

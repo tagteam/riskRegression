@@ -45,6 +45,7 @@ Score(object, ...)
     -0.01)),
   cutpoints = NULL,
   verbose = 2,
+  ibs.method = c("left", "trapezoidal"),
   ...
 )
 }
@@ -73,7 +74,7 @@ statistics to apply to the predicted risks. Choices are \code{"risks"}, \code{"I
 \item \code{"riskQuantile"} calculates
 time-point specific boxplots for the
 predicted risks (or biomarker values) conditional on the outcome at the time-point.
-\item \code{"ibs"} calculates integrated Brier scores for time-to-event outcomes using the trapezoidal rule on the evaluation grid.
+\item \code{"ibs"} calculates integrated Brier scores for time-to-event outcomes on the evaluation grid using the method specified by \code{ibs.method}.
 At each positive evaluation time, the integral from zero is divided by that time. If zero is absent from the grid, the Brier score at zero is assumed to be zero.
 }
 Set to \code{NULL} to avoid estimation of summary statistics.}
@@ -218,6 +219,16 @@ are given at the \code{cutpoints}. These values are saved in \code{object$AUC$cu
 \item{verbose}{Verbosity level. Set to '-1' or 'FALSE' to get complete silence. Set to '0' to quiet all messages and warnings but keep the progress.bar.
 Set to '1' to see warnings and to '2' (the default) to see both warnings and messages.
 If 3 or higher, the program produces debug messages.}
+
+\item{ibs.method}{Integration method for \code{summary="ibs"}.
+The default \code{"left"} preserves the original \code{Dint} calculation:
+the Brier score at the left endpoint is held constant over each interval.
+Alternatively, \code{"trapezoidal"} averages the Brier scores at both endpoints.
+Both methods divide the integral from zero by the evaluation time and return zero at time zero.
+With \code{"left"}, a warning recommends trapezoidal integration when the grid omits
+observed event or censoring times between zero and the largest evaluation time,
+unless \code{verbose <= 0} (including \code{verbose=FALSE}). These are potential
+Brier score change times; prediction models can also change between observed times.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

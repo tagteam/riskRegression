@@ -107,7 +107,7 @@ test_that("integrated Brier score",{
 
     scores <- Score(list(zero = risks, nonzero = risks.nonzero),
                     formula = Surv(time, event) ~ 1, data = d, times = c(0, 1, 3),
-                    metrics = "brier", summary = "ibs", null.model = FALSE,
+                    metrics = "brier", summary = "ibs", ibs.method = "trapezoidal", null.model = FALSE,
                     contrasts = FALSE, conf.int = FALSE, se.fit = FALSE)$Brier$score
     # The Brier scores at times 1 and 3 are 1/4 and 5/16 for both models
     # The interval from 1 to 3 contributes 2 * (1/4 + 5/16) / 2 to each integral
@@ -117,7 +117,7 @@ test_that("integrated Brier score",{
 
     # Omitting time zero should give the same IBS at positive times as Brier(0) = 0
     scores <- Score(list(implicit = risks[, -1]), formula = Surv(time, event) ~ 1,
-                    data = d, times = c(1, 3), metrics = "brier", summary = "ibs",
+                    data = d, times = c(1, 3), metrics = "brier", summary = "ibs", ibs.method = "trapezoidal",
                     null.model = FALSE, conf.int = FALSE, se.fit = FALSE)$Brier$score
     expect_equal(scores$IBS, c(1/8, 11/48))
 })
@@ -138,7 +138,7 @@ test_that("survival outcome uncensored",{
         d[,event:=rep(1,.N)]
         cx=coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE)
         cx1=cph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE,y=TRUE)
-        out <- Score(list(Cox=cx,Cph=cx1),data=d,metrics="brier",summary="ibs",contrasts=FALSE,times=1:8,formula=Hist(time,event)~1,se.fit=FALSE)
+        out <- Score(list(Cox=cx,Cph=cx1),data=d,metrics="brier",summary="ibs",verbose=FALSE,contrasts=FALSE,times=1:8,formula=Hist(time,event)~1,se.fit=FALSE)
         expect_equal(ignore_attr=TRUE,100*out$Brier$score[model=="Cox"]$IBS,100*out$Brier$score[model=="Cph"]$IBS,tolerance=0.001)
     }
 })
