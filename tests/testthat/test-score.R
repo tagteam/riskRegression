@@ -1,18 +1,18 @@
-### test-Score.R --- 
+### test-Score.R ---
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
-## created: Jan  4 2016 (14:30) 
-## Version: 
-## last-updated: sep  5 2025 (13:35) 
+## created: Jan  4 2016 (14:30)
+## Version:
+## last-updated: sep  5 2025 (13:35)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 174
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 library(testthat)
 library(survival)
@@ -28,7 +28,7 @@ test_that("Missing values in data", {
 })
 # }}}
 # {{{ "R squared/IPA"
-test_that("R squared/IPA", { 
+test_that("R squared/IPA", {
   set.seed(112)
   d <- sampleData(43,outcome="binary")
   f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
@@ -72,7 +72,7 @@ test_that("survival outcome,Brier Score, external prediction",{
     if (!requireNamespace("pec",quietly=FALSE)){
         message("Package pec not installed. Skip this test.")
         q <- p <- 1
-    }else{    
+    }else{
         ## generate simulated data
         set.seed(130971)
         n <- 100
@@ -99,35 +99,27 @@ test_that("survival outcome,Brier Score, external prediction",{
 # }}}
 # {{{integrated Brier score
 test_that("integrated Brier score",{
-    if (!requireNamespace("pec",quietly=TRUE)){
-        message("Package pec not installed. Skip this test.")
-        p <- q <- 1
-    }else{
-        set.seed(18)
-        trainSurv <- sampleData(100,outcome="survival")
-        testSurv <- sampleData(40,outcome="survival")
-        library(pec)
-        cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-        cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
-        ttt = sort(unique(testSurv$time))
-        # remove last obs to avoid NA predictions
-        ttt = ttt[-length(ttt)]
-        suppressWarnings(xs <- Score(list("c1"=cox1,"c2"=cox2),
-                                     formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
-                                     se.fit=FALSE,
-                                     summary="ibs",
-                                     times=ttt))
-        library(prodlim)
-        xp=pec::pec(list("c1"=cox1,"c2"=cox2),
-                    formula=Surv(time,event)~1,data=testSurv,
-                    times=ttt)
-        a1 <- as.numeric(ibs(xp,times=ttt,models="c1"))
-        b1 <- xs$Brier$score[model=="c1"][["IBS"]]
-        ## cbind(a1,b1)
-        q <- as.numeric(c(a1,use.names=FALSE))
-        p <- c(b1)
-    }
-    expect_equal(ignore_attr=TRUE,p,q)
+    d <- data.frame(time = c(1, 2, 4, 5), event = c(1, 1, 1, 0))
+    # Both models predict the same risks at times 1 and 3 and differ only at time zero
+    risks <- matrix(rep(c(0, 0.5, 0.75), each = nrow(d)), nrow = nrow(d))
+    risks.nonzero <- risks
+    risks.nonzero[, 1] <- 0.25
+
+    scores <- Score(list(zero = risks, nonzero = risks.nonzero),
+                    formula = Surv(time, event) ~ 1, data = d, times = c(0, 1, 3),
+                    metrics = "brier", summary = "ibs", null.model = FALSE,
+                    contrasts = FALSE, conf.int = FALSE, se.fit = FALSE)$Brier$score
+    # The Brier scores at times 1 and 3 are 1/4 and 5/16 for both models
+    # The interval from 1 to 3 contributes 2 * (1/4 + 5/16) / 2 to each integral
+    # The first interval uses Brier(0) = 0 or 1/16, and each total is divided by its horizon
+    expect_equal(scores[model == "zero", IBS], c(0, 1/8, 11/48))
+    expect_equal(scores[model == "nonzero", IBS], c(0, 5/32, 23/96))
+
+    # Omitting time zero should give the same IBS at positive times as Brier(0) = 0
+    scores <- Score(list(implicit = risks[, -1]), formula = Surv(time, event) ~ 1,
+                    data = d, times = c(1, 3), metrics = "brier", summary = "ibs",
+                    null.model = FALSE, conf.int = FALSE, se.fit = FALSE)$Brier$score
+    expect_equal(scores$IBS, c(1/8, 11/48))
 })
 # }}}
 
@@ -195,7 +187,7 @@ test_that("binary outcome: AUC", {
         scoreres <- Score(list(X1=~x1,X2=~x2,X3=~x3),formula=y~1,data=d,null.model=FALSE,cause="1",metrics="auc")
         ## Roc(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d)
         scoreres <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,cause="1")
-        ## to avoid side effects of data.table features we check the following 
+        ## to avoid side effects of data.table features we check the following
         scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",cause="1")
         scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
         expect_equal(ignore_attr=TRUE,scoreres$AUC,scoreres1$AUC)
