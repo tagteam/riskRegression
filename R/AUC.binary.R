@@ -96,10 +96,10 @@ AUC.binary <- function(DT,
             prob_predicted_negative <- count_predicted_negative/.N
             # standard errors
             meanY <- mean(riskRegression_event)
-            se.TPR = sapply(1:length(cutpoints),function(i){sd(riskRegression_event/meanY * ((risk > cutpoints[[i]])-TPR[[i]]))/sqrt(.N)})
-            se.FPR = sapply(1:length(cutpoints),function(i){sd((1-riskRegression_event)/(1-meanY) * ((risk > cutpoints[[i]])-FPR[[i]]))/sqrt(.N)})
-            se.PPV = sapply(1:length(cutpoints),function(i){sd((risk > cutpoints[[i]])/prob_predicted_positive[[i]] * (riskRegression_event - PPV[[i]]))/sqrt(.N)})
-            se.NPV = sapply(1:length(cutpoints),function(i){sd((risk <= cutpoints[[i]])/prob_predicted_negative[[i]] * ((1-riskRegression_event) - NPV[[i]]))/sqrt(.N)})
+            se.TPR = sapply(1:length(cutpoints),function(i){sd(riskRegression_event/meanY * ((risk >= cutpoints[[i]])-TPR[[i]]))/sqrt(.N)})
+            se.FPR = sapply(1:length(cutpoints),function(i){sd((1-riskRegression_event)/(1-meanY) * ((risk >= cutpoints[[i]])-FPR[[i]]))/sqrt(.N)})
+            se.PPV = sapply(1:length(cutpoints),function(i){sd((risk >= cutpoints[[i]])/prob_predicted_positive[[i]] * (riskRegression_event - PPV[[i]]))/sqrt(.N)})
+            se.NPV = sapply(1:length(cutpoints),function(i){sd((risk < cutpoints[[i]])/prob_predicted_negative[[i]] * ((1-riskRegression_event) - NPV[[i]]))/sqrt(.N)})
             data.table(cutpoint=cutpoints,TPR,se.TPR,FPR,se.FPR,PPV,se.PPV,NPV,se.NPV)
         },by=list(model)]
         output <- c(output, list(cutpoints=cutpoint_results[]))
