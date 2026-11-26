@@ -61,3 +61,26 @@ test_that("AUC: standard error for n > 46340, cens.model cox",{
 })
 # }}}
 
+# {{{ "AUC binary: cutpoints with ties"
+## Predicted positive is risk >= cutpoint. The standard errors should use the
+## same rule as the estimates, also when risks are tied at the cutpoint.
+test_that("AUC binary: standard errors at cutpoints with ties",{
+    library(riskRegression)
+    set.seed(8)
+    d <- data.frame(score = rep(0:4, each = 40))
+    d$Y <- rbinom(200, 1, plogis(-2 + 0.8 * d$score))
+    x <- Score(list(score = d$score),formula = Y~1,data = d,metrics = "auc",
+               cutpoints = 2,null.model = FALSE,verbose = -1)$AUC$cutpoints
+    N <- nrow(d)
+    pos <- d$score >= 2
+    binom.se <- function(p,n){sqrt(p*(1-p)/n*N/(N-1))}
+    TPR <- mean(pos[d$Y == 1])
+    FPR <- mean(pos[d$Y == 0])
+    PPV <- mean(d$Y[pos])
+    NPV <- mean(1-d$Y[!pos])
+    expect_equal(c(x$TPR,x$FPR,x$PPV,x$NPV),c(TPR,FPR,PPV,NPV))
+    expect_equal(c(x$se.TPR,x$se.FPR,x$se.PPV,x$se.NPV),
+                 c(binom.se(TPR,sum(d$Y == 1)),binom.se(FPR,sum(d$Y == 0)),
+                   binom.se(PPV,sum(pos)),binom.se(NPV,sum(!pos))))
+})
+# }}}
